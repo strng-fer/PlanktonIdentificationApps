@@ -168,8 +168,7 @@ class MainActivity : AppCompatActivity() {
         // Permission launcher
         permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
             if (isGranted) {
-                val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                cameraLauncher.launch(cameraIntent)
+                showCameraSelectionDialog()
             } else {
                 showError("Izin kamera diperlukan untuk mengambil foto.")
             }
@@ -204,11 +203,8 @@ class MainActivity : AppCompatActivity() {
             val inputFeature0 =
                 TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
 
-            // Use proper MobileNet_V3 preprocessing
-            // Try different preprocessing methods to see which works
-            val byteBuffer = preprocessImageForMobileNetV3(image)
-            // Alternative: val byteBuffer = preprocessImageStandard(image)
-            // Alternative: val byteBuffer = preprocessImageImageNet(image)
+            // MobileNetV3 dengan preprocessing built-in - gunakan raw pixel values [0-255]
+            val byteBuffer = preprocessImageForMobileNetV3BuildIn(image)
             inputFeature0.loadBuffer(byteBuffer)
 
             // Runs model inference and gets result.
@@ -217,59 +213,68 @@ class MainActivity : AppCompatActivity() {
 
             val confidences = outputFeature0.floatArray
 
-            // Debug: Print all confidence values
+            // Comprehensive debugging
+            android.util.Log.d("PlanktonDebug", "=== MODEL OUTPUT DEBUG ===")
             android.util.Log.d("PlanktonDebug", "Total classes: ${confidences.size}")
-            for (i in confidences.indices) {
-                android.util.Log.d("PlanktonDebug", "Class $i confidence: ${confidences[i]}")
+            android.util.Log.d("PlanktonDebug", "Raw output values (first 5):")
+            for (i in 0 until minOf(5, confidences.size)) {
+                android.util.Log.d("PlanktonDebug", "Class $i: ${confidences[i]}")
             }
 
+            // Model MobileNetV3 dengan softmax sudah built-in, jadi tidak perlu apply softmax lagi
+            // Tapi kita cek dulu apakah output sudah dalam bentuk probabilitas
+            val sumConfidences = confidences.sum()
+            android.util.Log.d("PlanktonDebug", "Sum of all confidences: $sumConfidences")
+
+            val finalConfidences = if (sumConfidences > 0.99 && sumConfidences < 1.01) {
+                // Output sudah dalam bentuk probabilitas (sum ≈ 1.0)
+                android.util.Log.d("PlanktonDebug", "Using raw output (already probabilities)")
+                confidences
+            } else {
+                // Output masih berupa logits, perlu softmax
+                android.util.Log.d("PlanktonDebug", "Applying softmax to raw logits")
+                applySoftmax(confidences)
+            }
+
+            // Find max confidence
             var maxPos = 0
             var maxConfidence = 0f
-            for (i in confidences.indices) {
-                if (confidences[i] > maxConfidence) {
-                    maxConfidence = confidences[i]
+            for (i in finalConfidences.indices) {
+                if (finalConfidences[i] > maxConfidence) {
+                    maxConfidence = finalConfidences[i]
                     maxPos = i
                 }
             }
 
             val classes = loadLabels(this)
-
-            // Debug: Print prediction details
             android.util.Log.d("PlanktonDebug", "Predicted class index: $maxPos")
             android.util.Log.d("PlanktonDebug", "Max confidence: $maxConfidence")
             if (maxPos < classes.size) {
                 android.util.Log.d("PlanktonDebug", "Predicted class name: ${classes[maxPos]}")
             }
 
-            // Additional debugging: Check if all confidences are similar
-            val avgConfidence = confidences.average()
-            val minConfidence = confidences.minOrNull() ?: 0f
-            val maxConfidenceValue = confidences.maxOrNull() ?: 0f
-            android.util.Log.d("PlanktonDebug", "Confidence stats - Min: $minConfidence, Max: $maxConfidenceValue, Avg: $avgConfidence")
-
-            // Check if model is giving random/uniform predictions
+            // Check for potential issues
+            val avgConfidence = finalConfidences.average()
+            val minConfidence = finalConfidences.minOrNull() ?: 0f
+            val maxConfidenceValue = finalConfidences.maxOrNull() ?: 0f
             val confidenceRange = maxConfidenceValue - minConfidence
-            android.util.Log.d("PlanktonDebug", "Confidence range: $confidenceRange")
-            if (confidenceRange < 0.1f) {
-                android.util.Log.w("PlanktonDebug", "WARNING: Very small confidence range - model might not be working properly!")
-            }
+
+            android.util.Log.d("PlanktonDebug", "Confidence stats - Min: $minConfidence, Max: $maxConfidenceValue, Avg: $avgConfidence, Range: $confidenceRange")
 
             if (maxPos < classes.size) {
                 result!!.text = classes[maxPos]
 
-                // Buat list pasangan (index, confidence) dan urutkan berdasarkan confidence tertinggi
+                // Create sorted confidence pairs
                 val classConfidencePairs = mutableListOf<Pair<Int, Float>>()
-                for (i in confidences.indices) {
-                    classConfidencePairs.add(Pair(i, confidences[i]))
+                for (i in finalConfidences.indices) {
+                    classConfidencePairs.add(Pair(i, finalConfidences[i]))
                 }
 
-                // Urutkan berdasarkan confidence dari tertinggi ke terendah
+                // Sort by confidence descending
                 classConfidencePairs.sortByDescending { it.second }
 
-                // Ambil hanya 3 tertinggi
+                // Show top 3 predictions
                 val top3 = classConfidencePairs.take(3)
-
-                // Format string untuk menampilkan top 3
                 var s = "Top 3 Predictions:\n"
                 for ((index, conf) in top3) {
                     if (index < classes.size) {
@@ -283,29 +288,92 @@ class MainActivity : AppCompatActivity() {
             }
 
         } catch (e: Exception) {
+            android.util.Log.e("PlanktonDebug", "Error in classifyImage", e)
             showError("Error classifying image: ${e.message}")
         } finally {
-            // Releases model resources if no longer used.
             model?.close()
         }
     }
 
     /**
-     * Preprocess image for MobileNet_V3 model
-     * This function applies the same preprocessing as tf.keras.applications.mobilenet_v3.preprocess_input
-     * which normalizes pixel values to the range [-1, 1]
+     * Apply softmax function to convert logits to probabilities
+     */
+    private fun applySoftmax(logits: FloatArray): FloatArray {
+        val result = FloatArray(logits.size)
+
+        // Find max for numerical stability
+        val maxLogit = logits.maxOrNull() ?: 0f
+
+        // Calculate exp(x - max) for all elements
+        var sumExp = 0f
+        for (i in logits.indices) {
+            result[i] = kotlin.math.exp(logits[i] - maxLogit)
+            sumExp += result[i]
+        }
+
+        // Normalize
+        for (i in result.indices) {
+            result[i] = result[i] / sumExp
+        }
+
+        return result
+    }
+
+    /**
+     * Fixed preprocessing that tries to match the exact preprocessing used during training
+     */
+    private fun preprocessImageFixed(image: Bitmap): ByteBuffer {
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        // Create properly scaled bitmap
+        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
+
+        val intValues = IntArray(imageSize * imageSize)
+        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
+
+        android.util.Log.d("PlanktonDebug", "Processing image size: ${imageSize}x${imageSize}")
+
+        var pixel = 0
+        for (i in 0 until imageSize) {
+            for (j in 0 until imageSize) {
+                val value = intValues[pixel++]
+
+                // Extract RGB values (Android uses ARGB format)
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                // Try standard [0,1] normalization first
+                byteBuffer.putFloat(red / 255.0f)
+                byteBuffer.putFloat(green / 255.0f)
+                byteBuffer.putFloat(blue / 255.0f)
+            }
+        }
+
+        android.util.Log.d("PlanktonDebug", "ByteBuffer size: ${byteBuffer.capacity()}, position after fill: ${byteBuffer.position()}")
+
+        // Reset position for reading
+        byteBuffer.rewind()
+
+        return byteBuffer
+    }
+
+    /**
+     * Alternative preprocessing methods for testing different normalization approaches
      */
     private fun preprocessImageForMobileNetV3(image: Bitmap): ByteBuffer {
         val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
         byteBuffer.order(ByteOrder.nativeOrder())
 
+        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
         val intValues = IntArray(imageSize * imageSize)
-        image.getPixels(intValues, 0, image.width, 0, 0, image.width, image.height)
+        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
 
         var pixel = 0
-        for (i in 0..<imageSize) {
-            for (j in 0..<imageSize) {
-                val value = intValues[pixel++] // RGB
+        for (i in 0 until imageSize) {
+            for (j in 0 until imageSize) {
+                val value = intValues[pixel++]
 
                 // Extract RGB values
                 val red = (value shr 16) and 0xFF
@@ -320,67 +388,50 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        byteBuffer.rewind()
         return byteBuffer
     }
 
     /**
-     * Alternative preprocessing methods for testing
+     * Preprocessing untuk MobileNetV3 dengan built-in preprocessing
+     * Model sudah melakukan normalisasi internal, jadi kita hanya perlu memberikan raw pixel values [0-255]
      */
-    private fun preprocessImageStandard(image: Bitmap): ByteBuffer {
-        // Standard [0, 1] normalization
+    private fun preprocessImageForMobileNetV3BuildIn(image: Bitmap): ByteBuffer {
         val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
         byteBuffer.order(ByteOrder.nativeOrder())
 
+        // Create properly scaled bitmap
+        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
+
         val intValues = IntArray(imageSize * imageSize)
-        image.getPixels(intValues, 0, image.width, 0, 0, image.width, image.height)
+        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
+
+        android.util.Log.d("PlanktonDebug", "Processing image for MobileNetV3 with built-in preprocessing")
+        android.util.Log.d("PlanktonDebug", "Image size: ${imageSize}x${imageSize}")
 
         var pixel = 0
-        for (i in 0..<imageSize) {
-            for (j in 0..<imageSize) {
+        for (i in 0 until imageSize) {
+            for (j in 0 until imageSize) {
                 val value = intValues[pixel++]
+
+                // Extract RGB values (Android uses ARGB format)
                 val red = (value shr 16) and 0xFF
                 val green = (value shr 8) and 0xFF
                 val blue = value and 0xFF
 
-                // Standard normalization [0, 1]
-                byteBuffer.putFloat(red / 255.0f)
-                byteBuffer.putFloat(green / 255.0f)
-                byteBuffer.putFloat(blue / 255.0f)
+                // MobileNetV3 dengan built-in preprocessing expects raw pixel values [0-255]
+                // TIDAK melakukan normalisasi karena model akan melakukannya secara internal
+                byteBuffer.putFloat(red.toFloat())
+                byteBuffer.putFloat(green.toFloat())
+                byteBuffer.putFloat(blue.toFloat())
             }
         }
-        return byteBuffer
-    }
 
-    private fun preprocessImageImageNet(image: Bitmap): ByteBuffer {
-        // ImageNet mean subtraction (another common preprocessing)
-        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
-        byteBuffer.order(ByteOrder.nativeOrder())
+        android.util.Log.d("PlanktonDebug", "ByteBuffer filled with raw pixel values [0-255]")
 
-        val intValues = IntArray(imageSize * imageSize)
-        image.getPixels(intValues, 0, image.width, 0, 0, image.width, image.height)
+        // Reset position for reading
+        byteBuffer.rewind()
 
-        // ImageNet means
-        val meanR = 0.485f * 255f
-        val meanG = 0.456f * 255f
-        val meanB = 0.406f * 255f
-        val stdR = 0.229f * 255f
-        val stdG = 0.224f * 255f
-        val stdB = 0.114f * 255f
-
-        var pixel = 0
-        for (i in 0..<imageSize) {
-            for (j in 0..<imageSize) {
-                val value = intValues[pixel++]
-                val red = (value shr 16) and 0xFF
-                val green = (value shr 8) and 0xFF
-                val blue = value and 0xFF
-
-                // ImageNet normalization
-                byteBuffer.putFloat((red - meanR) / stdR)
-                byteBuffer.putFloat((green - meanG) / stdG)
-                byteBuffer.putFloat((blue - meanB) / stdB)
-            }
-        }
         return byteBuffer
     }
 
@@ -390,17 +441,35 @@ class MainActivity : AppCompatActivity() {
             val availableCameras = getAvailableCameras(cameraManager)
 
             if (availableCameras.isEmpty()) {
-                showError("Tidak ada kamera yang tersedia")
+                // Jika tidak ada kamera yang terdeteksi, gunakan kamera default
+                launchDefaultCamera()
                 return
             }
 
-            val cameraNames = availableCameras.map { it.second }.toTypedArray()
+            // Filter hanya kamera default dan USB eksternal
+            val filteredCameras = availableCameras.filter { camera ->
+                camera.second == "Kamera Default" || camera.second == "Kamera USB Eksternal"
+            }
+
+            if (filteredCameras.size == 1) {
+                // Jika hanya ada satu pilihan, langsung buka
+                launchCameraWithId(filteredCameras[0].first)
+                return
+            }
+
+            if (filteredCameras.isEmpty()) {
+                // Jika tidak ada kamera yang sesuai filter, gunakan default
+                launchDefaultCamera()
+                return
+            }
+
+            val cameraNames = filteredCameras.map { it.second }.toTypedArray()
 
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Pilih Kamera")
                 .setIcon(R.drawable.ic_camera_capture)
                 .setItems(cameraNames) { dialog, which ->
-                    val selectedCameraId = availableCameras[which].first
+                    val selectedCameraId = filteredCameras[which].first
                     launchCameraWithId(selectedCameraId)
                 }
                 .setNegativeButton("Batal") { dialog, _ ->
@@ -408,7 +477,8 @@ class MainActivity : AppCompatActivity() {
                 }
                 .show()
         } catch (e: Exception) {
-            showError("Error accessing camera: ${e.message}")
+            // Jika terjadi error, gunakan kamera default
+            launchDefaultCamera()
         }
     }
 
@@ -421,13 +491,19 @@ class MainActivity : AppCompatActivity() {
             for (cameraId in cameraIdList) {
                 val characteristics = cameraManager.getCameraCharacteristics(cameraId)
                 val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
-                val cameraName = when (facing) {
-                    CameraCharacteristics.LENS_FACING_BACK -> "Kamera Belakang"
-                    CameraCharacteristics.LENS_FACING_FRONT -> "Kamera Depan"
-                    CameraCharacteristics.LENS_FACING_EXTERNAL -> "Kamera USB Eksternal"
-                    else -> "Kamera Lainnya"
+
+                // Hanya tambahkan kamera yang sesuai kriteria
+                when (facing) {
+                    CameraCharacteristics.LENS_FACING_BACK -> {
+                        // Gunakan kamera belakang sebagai kamera default
+                        cameras.add(Pair(cameraId, "Kamera Default"))
+                    }
+                    CameraCharacteristics.LENS_FACING_EXTERNAL -> {
+                        // Tambahkan kamera USB eksternal
+                        cameras.add(Pair(cameraId, "Kamera USB Eksternal"))
+                    }
+                    // Abaikan kamera depan dan lainnya
                 }
-                cameras.add(Pair(cameraId, cameraName))
             }
         } catch (e: Exception) {
             // Fallback untuk perangkat yang tidak mendukung Camera2 API
@@ -437,28 +513,28 @@ class MainActivity : AppCompatActivity() {
         return cameras
     }
 
+    private fun launchDefaultCamera() {
+        try {
+            val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            cameraLauncher.launch(cameraIntent)
+            Toast.makeText(this, "Membuka kamera default...", Toast.LENGTH_SHORT).show()
+        } catch (e: Exception) {
+            showError("Error launching default camera: ${e.message}")
+        }
+    }
+
     private fun launchCameraWithId(cameraId: String) {
         try {
             val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            cameraLauncher.launch(cameraIntent)
 
-            // Untuk kamera tertentu, kita bisa menggunakan extra intent
-            when (cameraId) {
-                "0" -> {
-                    // Kamera belakang (default)
-                    cameraIntent.putExtra("android.intent.extras.CAMERA_FACING", 0)
-                }
-                "1" -> {
-                    // Kamera depan
-                    cameraIntent.putExtra("android.intent.extras.CAMERA_FACING", 1)
-                }
-                else -> {
-                    // Kamera lain atau eksternal
-                    cameraIntent.putExtra("android.intent.extras.CAMERA_FACING", 0)
-                }
+            val cameraType = if (cameraId.contains("external") || cameraId.toIntOrNull() ?: 0 > 1) {
+                "kamera USB eksternal"
+            } else {
+                "kamera default"
             }
 
-            cameraLauncher.launch(cameraIntent)
-            Toast.makeText(this, "Membuka kamera...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Membuka $cameraType...", Toast.LENGTH_SHORT).show()
 
         } catch (e: Exception) {
             showError("Error launching camera: ${e.message}")
