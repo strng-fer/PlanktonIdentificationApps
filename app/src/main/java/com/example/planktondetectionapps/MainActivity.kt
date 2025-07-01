@@ -5,6 +5,8 @@ import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CameraCharacteristics
 import android.media.ThumbnailUtils
 import android.os.Bundle
 import android.provider.MediaStore
@@ -14,6 +16,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.scale
 import com.example.planktondetectionapps.ml.ModelUnquant
@@ -30,9 +33,11 @@ class MainActivity : AppCompatActivity() {
     var confidence: TextView? = null
     var imageView: ImageView? = null
     var picture: Button? = null
+    var galleryButton: Button? = null
     var imageSize: Int = 224
 
     private lateinit var cameraLauncher: ActivityResultLauncher<Intent>
+    private lateinit var galleryLauncher: ActivityResultLauncher<Intent>
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,6 +48,7 @@ class MainActivity : AppCompatActivity() {
         confidence = findViewById<TextView>(R.id.confidence)
         imageView = findViewById<ImageView>(R.id.imageView)
         picture = findViewById<Button>(R.id.button)
+        galleryButton = findViewById<Button>(R.id.galleryButton)
 
         // Initialize ActivityResultLaunchers
         initializeLaunchers()
@@ -50,12 +56,16 @@ class MainActivity : AppCompatActivity() {
         picture?.setOnClickListener {
             // Launch camera if we have permission
             if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                cameraLauncher.launch(cameraIntent)
+                showCameraSelectionDialog()
             } else {
                 //Request camera permission if we don't have it.
                 permissionLauncher.launch(Manifest.permission.CAMERA)
             }
+        }
+
+        galleryButton?.setOnClickListener {
+            val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+            galleryLauncher.launch(galleryIntent)
         }
     }
 
@@ -83,6 +93,32 @@ class MainActivity : AppCompatActivity() {
                 }
             } else {
                 showError("❌ Pengambilan gambar dibatalkan.")
+            }
+        }
+
+        // Gallery launcher
+        galleryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK && result.data != null) {
+                try {
+                    val imageUri = result.data?.data
+                    if (imageUri != null) {
+                        val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+
+                        // Process and display the image
+                        val dimension = min(bitmap.width, bitmap.height)
+                        var image = ThumbnailUtils.extractThumbnail(bitmap, dimension, dimension)
+                        imageView?.setImageBitmap(image)
+
+                        image = image.scale(imageSize, imageSize)
+                        classifyImage(image)
+                    } else {
+                        showError("❌ Gagal mengambil gambar dari galeri.")
+                    }
+                } catch (e: Exception) {
+                    showError("❌ Error processing gallery image: ${e.message}")
+                }
+            } else {
+                showError("❌ Pemilihan gambar dibatalkan.")
             }
         }
 
@@ -159,9 +195,24 @@ class MainActivity : AppCompatActivity() {
             if (maxPos < classes.size) {
                 result!!.text = classes[maxPos]
 
-                var s = ""
-                for (i in classes.indices) {
-                    s += String.format(Locale.getDefault(), "%s: %.1f%%\n", classes[i], confidences[i] * 100)
+                // Buat list pasangan (index, confidence) dan urutkan berdasarkan confidence tertinggi
+                val classConfidencePairs = mutableListOf<Pair<Int, Float>>()
+                for (i in confidences.indices) {
+                    classConfidencePairs.add(Pair(i, confidences[i]))
+                }
+
+                // Urutkan berdasarkan confidence dari tertinggi ke terendah
+                classConfidencePairs.sortByDescending { it.second }
+
+                // Ambil hanya 3 tertinggi
+                val top3 = classConfidencePairs.take(3)
+
+                // Format string untuk menampilkan top 3
+                var s = "Top 3 Predictions:\n"
+                for ((index, conf) in top3) {
+                    if (index < classes.size) {
+                        s += String.format(Locale.getDefault(), "%s: %.1f%%\n", classes[index], conf * 100)
+                    }
                 }
 
                 confidence!!.text = s
@@ -174,6 +225,86 @@ class MainActivity : AppCompatActivity() {
         } finally {
             // Releases model resources if no longer used.
             model?.close()
+        }
+    }
+
+    private fun showCameraSelectionDialog() {
+        try {
+            val cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+            val availableCameras = getAvailableCameras(cameraManager)
+
+            if (availableCameras.isEmpty()) {
+                showError("❌ Tidak ada kamera yang tersedia")
+                return
+            }
+
+            val cameraNames = availableCameras.map { it.second }.toTypedArray()
+
+            val builder = AlertDialog.Builder(this)
+            builder.setTitle("📷 Pilih Kamera")
+                .setItems(cameraNames) { dialog, which ->
+                    val selectedCameraId = availableCameras[which].first
+                    launchCameraWithId(selectedCameraId)
+                }
+                .setNegativeButton("Batal") { dialog, _ ->
+                    dialog.dismiss()
+                }
+                .show()
+        } catch (e: Exception) {
+            showError("❌ Error accessing camera: ${e.message}")
+        }
+    }
+
+    private fun getAvailableCameras(cameraManager: CameraManager): List<Pair<String, String>> {
+        val cameras = mutableListOf<Pair<String, String>>()
+
+        try {
+            val cameraIdList = cameraManager.cameraIdList
+
+            for (cameraId in cameraIdList) {
+                val characteristics = cameraManager.getCameraCharacteristics(cameraId)
+                val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
+                val cameraName = when (facing) {
+                    CameraCharacteristics.LENS_FACING_BACK -> "📷 Kamera Belakang"
+                    CameraCharacteristics.LENS_FACING_FRONT -> "🤳 Kamera Depan"
+                    CameraCharacteristics.LENS_FACING_EXTERNAL -> "🔌 Kamera USB Eksternal"
+                    else -> "📹 Kamera Lainnya"
+                }
+                cameras.add(Pair(cameraId, cameraName))
+            }
+        } catch (e: Exception) {
+            // Fallback untuk perangkat yang tidak mendukung Camera2 API
+            cameras.add(Pair("0", "📷 Kamera Default"))
+        }
+
+        return cameras
+    }
+
+    private fun launchCameraWithId(cameraId: String) {
+        try {
+            val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+
+            // Untuk kamera tertentu, kita bisa menggunakan extra intent
+            when (cameraId) {
+                "0" -> {
+                    // Kamera belakang (default)
+                    cameraIntent.putExtra("android.intent.extras.CAMERA_FACING", 0)
+                }
+                "1" -> {
+                    // Kamera depan
+                    cameraIntent.putExtra("android.intent.extras.CAMERA_FACING", 1)
+                }
+                else -> {
+                    // Kamera lain atau eksternal
+                    cameraIntent.putExtra("android.intent.extras.CAMERA_FACING", 0)
+                }
+            }
+
+            cameraLauncher.launch(cameraIntent)
+            Toast.makeText(this, "📸 Membuka kamera...", Toast.LENGTH_SHORT).show()
+
+        } catch (e: Exception) {
+            showError("❌ Error launching camera: ${e.message}")
         }
     }
 }
