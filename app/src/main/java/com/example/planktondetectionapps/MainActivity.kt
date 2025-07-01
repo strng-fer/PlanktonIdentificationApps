@@ -50,6 +50,9 @@ class MainActivity : AppCompatActivity() {
         picture = findViewById<Button>(R.id.button)
         galleryButton = findViewById<Button>(R.id.galleryButton)
 
+        // Show welcome dialog when app starts
+        showWelcomeDialog()
+
         // Initialize ActivityResultLaunchers
         initializeLaunchers()
 
@@ -69,6 +72,46 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showWelcomeDialog() {
+        val dialogBuilder = AlertDialog.Builder(this)
+        dialogBuilder.setTitle("Selamat Datang di Plankton Detection")
+        dialogBuilder.setIcon(R.drawable.ic_microscope)
+        dialogBuilder.setMessage(
+            "Aplikasi ini menggunakan teknologi AI untuk mendeteksi dan mengklasifikasi jenis plankton.\n\n" +
+            "• Ambil foto menggunakan kamera\n" +
+            "• Pilih foto dari galeri\n" +
+            "• Dapatkan hasil klasifikasi dengan tingkat kepercayaan\n\n" +
+            "Pastikan gambar plankton terlihat jelas untuk hasil terbaik!"
+        )
+        dialogBuilder.setPositiveButton("Mulai") { dialog, _ ->
+            dialog.dismiss()
+        }
+        dialogBuilder.setCancelable(false)
+        dialogBuilder.create().show()
+    }
+
+    private fun showErrorDialog(title: String, message: String) {
+        val dialogBuilder = AlertDialog.Builder(this)
+        dialogBuilder.setTitle(title)
+        dialogBuilder.setMessage(message)
+        dialogBuilder.setPositiveButton("OK") { dialog, _ ->
+            dialog.dismiss()
+        }
+        dialogBuilder.setIcon(android.R.drawable.ic_dialog_alert)
+        dialogBuilder.create().show()
+    }
+
+    private fun showSuccessDialog(title: String, message: String) {
+        val dialogBuilder = AlertDialog.Builder(this)
+        dialogBuilder.setTitle(title)
+        dialogBuilder.setMessage(message)
+        dialogBuilder.setPositiveButton("OK") { dialog, _ ->
+            dialog.dismiss()
+        }
+        dialogBuilder.setIcon(android.R.drawable.ic_dialog_info)
+        dialogBuilder.create().show()
+    }
+
     private fun initializeLaunchers() {
         // Camera launcher
         cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -86,13 +129,13 @@ class MainActivity : AppCompatActivity() {
                         image = image.scale(imageSize, imageSize)
                         classifyImage(image)
                     } else {
-                        showError("❌ Gagal mengambil gambar dari kamera.")
+                        showError("Gagal mengambil gambar dari kamera.")
                     }
                 } catch (e: Exception) {
-                    showError("❌ Error processing image: ${e.message}")
+                    showError("Error processing image: ${e.message}")
                 }
             } else {
-                showError("❌ Pengambilan gambar dibatalkan.")
+                showError("Pengambilan gambar dibatalkan.")
             }
         }
 
@@ -112,13 +155,13 @@ class MainActivity : AppCompatActivity() {
                         image = image.scale(imageSize, imageSize)
                         classifyImage(image)
                     } else {
-                        showError("❌ Gagal mengambil gambar dari galeri.")
+                        showError("Gagal mengambil gambar dari galeri.")
                     }
                 } catch (e: Exception) {
-                    showError("❌ Error processing gallery image: ${e.message}")
+                    showError("Error processing gallery image: ${e.message}")
                 }
             } else {
-                showError("❌ Pemilihan gambar dibatalkan.")
+                showError("Pemilihan gambar dibatalkan.")
             }
         }
 
@@ -128,14 +171,15 @@ class MainActivity : AppCompatActivity() {
                 val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
                 cameraLauncher.launch(cameraIntent)
             } else {
-                showError("❌ Izin kamera diperlukan untuk mengambil foto.")
+                showError("Izin kamera diperlukan untuk mengambil foto.")
             }
         }
     }
 
     private fun showError(message: String) {
-        result?.text = message
-        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+        showErrorDialog("Gagal", message)
+        result?.text = "Terjadi kesalahan"
+        confidence?.text = "Silakan coba lagi"
     }
 
     fun loadLabels(context: Context): List<String> {
@@ -235,11 +279,11 @@ class MainActivity : AppCompatActivity() {
 
                 confidence!!.text = s
             } else {
-                showError("❌ Error: Invalid classification result")
+                showError("Error: Invalid classification result")
             }
 
         } catch (e: Exception) {
-            showError("❌ Error classifying image: ${e.message}")
+            showError("Error classifying image: ${e.message}")
         } finally {
             // Releases model resources if no longer used.
             model?.close()
@@ -346,14 +390,15 @@ class MainActivity : AppCompatActivity() {
             val availableCameras = getAvailableCameras(cameraManager)
 
             if (availableCameras.isEmpty()) {
-                showError("❌ Tidak ada kamera yang tersedia")
+                showError("Tidak ada kamera yang tersedia")
                 return
             }
 
             val cameraNames = availableCameras.map { it.second }.toTypedArray()
 
             val builder = AlertDialog.Builder(this)
-            builder.setTitle("📷 Pilih Kamera")
+            builder.setTitle("Pilih Kamera")
+                .setIcon(R.drawable.ic_camera_capture)
                 .setItems(cameraNames) { dialog, which ->
                     val selectedCameraId = availableCameras[which].first
                     launchCameraWithId(selectedCameraId)
@@ -363,7 +408,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 .show()
         } catch (e: Exception) {
-            showError("❌ Error accessing camera: ${e.message}")
+            showError("Error accessing camera: ${e.message}")
         }
     }
 
@@ -377,16 +422,16 @@ class MainActivity : AppCompatActivity() {
                 val characteristics = cameraManager.getCameraCharacteristics(cameraId)
                 val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
                 val cameraName = when (facing) {
-                    CameraCharacteristics.LENS_FACING_BACK -> "📷 Kamera Belakang"
-                    CameraCharacteristics.LENS_FACING_FRONT -> "🤳 Kamera Depan"
-                    CameraCharacteristics.LENS_FACING_EXTERNAL -> "🔌 Kamera USB Eksternal"
-                    else -> "📹 Kamera Lainnya"
+                    CameraCharacteristics.LENS_FACING_BACK -> "Kamera Belakang"
+                    CameraCharacteristics.LENS_FACING_FRONT -> "Kamera Depan"
+                    CameraCharacteristics.LENS_FACING_EXTERNAL -> "Kamera USB Eksternal"
+                    else -> "Kamera Lainnya"
                 }
                 cameras.add(Pair(cameraId, cameraName))
             }
         } catch (e: Exception) {
             // Fallback untuk perangkat yang tidak mendukung Camera2 API
-            cameras.add(Pair("0", "📷 Kamera Default"))
+            cameras.add(Pair("0", "Kamera Default"))
         }
 
         return cameras
@@ -413,10 +458,10 @@ class MainActivity : AppCompatActivity() {
             }
 
             cameraLauncher.launch(cameraIntent)
-            Toast.makeText(this, "📸 Membuka kamera...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Membuka kamera...", Toast.LENGTH_SHORT).show()
 
         } catch (e: Exception) {
-            showError("❌ Error launching camera: ${e.message}")
+            showError("Error launching camera: ${e.message}")
         }
     }
 }
