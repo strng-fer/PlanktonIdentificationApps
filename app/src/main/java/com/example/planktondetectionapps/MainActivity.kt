@@ -1,7 +1,6 @@
 package com.example.planktondetectionapps
 
-import com.example.planktondetectionapps.R
-import android.view.View
+import android.content.Context
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -12,13 +11,18 @@ import android.provider.MediaStore
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.graphics.scale
 import com.example.planktondetectionapps.ml.ModelUnquant
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.util.Locale
 import kotlin.math.min
 
 class MainActivity : AppCompatActivity() {
@@ -27,6 +31,9 @@ class MainActivity : AppCompatActivity() {
     var imageView: ImageView? = null
     var picture: Button? = null
     var imageSize: Int = 224
+
+    private lateinit var cameraLauncher: ActivityResultLauncher<Intent>
+    private lateinit var permissionLauncher: ActivityResultLauncher<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,21 +44,81 @@ class MainActivity : AppCompatActivity() {
         imageView = findViewById<ImageView>(R.id.imageView)
         picture = findViewById<Button>(R.id.button)
 
-        picture?.setOnClickListener(View.OnClickListener {
+        // Initialize ActivityResultLaunchers
+        initializeLaunchers()
+
+        picture?.setOnClickListener {
             // Launch camera if we have permission
             if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                 val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-                startActivityForResult(cameraIntent, 1)
+                cameraLauncher.launch(cameraIntent)
             } else {
                 //Request camera permission if we don't have it.
-                requestPermissions(arrayOf(Manifest.permission.CAMERA), 100)
+                permissionLauncher.launch(Manifest.permission.CAMERA)
             }
-        })
+        }
+    }
+
+    private fun initializeLaunchers() {
+        // Camera launcher
+        cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                try {
+                    val extras = result.data?.extras
+                    @Suppress("DEPRECATION")
+                    val photo = extras?.get("data") as? Bitmap
+
+                    if (photo != null) {
+                        val dimension = min(photo.width, photo.height)
+                        var image = ThumbnailUtils.extractThumbnail(photo, dimension, dimension)
+                        imageView?.setImageBitmap(image)
+
+                        image = image.scale(imageSize, imageSize)
+                        classifyImage(image)
+                    } else {
+                        showError("❌ Gagal mengambil gambar dari kamera.")
+                    }
+                } catch (e: Exception) {
+                    showError("❌ Error processing image: ${e.message}")
+                }
+            } else {
+                showError("❌ Pengambilan gambar dibatalkan.")
+            }
+        }
+
+        // Permission launcher
+        permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+                cameraLauncher.launch(cameraIntent)
+            } else {
+                showError("❌ Izin kamera diperlukan untuk mengambil foto.")
+            }
+        }
+    }
+
+    private fun showError(message: String) {
+        result?.text = message
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+    }
+
+    fun loadLabels(context: Context): List<String> {
+        val labels = mutableListOf<String>()
+        try {
+            context.assets.open("labels.txt").bufferedReader().useLines { lines ->
+                lines.forEach { labels.add(it) }
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+            labels.add("Unknown") // fallback jika file tidak ditemukan
+        }
+        return labels
     }
 
     fun classifyImage(image: Bitmap) {
+        var model: ModelUnquant? = null
         try {
-            val model: ModelUnquant = ModelUnquant.newInstance(applicationContext)
+            model = ModelUnquant.newInstance(applicationContext)
 
             // Creates inputs for reference.
             val inputFeature0 =
@@ -87,34 +154,26 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            val classes = arrayOf("Table", "Cupboard")
+            val classes = loadLabels(this)
 
-            result!!.text = classes[maxPos]
+            if (maxPos < classes.size) {
+                result!!.text = classes[maxPos]
 
-            var s = ""
-            for (i in classes.indices) {
-                s += String.format("%s: %.1f%%\n", classes[i], confidences[i] * 100)
+                var s = ""
+                for (i in classes.indices) {
+                    s += String.format(Locale.getDefault(), "%s: %.1f%%\n", classes[i], confidences[i] * 100)
+                }
+
+                confidence!!.text = s
+            } else {
+                showError("❌ Error: Invalid classification result")
             }
 
-            confidence!!.text = s
-
+        } catch (e: Exception) {
+            showError("❌ Error classifying image: ${e.message}")
+        } finally {
             // Releases model resources if no longer used.
-            model.close()
-        } catch (e: IOException) {
-            // TODO Handle the exception
+            model?.close()
         }
-    }
-
-    public override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        if (requestCode == 1 && resultCode == RESULT_OK) {
-            var image = data!!.extras!!["data"] as Bitmap?
-            val dimension = min(image!!.width, image.height)
-            image = ThumbnailUtils.extractThumbnail(image, dimension, dimension)
-            imageView!!.setImageBitmap(image)
-
-            image = Bitmap.createScaledBitmap(image, imageSize, imageSize, false)
-            classifyImage(image)
-        }
-        super.onActivityResult(requestCode, resultCode, data)
     }
 }
