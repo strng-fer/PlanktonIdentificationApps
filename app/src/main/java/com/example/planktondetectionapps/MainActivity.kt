@@ -159,21 +159,12 @@ class MainActivity : AppCompatActivity() {
             // Creates inputs for reference.
             val inputFeature0 =
                 TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
-            val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
-            byteBuffer.order(ByteOrder.nativeOrder())
 
-            val intValues = IntArray(imageSize * imageSize)
-            image.getPixels(intValues, 0, image.width, 0, 0, image.width, image.height)
-            var pixel = 0
-            for (i in 0..<imageSize) {
-                for (j in 0..<imageSize) {
-                    val `val` = intValues[pixel++] // RGB
-                    byteBuffer.putFloat(((`val` shr 16) and 0xFF) * (1f / 255f))
-                    byteBuffer.putFloat(((`val` shr 8) and 0xFF) * (1f / 255f))
-                    byteBuffer.putFloat((`val` and 0xFF) * (1f / 255f))
-                }
-            }
-
+            // Use proper MobileNet_V3 preprocessing
+            // Try different preprocessing methods to see which works
+            val byteBuffer = preprocessImageForMobileNetV3(image)
+            // Alternative: val byteBuffer = preprocessImageStandard(image)
+            // Alternative: val byteBuffer = preprocessImageImageNet(image)
             inputFeature0.loadBuffer(byteBuffer)
 
             // Runs model inference and gets result.
@@ -181,6 +172,13 @@ class MainActivity : AppCompatActivity() {
             val outputFeature0: TensorBuffer = outputs.getOutputFeature0AsTensorBuffer()
 
             val confidences = outputFeature0.floatArray
+
+            // Debug: Print all confidence values
+            android.util.Log.d("PlanktonDebug", "Total classes: ${confidences.size}")
+            for (i in confidences.indices) {
+                android.util.Log.d("PlanktonDebug", "Class $i confidence: ${confidences[i]}")
+            }
+
             var maxPos = 0
             var maxConfidence = 0f
             for (i in confidences.indices) {
@@ -191,6 +189,26 @@ class MainActivity : AppCompatActivity() {
             }
 
             val classes = loadLabels(this)
+
+            // Debug: Print prediction details
+            android.util.Log.d("PlanktonDebug", "Predicted class index: $maxPos")
+            android.util.Log.d("PlanktonDebug", "Max confidence: $maxConfidence")
+            if (maxPos < classes.size) {
+                android.util.Log.d("PlanktonDebug", "Predicted class name: ${classes[maxPos]}")
+            }
+
+            // Additional debugging: Check if all confidences are similar
+            val avgConfidence = confidences.average()
+            val minConfidence = confidences.minOrNull() ?: 0f
+            val maxConfidenceValue = confidences.maxOrNull() ?: 0f
+            android.util.Log.d("PlanktonDebug", "Confidence stats - Min: $minConfidence, Max: $maxConfidenceValue, Avg: $avgConfidence")
+
+            // Check if model is giving random/uniform predictions
+            val confidenceRange = maxConfidenceValue - minConfidence
+            android.util.Log.d("PlanktonDebug", "Confidence range: $confidenceRange")
+            if (confidenceRange < 0.1f) {
+                android.util.Log.w("PlanktonDebug", "WARNING: Very small confidence range - model might not be working properly!")
+            }
 
             if (maxPos < classes.size) {
                 result!!.text = classes[maxPos]
@@ -226,6 +244,100 @@ class MainActivity : AppCompatActivity() {
             // Releases model resources if no longer used.
             model?.close()
         }
+    }
+
+    /**
+     * Preprocess image for MobileNet_V3 model
+     * This function applies the same preprocessing as tf.keras.applications.mobilenet_v3.preprocess_input
+     * which normalizes pixel values to the range [-1, 1]
+     */
+    private fun preprocessImageForMobileNetV3(image: Bitmap): ByteBuffer {
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        val intValues = IntArray(imageSize * imageSize)
+        image.getPixels(intValues, 0, image.width, 0, 0, image.width, image.height)
+
+        var pixel = 0
+        for (i in 0..<imageSize) {
+            for (j in 0..<imageSize) {
+                val value = intValues[pixel++] // RGB
+
+                // Extract RGB values
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                // MobileNet_V3 preprocessing: normalize to [-1, 1]
+                // Formula: (pixel_value / 127.5) - 1.0
+                byteBuffer.putFloat((red / 127.5f) - 1.0f)
+                byteBuffer.putFloat((green / 127.5f) - 1.0f)
+                byteBuffer.putFloat((blue / 127.5f) - 1.0f)
+            }
+        }
+
+        return byteBuffer
+    }
+
+    /**
+     * Alternative preprocessing methods for testing
+     */
+    private fun preprocessImageStandard(image: Bitmap): ByteBuffer {
+        // Standard [0, 1] normalization
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        val intValues = IntArray(imageSize * imageSize)
+        image.getPixels(intValues, 0, image.width, 0, 0, image.width, image.height)
+
+        var pixel = 0
+        for (i in 0..<imageSize) {
+            for (j in 0..<imageSize) {
+                val value = intValues[pixel++]
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                // Standard normalization [0, 1]
+                byteBuffer.putFloat(red / 255.0f)
+                byteBuffer.putFloat(green / 255.0f)
+                byteBuffer.putFloat(blue / 255.0f)
+            }
+        }
+        return byteBuffer
+    }
+
+    private fun preprocessImageImageNet(image: Bitmap): ByteBuffer {
+        // ImageNet mean subtraction (another common preprocessing)
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        val intValues = IntArray(imageSize * imageSize)
+        image.getPixels(intValues, 0, image.width, 0, 0, image.width, image.height)
+
+        // ImageNet means
+        val meanR = 0.485f * 255f
+        val meanG = 0.456f * 255f
+        val meanB = 0.406f * 255f
+        val stdR = 0.229f * 255f
+        val stdG = 0.224f * 255f
+        val stdB = 0.114f * 255f
+
+        var pixel = 0
+        for (i in 0..<imageSize) {
+            for (j in 0..<imageSize) {
+                val value = intValues[pixel++]
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                // ImageNet normalization
+                byteBuffer.putFloat((red - meanR) / stdR)
+                byteBuffer.putFloat((green - meanG) / stdG)
+                byteBuffer.putFloat((blue - meanB) / stdB)
+            }
+        }
+        return byteBuffer
     }
 
     private fun showCameraSelectionDialog() {
