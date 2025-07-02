@@ -8,14 +8,16 @@ import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraCharacteristics
-import android.media.ThumbnailUtils
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -24,8 +26,6 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
-import androidx.core.graphics.scale
-import com.example.planktondetectionapps.ml.ModelUnquant
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import java.io.File
@@ -40,12 +40,20 @@ import java.util.Locale
 import kotlin.math.min
 
 class MainActivity : AppCompatActivity() {
+    // Model enum untuk memilih jenis model AI
+    enum class ModelType {
+        MOBILENET_V3_SMALL,
+        RESNET50_V2,
+        EFFICIENTNET_V2_B0
+    }
+
     var result: TextView? = null
     var confidence: TextView? = null
     var imageView: ImageView? = null
     var picture: Button? = null
     var galleryButton: Button? = null
     var saveButton: Button? = null
+    var modelSpinner: Spinner? = null
     var imageSize: Int = 224
 
     // Variables to store current classification data for saving
@@ -53,6 +61,7 @@ class MainActivity : AppCompatActivity() {
     private var currentClassificationResult: String? = null
     private var currentConfidence: Float = 0f
     private var currentPhotoUri: Uri? = null // Add this for full resolution camera capture
+    private var selectedModel: ModelType = ModelType.MOBILENET_V3_SMALL // Default model
 
     private lateinit var cameraLauncher: ActivityResultLauncher<Intent>
     private lateinit var galleryLauncher: ActivityResultLauncher<Intent>
@@ -69,12 +78,16 @@ class MainActivity : AppCompatActivity() {
         picture = findViewById<Button>(R.id.button)
         galleryButton = findViewById<Button>(R.id.galleryButton)
         saveButton = findViewById<Button>(R.id.saveButton)
+        modelSpinner = findViewById<Spinner>(R.id.modelSpinner)
 
         // Show welcome dialog when app starts
         showWelcomeDialog()
 
         // Initialize ActivityResultLaunchers
         initializeLaunchers()
+
+        // Setup model spinner
+        setupModelSpinner()
 
         picture?.setOnClickListener {
             // Launch camera if we have permission
@@ -97,6 +110,32 @@ class MainActivity : AppCompatActivity() {
                 checkStoragePermissionAndSave()
             } else {
                 showError("Tidak ada gambar atau hasil klasifikasi untuk disimpan.")
+            }
+        }
+    }
+
+    private fun setupModelSpinner() {
+        val adapter = ArrayAdapter.createFromResource(
+            this,
+            R.array.model_types,
+            android.R.layout.simple_spinner_item
+        )
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        modelSpinner?.adapter = adapter
+
+        modelSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: android.view.View, position: Int, id: Long) {
+                selectedModel = when (position) {
+                    0 -> ModelType.MOBILENET_V3_SMALL
+                    1 -> ModelType.RESNET50_V2
+                    2 -> ModelType.EFFICIENTNET_V2_B0
+                    else -> ModelType.MOBILENET_V3_SMALL
+                }
+                Toast.makeText(this@MainActivity, "Model dipilih: ${selectedModel.name}", Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>) {
+                // Do nothing
             }
         }
     }
@@ -277,23 +316,45 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun classifyImage(image: Bitmap) {
-        var model: ModelUnquant? = null
         try {
-            model = ModelUnquant.newInstance(applicationContext)
+            android.util.Log.d("PlanktonDebug", "=== CLASSIFICATION START ===")
+            android.util.Log.d("PlanktonDebug", "Selected model: ${selectedModel.name}")
 
             // Creates inputs for reference.
-            val inputFeature0 =
-                TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
+            val inputFeature0 = TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
 
-            // MobileNetV3 dengan preprocessing built-in - gunakan raw pixel values [0-255]
-            val byteBuffer = preprocessImageForMobileNetV3BuildIn(image)
+            // Choose preprocessing based on model type
+            val byteBuffer = when (selectedModel) {
+                ModelType.MOBILENET_V3_SMALL -> preprocessImageForMobileNetV3(image) // Use [-1,1] normalization
+                ModelType.RESNET50_V2 -> preprocessImageFixed(image) // Use [0,1] normalization
+                ModelType.EFFICIENTNET_V2_B0 -> preprocessImageFixed(image) // Use [0,1] normalization
+            }
             inputFeature0.loadBuffer(byteBuffer)
 
-            // Runs model inference and gets result.
-            val outputs: ModelUnquant.Outputs = model.process(inputFeature0)
-            val outputFeature0: TensorBuffer = outputs.getOutputFeature0AsTensorBuffer()
-
-            val confidences = outputFeature0.floatArray
+            // Run inference with selected model
+            val confidences = when (selectedModel) {
+                ModelType.MOBILENET_V3_SMALL -> {
+                    val model = com.example.planktondetectionapps.ml.MobileNetV3Small.newInstance(applicationContext)
+                    val outputs = model.process(inputFeature0)
+                    val result = outputs.getOutputFeature0AsTensorBuffer().floatArray
+                    model.close()
+                    result
+                }
+                ModelType.RESNET50_V2 -> {
+                    val model = com.example.planktondetectionapps.ml.ResNet50V2with300Data.newInstance(applicationContext)
+                    val outputs = model.process(inputFeature0)
+                    val result = outputs.getOutputFeature0AsTensorBuffer().floatArray
+                    model.close()
+                    result
+                }
+                ModelType.EFFICIENTNET_V2_B0 -> {
+                    val model = com.example.planktondetectionapps.ml.EfficientNetV2B0with300Data.newInstance(applicationContext)
+                    val outputs = model.process(inputFeature0)
+                    val result = outputs.getOutputFeature0AsTensorBuffer().floatArray
+                    model.close()
+                    result
+                }
+            }
 
             // Comprehensive debugging
             android.util.Log.d("PlanktonDebug", "=== MODEL OUTPUT DEBUG ===")
@@ -303,8 +364,7 @@ class MainActivity : AppCompatActivity() {
                 android.util.Log.d("PlanktonDebug", "Class $i: ${confidences[i]}")
             }
 
-            // Model MobileNetV3 dengan softmax sudah built-in, jadi tidak perlu apply softmax lagi
-            // Tapi kita cek dulu apakah output sudah dalam bentuk probabilitas
+            // Check if output is already probabilities or needs softmax
             val sumConfidences = confidences.sum()
             android.util.Log.d("PlanktonDebug", "Sum of all confidences: $sumConfidences")
 
@@ -359,9 +419,9 @@ class MainActivity : AppCompatActivity() {
                 // Sort by confidence descending
                 classConfidencePairs.sortByDescending { it.second }
 
-                // Show top 3 predictions
+                // Show top 3 predictions with model name
                 val top3 = classConfidencePairs.take(3)
-                var s = "Top 3 Predictions:\n"
+                var s = "Model: ${selectedModel.name}\nTop 3 Predictions:\n"
                 for ((index, conf) in top3) {
                     if (index < classes.size) {
                         s += String.format(Locale.getDefault(), "%s: %.1f%%\n", classes[index], conf * 100)
@@ -378,9 +438,7 @@ class MainActivity : AppCompatActivity() {
 
         } catch (e: Exception) {
             android.util.Log.e("PlanktonDebug", "Error in classifyImage", e)
-            showError("Error classifying image: ${e.message}")
-        } finally {
-            model?.close()
+            showError("Error classifying image with ${selectedModel.name}: ${e.message}")
         }
     }
 
@@ -478,49 +536,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         byteBuffer.rewind()
-        return byteBuffer
-    }
-
-    /**
-     * Preprocessing untuk MobileNetV3 dengan built-in preprocessing
-     * Model sudah melakukan normalisasi internal, jadi kita hanya perlu memberikan raw pixel values [0-255]
-     */
-    private fun preprocessImageForMobileNetV3BuildIn(image: Bitmap): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
-        byteBuffer.order(ByteOrder.nativeOrder())
-
-        // Create properly scaled bitmap
-        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
-
-        val intValues = IntArray(imageSize * imageSize)
-        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
-
-        android.util.Log.d("PlanktonDebug", "Processing image for MobileNetV3 with built-in preprocessing")
-        android.util.Log.d("PlanktonDebug", "Image size: ${imageSize}x${imageSize}")
-
-        var pixel = 0
-        for (i in 0 until imageSize) {
-            for (j in 0 until imageSize) {
-                val value = intValues[pixel++]
-
-                // Extract RGB values (Android uses ARGB format)
-                val red = (value shr 16) and 0xFF
-                val green = (value shr 8) and 0xFF
-                val blue = value and 0xFF
-
-                // MobileNetV3 dengan built-in preprocessing expects raw pixel values [0-255]
-                // TIDAK melakukan normalisasi karena model akan melakukannya secara internal
-                byteBuffer.putFloat(red.toFloat())
-                byteBuffer.putFloat(green.toFloat())
-                byteBuffer.putFloat(blue.toFloat())
-            }
-        }
-
-        android.util.Log.d("PlanktonDebug", "ByteBuffer filled with raw pixel values [0-255]")
-
-        // Reset position for reading
-        byteBuffer.rewind()
-
         return byteBuffer
     }
 
@@ -635,7 +650,7 @@ class MainActivity : AppCompatActivity() {
             cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, currentPhotoUri)
             cameraLauncher.launch(cameraIntent)
 
-            val cameraType = if (cameraId.contains("external") || cameraId.toIntOrNull() ?: 0 > 1) {
+            val cameraType = if (cameraId.contains("external") || (cameraId.toIntOrNull() ?: 0) > 1) {
                 "kamera USB eksternal"
             } else {
                 "kamera default"
@@ -680,13 +695,13 @@ class MainActivity : AppCompatActivity() {
 
         try {
             val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val fileName = "${currentClassificationResult}_${timeStamp}.png" // Changed to PNG for lossless quality
+            val fileName = "${currentClassificationResult}_${timeStamp}.png"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 // Android 10 and above - use MediaStore API
                 val contentValues = ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                    put(MediaStore.Images.Media.MIME_TYPE, "image/png") // Changed to PNG
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/png")
                     put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/PlanktonDetection")
                     put(MediaStore.Images.Media.IS_PENDING, 1)
                 }
@@ -696,7 +711,6 @@ class MainActivity : AppCompatActivity() {
                 if (uri != null) {
                     val outputStream: OutputStream? = contentResolver.openOutputStream(uri)
                     outputStream?.use { stream ->
-                        // Use PNG for lossless compression (no quality loss)
                         currentBitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
                     }
 
@@ -725,7 +739,6 @@ class MainActivity : AppCompatActivity() {
                 val outputStream = FileOutputStream(imageFile)
 
                 outputStream.use { stream ->
-                    // Use PNG for lossless compression (no quality loss)
                     currentBitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
                 }
 

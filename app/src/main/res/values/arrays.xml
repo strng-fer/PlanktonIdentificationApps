@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="model_types">
+        <item>MobileNetV3 Small</item>
+        <item>ResNet50 V2 (300 Data)</item>
+        <item>EfficientNet V2 B0 (300 Data)</item>
+    </string-array>
+</resources>
