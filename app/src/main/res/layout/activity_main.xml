@@ -87,7 +87,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="16dp">
 
             <Button
                 android:id="@+id/button"
@@ -124,6 +124,25 @@
                 android:gravity="center" />
 
         </LinearLayout>
+
+        <!-- Save Button -->
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/button_save"
+            android:text="Simpan ke Galeri"
+            android:drawableLeft="@drawable/ic_save"
+            android:drawablePadding="8dp"
+            android:textColor="#FFFFFF"
+            android:textAllCaps="false"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:elevation="2dp"
+            android:gravity="center"
+            android:enabled="false"
+            android:visibility="visible" />
 
         <!-- Results Section -->
         <LinearLayout

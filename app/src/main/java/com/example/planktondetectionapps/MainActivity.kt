@@ -2,13 +2,17 @@ package com.example.planktondetectionapps
 
 import android.content.Context
 import android.Manifest
+import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraCharacteristics
 import android.media.ThumbnailUtils
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
 import android.provider.MediaStore
 import android.widget.Button
 import android.widget.ImageView
@@ -18,13 +22,19 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.scale
 import com.example.planktondetectionapps.ml.ModelUnquant
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
+import java.io.File
+import java.io.FileOutputStream
 import java.io.IOException
+import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 import kotlin.math.min
 
@@ -34,11 +44,18 @@ class MainActivity : AppCompatActivity() {
     var imageView: ImageView? = null
     var picture: Button? = null
     var galleryButton: Button? = null
+    var saveButton: Button? = null
     var imageSize: Int = 224
+
+    // Variables to store current classification data for saving
+    private var currentBitmap: Bitmap? = null
+    private var currentClassificationResult: String? = null
+    private var currentConfidence: Float = 0f
 
     private lateinit var cameraLauncher: ActivityResultLauncher<Intent>
     private lateinit var galleryLauncher: ActivityResultLauncher<Intent>
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
+    private lateinit var storagePermissionLauncher: ActivityResultLauncher<String>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,6 +66,7 @@ class MainActivity : AppCompatActivity() {
         imageView = findViewById<ImageView>(R.id.imageView)
         picture = findViewById<Button>(R.id.button)
         galleryButton = findViewById<Button>(R.id.galleryButton)
+        saveButton = findViewById<Button>(R.id.saveButton)
 
         // Show welcome dialog when app starts
         showWelcomeDialog()
@@ -70,18 +88,48 @@ class MainActivity : AppCompatActivity() {
             val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
             galleryLauncher.launch(galleryIntent)
         }
+
+        // Add save button click listener
+        saveButton?.setOnClickListener {
+            if (currentBitmap != null && currentClassificationResult != null) {
+                checkStoragePermissionAndSave()
+            } else {
+                showError("Tidak ada gambar atau hasil klasifikasi untuk disimpan.")
+            }
+        }
+    }
+
+    private fun checkStoragePermissionAndSave() {
+        // For Android 10 and above, WRITE_EXTERNAL_STORAGE permission is not needed
+        // when using MediaStore API
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            saveImageToGallery()
+        } else {
+            // For Android 9 and below, check for WRITE_EXTERNAL_STORAGE permission
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED) {
+                saveImageToGallery()
+            } else {
+                storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            }
+        }
     }
 
     private fun showWelcomeDialog() {
         val dialogBuilder = AlertDialog.Builder(this)
-        dialogBuilder.setTitle("Selamat Datang di Plankton Detection")
+        dialogBuilder.setTitle("Selamat Datang di PlanktoScan")
         dialogBuilder.setIcon(R.drawable.ic_microscope)
         dialogBuilder.setMessage(
-            "Aplikasi ini menggunakan teknologi AI untuk mendeteksi dan mengklasifikasi jenis plankton.\n\n" +
-            "• Ambil foto menggunakan kamera\n" +
-            "• Pilih foto dari galeri\n" +
-            "• Dapatkan hasil klasifikasi dengan tingkat kepercayaan\n\n" +
-            "Pastikan gambar plankton terlihat jelas untuk hasil terbaik!"
+            """
+            Aplikasi ini menggunakan teknologi AI untuk mendeteksi dan mengklasifikasi jenis plankton.
+            
+            •  Ambil foto menggunakan kamera
+            •  Pilih foto dari galeri
+            •  Dapatkan hasil klasifikasi dengan tingkat kepercayaan
+            •  Simpan hasil ke galeri dengan nama sesuai klasifikasi
+            
+            Pastikan gambar plankton terlihat jelas untuk hasil terbaik!
+            """.trimIndent()
         )
         dialogBuilder.setPositiveButton("Mulai") { dialog, _ ->
             dialog.dismiss()
@@ -124,6 +172,9 @@ class MainActivity : AppCompatActivity() {
                     if (photo != null) {
                         val dimension = min(photo.width, photo.height)
                         var image = ThumbnailUtils.extractThumbnail(photo, dimension, dimension)
+
+                        // Store the original image for saving
+                        currentBitmap = image
                         imageView?.setImageBitmap(image)
 
                         image = image.scale(imageSize, imageSize)
@@ -150,6 +201,9 @@ class MainActivity : AppCompatActivity() {
                         // Process and display the image
                         val dimension = min(bitmap.width, bitmap.height)
                         var image = ThumbnailUtils.extractThumbnail(bitmap, dimension, dimension)
+
+                        // Store the original image for saving
+                        currentBitmap = image
                         imageView?.setImageBitmap(image)
 
                         image = image.scale(imageSize, imageSize)
@@ -173,12 +227,23 @@ class MainActivity : AppCompatActivity() {
                 showError("Izin kamera diperlukan untuk mengambil foto.")
             }
         }
+
+        // Storage permission launcher
+        storagePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+            if (isGranted) {
+                saveImageToGallery()
+            } else {
+                showError("Izin penyimpanan diperlukan untuk menyimpan gambar ke galeri.")
+            }
+        }
     }
 
     private fun showError(message: String) {
         showErrorDialog("Gagal", message)
         result?.text = "Terjadi kesalahan"
         confidence?.text = "Silakan coba lagi"
+        // Disable save button when there's an error
+        saveButton?.isEnabled = false
     }
 
     fun loadLabels(context: Context): List<String> {
@@ -262,6 +327,10 @@ class MainActivity : AppCompatActivity() {
             android.util.Log.d("PlanktonDebug", "Confidence stats - Min: $minConfidence, Max: $maxConfidenceValue, Avg: $avgConfidence, Range: $confidenceRange")
 
             if (maxPos < classes.size) {
+                // Store classification results for saving
+                currentClassificationResult = classes[maxPos]
+                currentConfidence = maxConfidence
+
                 result!!.text = classes[maxPos]
 
                 // Create sorted confidence pairs
@@ -283,6 +352,9 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 confidence!!.text = s
+
+                // Enable save button after successful classification
+                saveButton?.isEnabled = true
             } else {
                 showError("Error: Invalid classification result")
             }
@@ -538,6 +610,78 @@ class MainActivity : AppCompatActivity() {
 
         } catch (e: Exception) {
             showError("Error launching camera: ${e.message}")
+        }
+    }
+
+    private fun saveImageToGallery() {
+        if (currentBitmap == null || currentClassificationResult == null) {
+            showError("Tidak ada gambar atau hasil klasifikasi untuk disimpan.")
+            return
+        }
+
+        try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val fileName = "${currentClassificationResult}_${timeStamp}.jpg"
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Android 10 and above - use MediaStore API
+                val contentValues = ContentValues().apply {
+                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/PlanktonDetection")
+                    put(MediaStore.Images.Media.IS_PENDING, 1)
+                }
+
+                val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+                if (uri != null) {
+                    val outputStream: OutputStream? = contentResolver.openOutputStream(uri)
+                    outputStream?.use { stream ->
+                        currentBitmap!!.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+                    }
+
+                    // Clear the IS_PENDING flag
+                    contentValues.clear()
+                    contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+                    contentResolver.update(uri, contentValues, null, null)
+
+                    showSuccessDialog(
+                        "Berhasil Disimpan",
+                        "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format("%.1f%%", currentConfidence * 100)}"
+                    )
+                } else {
+                    showError("Gagal menyimpan gambar ke galeri.")
+                }
+            } else {
+                // Android 9 and below - use traditional file storage
+                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+                val planktonDir = File(picturesDir, "PlanktonDetection")
+
+                if (!planktonDir.exists()) {
+                    planktonDir.mkdirs()
+                }
+
+                val imageFile = File(planktonDir, fileName)
+                val outputStream = FileOutputStream(imageFile)
+
+                outputStream.use { stream ->
+                    currentBitmap!!.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+                }
+
+                // Notify media scanner about the new file
+                val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+                mediaScanIntent.data = Uri.fromFile(imageFile)
+                sendBroadcast(mediaScanIntent)
+
+                showSuccessDialog(
+                    "Berhasil Disimpan",
+                    "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format("%.1f%%", currentConfidence * 100)}"
+                )
+            }
+
+        } catch (e: Exception) {
+            android.util.Log.e("PlanktonDebug", "Error saving image to gallery", e)
+            showError("Gagal menyimpan gambar: ${e.message}")
         }
     }
 }
