@@ -23,6 +23,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.core.graphics.scale
 import com.example.planktondetectionapps.ml.ModelUnquant
 import org.tensorflow.lite.DataType
@@ -51,6 +52,7 @@ class MainActivity : AppCompatActivity() {
     private var currentBitmap: Bitmap? = null
     private var currentClassificationResult: String? = null
     private var currentConfidence: Float = 0f
+    private var currentPhotoUri: Uri? = null // Add this for full resolution camera capture
 
     private lateinit var cameraLauncher: ActivityResultLauncher<Intent>
     private lateinit var galleryLauncher: ActivityResultLauncher<Intent>
@@ -157,32 +159,53 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initializeLaunchers() {
-        // Camera launcher
+        // Camera launcher - using full resolution capture with file output
         cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 try {
+                    // Check if we have a photo URI from full resolution capture
+                    currentPhotoUri?.let { photoUri ->
+                        android.util.Log.d("PlanktonDebug", "Loading full resolution image from URI")
+                        val bitmap = loadHighQualityImageFromUri(photoUri)
+                        android.util.Log.d("PlanktonDebug", "Full resolution camera image size: ${bitmap.width}x${bitmap.height}")
+
+                        // Store high-quality image for preview and saving
+                        currentBitmap = bitmap
+                        imageView?.setImageBitmap(bitmap)
+
+                        // Create AI processing image
+                        val aiImage = createHighQualitySquareImage(bitmap, imageSize)
+                        classifyImage(aiImage)
+
+                        // Clean up temporary file
+                        cleanupTempFile(photoUri)
+                        return@registerForActivityResult
+                    }
+
+                    // Fallback to thumbnail if no URI (shouldn't happen with new implementation)
                     val extras = result.data?.extras
                     @Suppress("DEPRECATION")
                     val photo = extras?.get("data") as? Bitmap
 
                     if (photo != null) {
-                        val dimension = min(photo.width, photo.height)
-                        var image = ThumbnailUtils.extractThumbnail(photo, dimension, dimension)
+                        android.util.Log.d("PlanktonDebug", "Fallback to thumbnail - size: ${photo.width}x${photo.height}")
+                        showError("Kualitas gambar rendah (thumbnail). Menggunakan kualitas yang tersedia.")
 
-                        // Store the original image for saving
-                        currentBitmap = image
-                        imageView?.setImageBitmap(image)
-
-                        image = image.scale(imageSize, imageSize)
-                        classifyImage(image)
+                        // Still process the thumbnail but warn user
+                        currentBitmap = photo
+                        imageView?.setImageBitmap(photo)
+                        val aiImage = createHighQualitySquareImage(photo, imageSize)
+                        classifyImage(aiImage)
                     } else {
                         showError("Gagal mengambil gambar dari kamera.")
                     }
                 } catch (e: Exception) {
                     showError("Error processing image: ${e.message}")
+                    currentPhotoUri?.let { cleanupTempFile(it) }
                 }
             } else {
                 showError("Pengambilan gambar dibatalkan.")
+                currentPhotoUri?.let { cleanupTempFile(it) }
             }
         }
 
@@ -192,18 +215,16 @@ class MainActivity : AppCompatActivity() {
                 try {
                     val imageUri = result.data?.data
                     if (imageUri != null) {
-                        val bitmap = MediaStore.Images.Media.getBitmap(contentResolver, imageUri)
+                        val bitmap = loadHighQualityImageFromUri(imageUri)
+                        android.util.Log.d("PlanktonDebug", "Gallery image size: ${bitmap.width}x${bitmap.height}")
 
-                        // Process and display the image
-                        val dimension = min(bitmap.width, bitmap.height)
-                        var image = ThumbnailUtils.extractThumbnail(bitmap, dimension, dimension)
+                        // Store high-quality image for preview and saving
+                        currentBitmap = bitmap
+                        imageView?.setImageBitmap(bitmap)
 
-                        // Store the original image for saving
-                        currentBitmap = image
-                        imageView?.setImageBitmap(image)
-
-                        image = image.scale(imageSize, imageSize)
-                        classifyImage(image)
+                        // Create AI processing image
+                        val aiImage = createHighQualitySquareImage(bitmap, imageSize)
+                        classifyImage(aiImage)
                     } else {
                         showError("Gagal mengambil gambar dari galeri.")
                     }
@@ -583,17 +604,35 @@ class MainActivity : AppCompatActivity() {
 
     private fun launchDefaultCamera() {
         try {
+            // Create temporary file for full resolution capture
+            val photoFile = createImageFile()
+            currentPhotoUri = FileProvider.getUriForFile(
+                this,
+                "${applicationContext.packageName}.fileprovider",
+                photoFile
+            )
+
             val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, currentPhotoUri)
             cameraLauncher.launch(cameraIntent)
-            Toast.makeText(this, "Membuka kamera default...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Membuka kamera untuk foto resolusi penuh...", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
-            showError("Error launching default camera: ${e.message}")
+            showError("Error launching camera: ${e.message}")
         }
     }
 
     private fun launchCameraWithId(cameraId: String) {
         try {
+            // Create temporary file for full resolution capture
+            val photoFile = createImageFile()
+            currentPhotoUri = FileProvider.getUriForFile(
+                this,
+                "${applicationContext.packageName}.fileprovider",
+                photoFile
+            )
+
             val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, currentPhotoUri)
             cameraLauncher.launch(cameraIntent)
 
             val cameraType = if (cameraId.contains("external") || cameraId.toIntOrNull() ?: 0 > 1) {
@@ -602,10 +641,34 @@ class MainActivity : AppCompatActivity() {
                 "kamera default"
             }
 
-            Toast.makeText(this, "Membuka $cameraType...", Toast.LENGTH_SHORT).show()
-
+            Toast.makeText(this, "Membuka $cameraType untuk foto resolusi penuh...", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
             showError("Error launching camera: ${e.message}")
+        }
+    }
+
+    /**
+     * Create temporary file for full resolution camera capture
+     */
+    private fun createImageFile(): File {
+        val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val imageFileName = "JPEG_${timeStamp}_"
+        val storageDir = getExternalFilesDir(Environment.DIRECTORY_PICTURES)
+        return File.createTempFile(imageFileName, ".jpg", storageDir)
+    }
+
+    /**
+     * Clean up temporary file after processing
+     */
+    private fun cleanupTempFile(uri: Uri) {
+        try {
+            val file = File(uri.path ?: return)
+            if (file.exists()) {
+                file.delete()
+                android.util.Log.d("PlanktonDebug", "Temporary file cleaned up: ${file.name}")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("PlanktonDebug", "Error cleaning up temp file", e)
         }
     }
 
@@ -617,13 +680,13 @@ class MainActivity : AppCompatActivity() {
 
         try {
             val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val fileName = "${currentClassificationResult}_${timeStamp}.jpg"
+            val fileName = "${currentClassificationResult}_${timeStamp}.png" // Changed to PNG for lossless quality
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                 // Android 10 and above - use MediaStore API
                 val contentValues = ContentValues().apply {
                     put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                    put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
+                    put(MediaStore.Images.Media.MIME_TYPE, "image/png") // Changed to PNG
                     put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/PlanktonDetection")
                     put(MediaStore.Images.Media.IS_PENDING, 1)
                 }
@@ -633,7 +696,8 @@ class MainActivity : AppCompatActivity() {
                 if (uri != null) {
                     val outputStream: OutputStream? = contentResolver.openOutputStream(uri)
                     outputStream?.use { stream ->
-                        currentBitmap!!.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+                        // Use PNG for lossless compression (no quality loss)
+                        currentBitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
                     }
 
                     // Clear the IS_PENDING flag
@@ -643,7 +707,7 @@ class MainActivity : AppCompatActivity() {
 
                     showSuccessDialog(
                         "Berhasil Disimpan",
-                        "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format("%.1f%%", currentConfidence * 100)}"
+                        "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format(Locale.getDefault(), "%.1f%%", currentConfidence * 100)}"
                     )
                 } else {
                     showError("Gagal menyimpan gambar ke galeri.")
@@ -661,7 +725,8 @@ class MainActivity : AppCompatActivity() {
                 val outputStream = FileOutputStream(imageFile)
 
                 outputStream.use { stream ->
-                    currentBitmap!!.compress(Bitmap.CompressFormat.JPEG, 90, stream)
+                    // Use PNG for lossless compression (no quality loss)
+                    currentBitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
                 }
 
                 // Notify media scanner about the new file
@@ -671,7 +736,7 @@ class MainActivity : AppCompatActivity() {
 
                 showSuccessDialog(
                     "Berhasil Disimpan",
-                    "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format("%.1f%%", currentConfidence * 100)}"
+                    "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format(Locale.getDefault(), "%.1f%%", currentConfidence * 100)}"
                 )
             }
 
@@ -679,5 +744,94 @@ class MainActivity : AppCompatActivity() {
             android.util.Log.e("PlanktonDebug", "Error saving image to gallery", e)
             showError("Gagal menyimpan gambar: ${e.message}")
         }
+    }
+
+    /**
+     * Load high-quality image from URI without quality loss
+     */
+    private fun loadHighQualityImageFromUri(uri: Uri): Bitmap {
+        return try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                // Use newer ImageDecoder for better quality
+                val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
+                android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+                    decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
+                    decoder.isMutableRequired = true
+                }
+            } else {
+                // Fallback for older versions with better options
+                val options = android.graphics.BitmapFactory.Options().apply {
+                    inJustDecodeBounds = false
+                    inPreferredConfig = Bitmap.Config.ARGB_8888
+                    inSampleSize = 1 // Don't downsample
+                    inMutable = true
+                }
+                val inputStream = contentResolver.openInputStream(uri)
+                android.graphics.BitmapFactory.decodeStream(inputStream, null, options)
+                    ?: throw Exception("Failed to decode image from URI")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("PlanktonDebug", "Error loading image from URI", e)
+            // Fallback to the deprecated method if others fail
+            @Suppress("DEPRECATION")
+            MediaStore.Images.Media.getBitmap(contentResolver, uri)
+        }
+    }
+
+    /**
+     * Create high-quality square image without losing quality
+     * Using advanced filtering and processing for maximum sharpness
+     */
+    private fun createHighQualitySquareImage(originalBitmap: Bitmap, targetSize: Int): Bitmap {
+        val width = originalBitmap.width
+        val height = originalBitmap.height
+
+        // Ensure we start with ARGB_8888 for best quality
+        val sourceBitmap = if (originalBitmap.config != Bitmap.Config.ARGB_8888) {
+            originalBitmap.copy(Bitmap.Config.ARGB_8888, false)
+        } else {
+            originalBitmap
+        }
+
+        // Calculate the size of the square (use the smaller dimension)
+        val squareSize = min(width, height)
+
+        // Calculate the starting coordinates for cropping (center crop)
+        val xOffset = (width - squareSize) / 2
+        val yOffset = (height - squareSize) / 2
+
+        // Create square bitmap by cropping from center with highest quality
+        val squareBitmap = Bitmap.createBitmap(
+            sourceBitmap,
+            xOffset,
+            yOffset,
+            squareSize,
+            squareSize
+        )
+
+        // If target size is same as square size, return as-is to avoid unnecessary scaling
+        if (squareSize == targetSize) {
+            return squareBitmap
+        }
+
+        // Use Paint with anti-aliasing and filtering for best quality scaling
+        val paint = android.graphics.Paint().apply {
+            isAntiAlias = true
+            isFilterBitmap = true
+            isDither = true
+        }
+
+        // Create target bitmap with best config
+        val scaledBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888)
+        val canvas = android.graphics.Canvas(scaledBitmap)
+
+        // Create rect for source and destination
+        val srcRect = android.graphics.Rect(0, 0, squareSize, squareSize)
+        val dstRect = android.graphics.Rect(0, 0, targetSize, targetSize)
+
+        // Draw with high-quality scaling
+        canvas.drawBitmap(squareBitmap, srcRect, dstRect, paint)
+
+        return scaledBitmap
     }
 }
