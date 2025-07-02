@@ -1,16 +1,38 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Primary Colors -->
+    <color name="primary_blue">#2196F3</color>
+    <color name="primary_blue_dark">#1976D2</color>
+    <color name="primary_blue_light">#64B5F6</color>
 
-    <!-- Blue color palette for app theme -->
-    <color name="blue_primary">#2196F3</color>
-    <color name="blue_primary_dark">#1976D2</color>
-    <color name="blue_primary_light">#BBDEFB</color>
-    <color name="blue_secondary">#03DAC6</color>
-    <color name="blue_secondary_dark">#018786</color>
-    <color name="blue_on_primary">#FFFFFF</color>
-    <color name="blue_on_secondary">#000000</color>
-    <color name="blue_surface">#FFFFFF</color>
-    <color name="blue_on_surface">#000000</color>
+    <!-- Secondary Colors -->
+    <color name="secondary_orange">#FF9800</color>
+    <color name="secondary_orange_dark">#F57C00</color>
+    <color name="secondary_orange_light">#FFB74D</color>
+
+    <!-- Save Button Colors -->
+    <color name="save_green">#4CAF50</color>
+    <color name="save_green_dark">#388E3C</color>
+    <color name="save_green_light">#81C784</color>
+
+    <!-- Night Mode Colors -->
+    <color name="primary_blue_night">#64B5F6</color>
+    <color name="primary_blue_dark_night">#42A5F5</color>
+    <color name="secondary_orange_night">#FFB74D</color>
+    <color name="secondary_orange_dark_night">#FFA726</color>
+    <color name="save_green_night">#81C784</color>
+    <color name="save_green_dark_night">#66BB6A</color>
+
+    <!-- Text Colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+
+    <!-- Background Colors -->
+    <color name="background_light">#FAFAFA</color>
+    <color name="background_dark">#121212</color>
+    <color name="surface_light">#FFFFFF</color>
+    <color name="surface_dark">#1E1E1E</color>
 </resources>
+

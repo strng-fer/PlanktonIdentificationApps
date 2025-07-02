@@ -16,36 +16,46 @@
         <!-- Header Section dengan Logo dan Info -->
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="224dp"
+            android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
             android:background="@drawable/card_background"
             android:elevation="4dp"
-            android:gravity="center"
             android:orientation="vertical"
-            android:padding="24dp">
+            android:padding="20dp">
 
-            <ImageView
-                android:layout_width="63dp"
-                android:layout_height="55dp"
-                android:layout_marginBottom="16dp"
-                android:contentDescription="App Logo"
-                android:src="@drawable/ic_plankton_logo" />
+            <!-- Logo dan Nama App -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center"
+                android:layout_marginBottom="12dp">
 
+                <ImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_marginEnd="12dp"
+                    android:contentDescription="App Logo"
+                    android:src="@mipmap/ic_launcher" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="PlanktonScan"
+                    android:textColor="#1565C0"
+                    android:textSize="24sp"
+                    android:textStyle="bold" />
+
+            </LinearLayout>
+
+            <!-- Deskripsi Aplikasi -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginBottom="8dp"
-                android:text="Plankton Detection"
-                android:textColor="#1565C0"
-                android:textSize="24sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
+                android:layout_gravity="center_horizontal"
                 android:gravity="center"
                 android:lineSpacingExtra="4dp"
-                android:text="Aplikasi deteksi plankton menggunakan AI\nUnggah foto atau ambil gambar untuk mengidentifikasi jenis plankton"
+                android:text="Aplikasi untuk melakukan klasifikasi jenis fitoplankton yang diambil dari kamera atau galeri secara langsung menggunakan teknologi Deep Learning."
                 android:textColor="#666666"
                 android:textSize="14sp" />
 
@@ -95,7 +105,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Pilih Model AI"
+                android:text="Pilih Model DeepLearning"
                 android:textSize="18sp"
                 android:textStyle="bold"
                 android:textColor="#424242"
@@ -384,7 +394,8 @@
             android:text="Simpan ke Galeri"
             android:drawableLeft="@drawable/ic_save"
             android:drawablePadding="8dp"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/save_button_text_color"
+            android:drawableTint="@color/save_button_text_color"
             android:textAllCaps="false"
             android:textSize="16sp"
             android:textStyle="bold"

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors for Night Mode -->
+    <color name="primary_blue">#64B5F6</color>
+    <color name="primary_blue_dark">#42A5F5</color>
+    <color name="primary_blue_light">#90CAF9</color>
+
+    <!-- Secondary Colors for Night Mode -->
+    <color name="secondary_orange">#FFB74D</color>
+    <color name="secondary_orange_dark">#FFA726</color>
+    <color name="secondary_orange_light">#FFCC80</color>
+
+    <!-- Save Button Colors for Night Mode -->
+    <color name="save_green">#81C784</color>
+    <color name="save_green_dark">#66BB6A</color>
+    <color name="save_green_light">#A5D6A7</color>
+
+    <!-- Text Colors for Night Mode -->
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B0B0B0</color>
+
+    <!-- Background Colors for Night Mode -->
+    <color name="background_light">#121212</color>
+    <color name="background_dark">#000000</color>
+    <color name="surface_light">#1E1E1E</color>
+    <color name="surface_dark">#121212</color>
+</resources>
+
