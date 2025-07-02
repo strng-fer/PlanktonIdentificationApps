@@ -13,11 +13,10 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.MediaStore
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
-import android.widget.Spinner
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
@@ -53,15 +52,26 @@ class MainActivity : AppCompatActivity() {
     var picture: Button? = null
     var galleryButton: Button? = null
     var saveButton: Button? = null
-    var modelSpinner: Spinner? = null
+
+    // Custom dropdown UI elements
+    var customDropdownContainer: LinearLayout? = null
+    var dropdownOptions: LinearLayout? = null
+    var dropdownArrow: ImageView? = null
+    var selectedModelName: TextView? = null
+    var selectedModelDescription: TextView? = null
+    var option1: LinearLayout? = null
+    var option2: LinearLayout? = null
+    var option3: LinearLayout? = null
+
     var imageSize: Int = 224
 
     // Variables to store current classification data for saving
     private var currentBitmap: Bitmap? = null
     private var currentClassificationResult: String? = null
     private var currentConfidence: Float = 0f
-    private var currentPhotoUri: Uri? = null // Add this for full resolution camera capture
+    private var currentPhotoUri: Uri? = null
     private var selectedModel: ModelType = ModelType.MOBILENET_V3_SMALL // Default model
+    private var isDropdownOpen = false
 
     private lateinit var cameraLauncher: ActivityResultLauncher<Intent>
     private lateinit var galleryLauncher: ActivityResultLauncher<Intent>
@@ -78,7 +88,16 @@ class MainActivity : AppCompatActivity() {
         picture = findViewById<Button>(R.id.button)
         galleryButton = findViewById<Button>(R.id.galleryButton)
         saveButton = findViewById<Button>(R.id.saveButton)
-        modelSpinner = findViewById<Spinner>(R.id.modelSpinner)
+
+        // Initialize custom dropdown elements
+        customDropdownContainer = findViewById<LinearLayout>(R.id.customDropdownContainer)
+        dropdownOptions = findViewById<LinearLayout>(R.id.dropdownOptions)
+        dropdownArrow = findViewById<ImageView>(R.id.dropdownArrow)
+        selectedModelName = findViewById<TextView>(R.id.selectedModelName)
+        selectedModelDescription = findViewById<TextView>(R.id.selectedModelDescription)
+        option1 = findViewById<LinearLayout>(R.id.option1)
+        option2 = findViewById<LinearLayout>(R.id.option2)
+        option3 = findViewById<LinearLayout>(R.id.option3)
 
         // Show welcome dialog when app starts
         showWelcomeDialog()
@@ -86,8 +105,8 @@ class MainActivity : AppCompatActivity() {
         // Initialize ActivityResultLaunchers
         initializeLaunchers()
 
-        // Setup model spinner
-        setupModelSpinner()
+        // Setup custom dropdown functionality
+        setupCustomDropdown()
 
         picture?.setOnClickListener {
             // Launch camera if we have permission
@@ -114,30 +133,52 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupModelSpinner() {
-        val adapter = ArrayAdapter.createFromResource(
-            this,
-            R.array.model_types,
-            android.R.layout.simple_spinner_item
-        )
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        modelSpinner?.adapter = adapter
-
-        modelSpinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: android.view.View, position: Int, id: Long) {
-                selectedModel = when (position) {
-                    0 -> ModelType.MOBILENET_V3_SMALL
-                    1 -> ModelType.RESNET50_V2
-                    2 -> ModelType.EFFICIENTNET_V2_B0
-                    else -> ModelType.MOBILENET_V3_SMALL
-                }
-                Toast.makeText(this@MainActivity, "Model dipilih: ${selectedModel.name}", Toast.LENGTH_SHORT).show()
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>) {
-                // Do nothing
-            }
+    private fun setupCustomDropdown() {
+        // Toggle dropdown when container is clicked
+        customDropdownContainer?.setOnClickListener {
+            toggleDropdown()
         }
+
+        // Set up option click listeners
+        option1?.setOnClickListener {
+            selectModel(ModelType.MOBILENET_V3_SMALL, "MobileNetV3 Small", "Model ringan dengan performa cepat")
+        }
+
+        option2?.setOnClickListener {
+            selectModel(ModelType.RESNET50_V2, "ResNet50 V2 (300 Data)", "Model menengah dengan akurasi tinggi")
+        }
+
+        option3?.setOnClickListener {
+            selectModel(ModelType.EFFICIENTNET_V2_B0, "EfficientNet V2 B0 (300 Data)", "Model terbaru dengan efisiensi optimal")
+        }
+    }
+
+    private fun toggleDropdown() {
+        if (isDropdownOpen) {
+            // Close dropdown
+            dropdownOptions?.visibility = View.GONE
+            dropdownArrow?.rotation = 0f
+            isDropdownOpen = false
+        } else {
+            // Open dropdown
+            dropdownOptions?.visibility = View.VISIBLE
+            dropdownArrow?.rotation = 180f
+            isDropdownOpen = true
+        }
+    }
+
+    private fun selectModel(modelType: ModelType, modelName: String, modelDescription: String) {
+        selectedModel = modelType
+        selectedModelName?.text = modelName
+        selectedModelDescription?.text = modelDescription
+
+        // Close dropdown after selection
+        dropdownOptions?.visibility = View.GONE
+        dropdownArrow?.rotation = 0f
+        isDropdownOpen = false
+
+        // Show selection feedback
+        Toast.makeText(this, "Model dipilih: $modelName", Toast.LENGTH_SHORT).show()
     }
 
     private fun checkStoragePermissionAndSave() {
@@ -325,35 +366,99 @@ class MainActivity : AppCompatActivity() {
 
             // Choose preprocessing based on model type
             val byteBuffer = when (selectedModel) {
-                ModelType.MOBILENET_V3_SMALL -> preprocessImageForMobileNetV3BuildIn(image) // Use [-1,1] normalization
-                ModelType.RESNET50_V2 -> preprocessImageForResNetV2(image) // Use [-1,1] normalization (image/127.5-1.0)
-                ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetV2BuildIn(image) // Use [0,1] normalization
+                ModelType.MOBILENET_V3_SMALL -> preprocessImageForMobileNetV3BuildIn(image) // Use raw pixel values
+                ModelType.RESNET50_V2 -> preprocessImageForResNetV2(image) // Use [-1,1] normalization
+                ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetV2BuildIn(image) // Use raw pixel values
             }
             inputFeature0.loadBuffer(byteBuffer)
 
             // Run inference with selected model
-            val confidences = when (selectedModel) {
-                ModelType.MOBILENET_V3_SMALL -> {
-                    val model = com.example.planktondetectionapps.ml.MobileNetV3Small.newInstance(applicationContext)
-                    val outputs = model.process(inputFeature0)
-                    val result = outputs.getOutputFeature0AsTensorBuffer().floatArray
-                    model.close()
-                    result
+            val confidences = try {
+                when (selectedModel) {
+                    ModelType.MOBILENET_V3_SMALL -> {
+                        try {
+                            val model = com.example.planktondetectionapps.ml.MobileNetV3Small.newInstance(applicationContext)
+                            val outputs = model.process(inputFeature0)
+                            val result = outputs.outputFeature0AsTensorBuffer.floatArray
+                            model.close()
+                            result
+                        } catch (e: Exception) {
+                            android.util.Log.e("PlanktonDebug", "MobileNetV3Small model not found", e)
+                            showError("Model MobileNetV3Small tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                            return
+                        }
+                    }
+                    ModelType.RESNET50_V2 -> {
+                        try {
+                            // Try different possible model names
+                            val modelClass = try {
+                                Class.forName("com.example.planktondetectionapps.ml.ResNet50V2")
+                            } catch (e: ClassNotFoundException) {
+                                try {
+                                    Class.forName("com.example.planktondetectionapps.ml.ResNet50V2with300Data")
+                                } catch (e2: ClassNotFoundException) {
+                                    Class.forName("com.example.planktondetectionapps.ml.Resnet50v2")
+                                }
+                            }
+
+                            // Use reflection to create and run the model
+                            val modelInstance = modelClass.getMethod("newInstance", android.content.Context::class.java)
+                                .invoke(null, applicationContext)
+                            val processMethod = modelClass.getMethod("process", TensorBuffer::class.java)
+                            val outputs = processMethod.invoke(modelInstance, inputFeature0)
+                            val outputMethod = outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
+                            val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
+                            val result = tensorBuffer.floatArray
+
+                            // Close model
+                            val closeMethod = modelClass.getMethod("close")
+                            closeMethod.invoke(modelInstance)
+
+                            result
+                        } catch (e: Exception) {
+                            android.util.Log.e("PlanktonDebug", "ResNet50V2 model not found", e)
+                            showError("Model ResNet50V2 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                            return
+                        }
+                    }
+                    ModelType.EFFICIENTNET_V2_B0 -> {
+                        try {
+                            // Try different possible model names
+                            val modelClass = try {
+                                Class.forName("com.example.planktondetectionapps.ml.EfficientNetV2B0")
+                            } catch (e: ClassNotFoundException) {
+                                try {
+                                    Class.forName("com.example.planktondetectionapps.ml.EfficientNetV2B0with300Data")
+                                } catch (e2: ClassNotFoundException) {
+                                    Class.forName("com.example.planktondetectionapps.ml.Efficientnetv2b0")
+                                }
+                            }
+
+                            // Use reflection to create and run the model
+                            val modelInstance = modelClass.getMethod("newInstance", android.content.Context::class.java)
+                                .invoke(null, applicationContext)
+                            val processMethod = modelClass.getMethod("process", TensorBuffer::class.java)
+                            val outputs = processMethod.invoke(modelInstance, inputFeature0)
+                            val outputMethod = outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
+                            val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
+                            val result = tensorBuffer.floatArray
+
+                            // Close model
+                            val closeMethod = modelClass.getMethod("close")
+                            closeMethod.invoke(modelInstance)
+
+                            result
+                        } catch (e: Exception) {
+                            android.util.Log.e("PlanktonDebug", "EfficientNetV2B0 model not found", e)
+                            showError("Model EfficientNetV2B0 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                            return
+                        }
+                    }
                 }
-                ModelType.RESNET50_V2 -> {
-                    val model = com.example.planktondetectionapps.ml.ResNet50V2with300Data.newInstance(applicationContext)
-                    val outputs = model.process(inputFeature0)
-                    val result = outputs.getOutputFeature0AsTensorBuffer().floatArray
-                    model.close()
-                    result
-                }
-                ModelType.EFFICIENTNET_V2_B0 -> {
-                    val model = com.example.planktondetectionapps.ml.EfficientNetV2B0with300Data.newInstance(applicationContext)
-                    val outputs = model.process(inputFeature0)
-                    val result = outputs.getOutputFeature0AsTensorBuffer().floatArray
-                    model.close()
-                    result
-                }
+            } catch (e: Exception) {
+                android.util.Log.e("PlanktonDebug", "Error running model inference", e)
+                showError("Error menjalankan inferensi model: ${e.message}")
+                return
             }
 
             // Comprehensive debugging
@@ -395,13 +500,6 @@ class MainActivity : AppCompatActivity() {
                 android.util.Log.d("PlanktonDebug", "Predicted class name: ${classes[maxPos]}")
             }
 
-            // Check for potential issues
-            val avgConfidence = finalConfidences.average()
-            val minConfidence = finalConfidences.minOrNull() ?: 0f
-            val maxConfidenceValue = finalConfidences.maxOrNull() ?: 0f
-            val confidenceRange = maxConfidenceValue - minConfidence
-
-            android.util.Log.d("PlanktonDebug", "Confidence stats - Min: $minConfidence, Max: $maxConfidenceValue, Avg: $avgConfidence, Range: $confidenceRange")
 
             if (maxPos < classes.size) {
                 // Store classification results for saving
