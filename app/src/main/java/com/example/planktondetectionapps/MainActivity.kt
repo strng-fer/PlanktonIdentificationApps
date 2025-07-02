@@ -325,9 +325,9 @@ class MainActivity : AppCompatActivity() {
 
             // Choose preprocessing based on model type
             val byteBuffer = when (selectedModel) {
-                ModelType.MOBILENET_V3_SMALL -> preprocessImageForMobileNetV3(image) // Use [-1,1] normalization
-                ModelType.RESNET50_V2 -> preprocessImageFixed(image) // Use [0,1] normalization
-                ModelType.EFFICIENTNET_V2_B0 -> preprocessImageFixed(image) // Use [0,1] normalization
+                ModelType.MOBILENET_V3_SMALL -> preprocessImageForMobileNetV3BuildIn(image) // Use [-1,1] normalization
+                ModelType.RESNET50_V2 -> preprocessImageForResNetV2(image) // Use [-1,1] normalization (image/127.5-1.0)
+                ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetV2BuildIn(image) // Use [0,1] normalization
             }
             inputFeature0.loadBuffer(byteBuffer)
 
@@ -467,7 +467,204 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * MobileNetV3Small preprocessing: Scales image to [-1, 1] range
+     * Uses tf.keras.applications.mobilenet_v3.preprocess_input equivalent
+     */
+    private fun preprocessImageForMobileNetV3(image: Bitmap): ByteBuffer {
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
+        val intValues = IntArray(imageSize * imageSize)
+        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
+
+        android.util.Log.d("PlanktonDebug", "Using MobileNetV3 preprocessing: [-1, 1] normalization")
+
+        var pixel = 0
+        for (i in 0 until imageSize) {
+            for (j in 0 until imageSize) {
+                val value = intValues[pixel++]
+
+                // Extract RGB values
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                // MobileNetV3 preprocessing: normalize to [-1, 1]
+                // Formula: (pixel_value / 127.5) - 1.0
+                byteBuffer.putFloat((red / 127.5f) - 1.0f)
+                byteBuffer.putFloat((green / 127.5f) - 1.0f)
+                byteBuffer.putFloat((blue / 127.5f) - 1.0f)
+            }
+        }
+
+        byteBuffer.rewind()
+        return byteBuffer
+    }
+
+    /**
+     * MobileNetV3Small preprocessing with built-in preprocessing: Uses raw pixel values [0-255]
+     * For models that have built-in preprocessing layers and expect unnormalized input
+     */
+    private fun preprocessImageForMobileNetV3BuildIn(image: Bitmap): ByteBuffer {
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        // Create properly scaled bitmap
+        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
+
+        val intValues = IntArray(imageSize * imageSize)
+        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
+
+        android.util.Log.d("PlanktonDebug", "Processing image for MobileNetV3 with built-in preprocessing")
+        android.util.Log.d("PlanktonDebug", "Image size: ${imageSize}x${imageSize}")
+
+        var pixel = 0
+        for (i in 0 until imageSize) {
+            for (j in 0 until imageSize) {
+                val value = intValues[pixel++]
+
+                // Extract RGB values (Android uses ARGB format)
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                // MobileNetV3 dengan built-in preprocessing expects raw pixel values [0-255]
+                // TIDAK melakukan normalisasi karena model akan melakukannya secara internal
+                byteBuffer.putFloat(red.toFloat())
+                byteBuffer.putFloat(green.toFloat())
+                byteBuffer.putFloat(blue.toFloat())
+            }
+        }
+
+        android.util.Log.d("PlanktonDebug", "ByteBuffer filled with raw pixel values [0-255]")
+
+        // Reset position for reading
+        byteBuffer.rewind()
+
+        return byteBuffer
+    }
+
+    /**
+     * ResNetV2 preprocessing: Normalizes to [-1, 1] range using ResNetV2 method
+     * Uses tf.keras.applications.resnet_v2.preprocess_input equivalent
+     * Different from ResNetV1 which uses mean subtraction per channel
+     */
+    private fun preprocessImageForResNetV2(image: Bitmap): ByteBuffer {
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
+        val intValues = IntArray(imageSize * imageSize)
+        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
+
+        android.util.Log.d("PlanktonDebug", "Using ResNetV2 preprocessing: [-1, 1] normalization (image/127.5 - 1.0)")
+
+        var pixel = 0
+        for (i in 0 until imageSize) {
+            for (j in 0 until imageSize) {
+                val value = intValues[pixel++]
+
+                // Extract RGB values
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                // ResNetV2 preprocessing: normalize to [-1, 1] using image/127.5 - 1.0
+                // This is different from ResNetV1 which uses per-channel mean subtraction
+                byteBuffer.putFloat((red / 127.5f) - 1.0f)
+                byteBuffer.putFloat((green / 127.5f) - 1.0f)
+                byteBuffer.putFloat((blue / 127.5f) - 1.0f)
+            }
+        }
+
+        byteBuffer.rewind()
+        return byteBuffer
+    }
+
+    /**
+     * EfficientNetV2 preprocessing: Rescales from [0, 255] to [0, 1]
+     * Uses tf.keras.applications.efficientnet_v2.preprocess_input equivalent
+     * Includes scaling without per-channel mean subtraction
+     */
+    private fun preprocessImageForEfficientNetV2(image: Bitmap): ByteBuffer {
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
+        val intValues = IntArray(imageSize * imageSize)
+        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
+
+        android.util.Log.d("PlanktonDebug", "Using EfficientNetV2 preprocessing: [0, 1] normalization")
+
+        var pixel = 0
+        for (i in 0 until imageSize) {
+            for (j in 0 until imageSize) {
+                val value = intValues[pixel++]
+
+                // Extract RGB values
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                // EfficientNetV2 preprocessing: rescale to [0, 1]
+                // Formula: pixel_value / 255.0
+                byteBuffer.putFloat(red / 255.0f)
+                byteBuffer.putFloat(green / 255.0f)
+                byteBuffer.putFloat(blue / 255.0f)
+            }
+        }
+
+        byteBuffer.rewind()
+        return byteBuffer
+    }
+
+    /**
+     * EfficientNetV2 preprocessing with built-in preprocessing: Uses raw pixel values [0-255]
+     * For models that have built-in preprocessing layers and expect unnormalized input
+     */
+    private fun preprocessImageForEfficientNetV2BuildIn(image: Bitmap): ByteBuffer {
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        // Create properly scaled bitmap
+        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
+
+        val intValues = IntArray(imageSize * imageSize)
+        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
+
+        android.util.Log.d("PlanktonDebug", "Processing image for EfficientNetV2 with built-in preprocessing")
+        android.util.Log.d("PlanktonDebug", "Image size: ${imageSize}x${imageSize}")
+
+        var pixel = 0
+        for (i in 0 until imageSize) {
+            for (j in 0 until imageSize) {
+                val value = intValues[pixel++]
+
+                // Extract RGB values (Android uses ARGB format)
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                // EfficientNetV2 dengan built-in preprocessing expects raw pixel values [0-255]
+                // TIDAK melakukan normalisasi karena model akan melakukannya secara internal
+                byteBuffer.putFloat(red.toFloat())
+                byteBuffer.putFloat(green.toFloat())
+                byteBuffer.putFloat(blue.toFloat())
+            }
+        }
+
+        android.util.Log.d("PlanktonDebug", "ByteBuffer filled with raw pixel values [0-255]")
+
+        // Reset position for reading
+        byteBuffer.rewind()
+
+        return byteBuffer
+    }
+
+    /**
      * Fixed preprocessing that tries to match the exact preprocessing used during training
+     * @deprecated Use specific preprocessing functions for each model instead
      */
     private fun preprocessImageFixed(image: Bitmap): ByteBuffer {
         val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
@@ -503,39 +700,6 @@ class MainActivity : AppCompatActivity() {
         // Reset position for reading
         byteBuffer.rewind()
 
-        return byteBuffer
-    }
-
-    /**
-     * Alternative preprocessing methods for testing different normalization approaches
-     */
-    private fun preprocessImageForMobileNetV3(image: Bitmap): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
-        byteBuffer.order(ByteOrder.nativeOrder())
-
-        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
-        val intValues = IntArray(imageSize * imageSize)
-        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
-
-        var pixel = 0
-        for (i in 0 until imageSize) {
-            for (j in 0 until imageSize) {
-                val value = intValues[pixel++]
-
-                // Extract RGB values
-                val red = (value shr 16) and 0xFF
-                val green = (value shr 8) and 0xFF
-                val blue = value and 0xFF
-
-                // MobileNet_V3 preprocessing: normalize to [-1, 1]
-                // Formula: (pixel_value / 127.5) - 1.0
-                byteBuffer.putFloat((red / 127.5f) - 1.0f)
-                byteBuffer.putFloat((green / 127.5f) - 1.0f)
-                byteBuffer.putFloat((blue / 127.5f) - 1.0f)
-            }
-        }
-
-        byteBuffer.rewind()
         return byteBuffer
     }
 
