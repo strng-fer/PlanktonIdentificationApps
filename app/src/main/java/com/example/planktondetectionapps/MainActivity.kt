@@ -117,19 +117,15 @@ class MainActivity : AppCompatActivity() {
 
     private fun showWelcomeDialog() {
         val dialogBuilder = AlertDialog.Builder(this)
-        dialogBuilder.setTitle("Selamat Datang di PlanktoScan")
+        dialogBuilder.setTitle("Selamat Datang di Plankton Detection")
         dialogBuilder.setIcon(R.drawable.ic_microscope)
         dialogBuilder.setMessage(
-            """
-            Aplikasi ini menggunakan teknologi AI untuk mendeteksi dan mengklasifikasi jenis plankton.
-            
-            •  Ambil foto menggunakan kamera
-            •  Pilih foto dari galeri
-            •  Dapatkan hasil klasifikasi dengan tingkat kepercayaan
-            •  Simpan hasil ke galeri dengan nama sesuai klasifikasi
-            
-            Pastikan gambar plankton terlihat jelas untuk hasil terbaik!
-            """.trimIndent()
+            "Aplikasi ini menggunakan teknologi AI untuk mendeteksi dan mengklasifikasi jenis plankton.\n\n" +
+            "• Ambil foto menggunakan kamera\n" +
+            "• Pilih foto dari galeri\n" +
+            "• Dapatkan hasil klasifikasi dengan tingkat kepercayaan\n" +
+            "• Simpan hasil ke galeri dengan nama sesuai klasifikasi\n\n" +
+            "Pastikan gambar plankton terlihat jelas untuk hasil terbaik!"
         )
         dialogBuilder.setPositiveButton("Mulai") { dialog, _ ->
             dialog.dismiss()
