@@ -546,11 +546,17 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * ResNetV2 preprocessing: Normalizes to [-1, 1] range using ResNetV2 method
-     * Uses tf.keras.applications.resnet_v2.preprocess_input equivalent
-     * Different from ResNetV1 which uses mean subtraction per channel
+     * ResNetV2 preprocessing following tf.keras.applications.resnet_v2.preprocess_input
+     * Preprocesses a batch of images by scaling pixel values to [-1, 1] sample-wise.
+     *
+     * The inputs pixel values are scaled between -1 and 1, sample-wise using:
+     * normalized_pixel = (pixel / 127.5) - 1.0
+     *
+     * This is the official preprocessing for ResNetV2 models as documented in:
+     * https://www.tensorflow.org/api_docs/python/tf/keras/applications/resnet_v2/preprocess_input
      */
     private fun preprocessImageForResNetV2(image: Bitmap): ByteBuffer {
+        val imageSize = 224
         val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
         byteBuffer.order(ByteOrder.nativeOrder())
 
@@ -558,20 +564,21 @@ class MainActivity : AppCompatActivity() {
         val intValues = IntArray(imageSize * imageSize)
         scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
 
-        android.util.Log.d("PlanktonDebug", "Using ResNetV2 preprocessing: [-1, 1] normalization (image/127.5 - 1.0)")
+        android.util.Log.d("PlanktonDebug", "Using ResNetV2 preprocessing: tf.keras.applications.resnet_v2.preprocess_input - scaling to [-1, 1]")
 
         var pixel = 0
         for (i in 0 until imageSize) {
             for (j in 0 until imageSize) {
                 val value = intValues[pixel++]
 
-                // Extract RGB values
+                // Extract RGB values (0-255 range)
                 val red = (value shr 16) and 0xFF
                 val green = (value shr 8) and 0xFF
                 val blue = value and 0xFF
 
-                // ResNetV2 preprocessing: normalize to [-1, 1] using image/127.5 - 1.0
-                // This is different from ResNetV1 which uses per-channel mean subtraction
+                // ResNetV2 preprocessing: scale from [0, 255] to [-1, 1]
+                // Formula: (pixel / 127.5) - 1.0
+                // This ensures: 0 -> -1.0, 127.5 -> 0.0, 255 -> 1.0
                 byteBuffer.putFloat((red / 127.5f) - 1.0f)
                 byteBuffer.putFloat((green / 127.5f) - 1.0f)
                 byteBuffer.putFloat((blue / 127.5f) - 1.0f)
