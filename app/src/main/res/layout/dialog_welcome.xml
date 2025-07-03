@@ -20,17 +20,17 @@
             android:layout_height="72dp"
             android:layout_marginBottom="12dp"
             android:contentDescription="PlanktonScan Logo"
-            android:src="@mipmap/ic_launcher" />
+            android:src="@mipmap/icon_only" />
 
         <!-- App Name -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="PlanktonScan"
-            android:textColor="#1565C0"
+            android:layout_marginBottom="8dp"
+            android:text="PlanktoScan"
+            android:textColor="#093266"
             android:textSize="28sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
+            android:textStyle="bold" />
 
         <!-- Welcome Title -->
         <TextView
@@ -202,12 +202,12 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:background="@drawable/button_primary"
-        android:text="Mulai Menggunakan PlanktonScan"
-        android:textColor="#FFFFFF"
-        android:textAllCaps="false"
-        android:textSize="16sp"
-        android:textStyle="bold"
         android:elevation="2dp"
-        android:gravity="center" />
+        android:gravity="center"
+        android:text="Mulai Menggunakan PlanktoScan"
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:textStyle="bold" />
 
 </LinearLayout>
