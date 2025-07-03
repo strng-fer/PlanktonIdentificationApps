@@ -206,11 +206,8 @@ See LICENSE file for details.
 
 ## 🚧 Roadmap
 
-- [ ] Tambah support untuk video analysis
 - [ ] Implementasi cloud sync untuk hasil deteksi
-- [ ] Tambah database lokal untuk history
 - [ ] Implementasi batch processing
-- [ ] Tambah export hasil ke PDF/Excel
 - [ ] Implementasi dark mode
 - [ ] Tambah multi-language support
 
