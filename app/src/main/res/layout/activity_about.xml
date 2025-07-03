@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/background_color">
@@ -50,13 +51,15 @@
                 android:layout_width="80dp"
                 android:layout_height="80dp"
                 android:layout_marginBottom="16dp"
-                android:src="@mipmap/ic_launcher" />
+                android:src="@mipmap/icon_only"
+                app:srcCompat="@mipmap/icon_only"
+                tools:srcCompat="@mipmap/icon_only" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="8dp"
-                android:text="Plankton Detection"
+                android:text="PlanktoScan"
                 android:textColor="@color/primary_text_color"
                 android:textSize="24sp"
                 android:textStyle="bold" />
