@@ -23,6 +23,7 @@ import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import org.tensorflow.lite.DataType
@@ -63,6 +64,14 @@ class MainActivity : AppCompatActivity() {
     var option2: LinearLayout? = null
     var option3: LinearLayout? = null
 
+    // Navigation menu UI elements
+    var menuButton: android.widget.ImageButton? = null
+    var navigationMenu: LinearLayout? = null
+    var settingsOption: LinearLayout? = null
+    var aboutOption: LinearLayout? = null
+    var documentationOption: LinearLayout? = null
+    private var isNavigationMenuOpen = false
+
     var imageSize: Int = 224
 
     // Variables to store current classification data for saving
@@ -80,6 +89,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Force light mode for the entire application
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+
         setContentView(R.layout.activity_main)
 
         result = findViewById<TextView>(R.id.result)
@@ -99,6 +112,13 @@ class MainActivity : AppCompatActivity() {
         option2 = findViewById<LinearLayout>(R.id.option2)
         option3 = findViewById<LinearLayout>(R.id.option3)
 
+        // Initialize navigation menu elements
+        menuButton = findViewById<android.widget.ImageButton>(R.id.menuButton)
+        navigationMenu = findViewById<LinearLayout>(R.id.navigationMenu)
+        settingsOption = findViewById<LinearLayout>(R.id.settingsOption)
+        aboutOption = findViewById<LinearLayout>(R.id.aboutOption)
+        documentationOption = findViewById<LinearLayout>(R.id.documentationOption)
+
         // Show welcome dialog when app starts
         showWelcomeDialog()
 
@@ -107,6 +127,9 @@ class MainActivity : AppCompatActivity() {
 
         // Setup custom dropdown functionality
         setupCustomDropdown()
+
+        // Setup navigation menu functionality
+        setupNavigationMenu()
 
         picture?.setOnClickListener {
             // Launch camera if we have permission
@@ -198,22 +221,25 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showWelcomeDialog() {
+        // Create custom dialog with stylish layout
         val dialogBuilder = AlertDialog.Builder(this)
-        dialogBuilder.setTitle("Selamat Datang di Plankton Detection")
-        dialogBuilder.setIcon(R.drawable.ic_microscope)
-        dialogBuilder.setMessage(
-            "Aplikasi ini menggunakan teknologi AI untuk mendeteksi dan mengklasifikasi jenis plankton.\n\n" +
-            "• Ambil foto menggunakan kamera\n" +
-            "• Pilih foto dari galeri\n" +
-            "• Dapatkan hasil klasifikasi dengan tingkat kepercayaan\n" +
-            "• Simpan hasil ke galeri dengan nama sesuai klasifikasi\n\n" +
-            "Pastikan gambar plankton terlihat jelas untuk hasil terbaik!"
-        )
-        dialogBuilder.setPositiveButton("Mulai") { dialog, _ ->
+        val dialogView = layoutInflater.inflate(R.layout.dialog_welcome, null)
+
+        dialogBuilder.setView(dialogView)
+        dialogBuilder.setCancelable(false)
+
+        val dialog = dialogBuilder.create()
+
+        // Make dialog background transparent to show custom card background
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        // Set up start button click listener
+        val startButton = dialogView.findViewById<Button>(R.id.welcomeStartButton)
+        startButton.setOnClickListener {
             dialog.dismiss()
         }
-        dialogBuilder.setCancelable(false)
-        dialogBuilder.create().show()
+
+        dialog.show()
     }
 
     private fun showErrorDialog(title: String, message: String) {
@@ -1115,5 +1141,48 @@ class MainActivity : AppCompatActivity() {
         canvas.drawBitmap(squareBitmap, srcRect, dstRect, paint)
 
         return scaledBitmap
+    }
+
+    private fun setupNavigationMenu() {
+        // Hide navigation menu by default
+        navigationMenu?.visibility = View.GONE
+
+        // Toggle navigation menu visibility when menu button is clicked
+        menuButton?.setOnClickListener {
+            if (isNavigationMenuOpen) {
+                // Close menu
+                navigationMenu?.visibility = View.GONE
+                isNavigationMenuOpen = false
+            } else {
+                // Open menu
+                navigationMenu?.visibility = View.VISIBLE
+                isNavigationMenuOpen = true
+            }
+        }
+
+        // Set up navigation options click listeners
+        settingsOption?.setOnClickListener {
+            Toast.makeText(this, "Pengaturan dipilih", Toast.LENGTH_SHORT).show()
+            // Close menu after selection
+            navigationMenu?.visibility = View.GONE
+            isNavigationMenuOpen = false
+            // TODO: Navigate to settings screen
+        }
+
+        aboutOption?.setOnClickListener {
+            Toast.makeText(this, "Tentang dipilih", Toast.LENGTH_SHORT).show()
+            // Close menu after selection
+            navigationMenu?.visibility = View.GONE
+            isNavigationMenuOpen = false
+            // TODO: Navigate to about screen
+        }
+
+        documentationOption?.setOnClickListener {
+            Toast.makeText(this, "Dokumentasi dipilih", Toast.LENGTH_SHORT).show()
+            // Close menu after selection
+            navigationMenu?.visibility = View.GONE
+            isNavigationMenuOpen = false
+            // TODO: Open documentation URL
+        }
     }
 }
