@@ -104,7 +104,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Informasi Model AI"
+                    android:text="Informasi Model Deep Learning"
                     android:textColor="@color/primary_text_color"
                     android:textSize="16sp"
                     android:textStyle="bold" />
