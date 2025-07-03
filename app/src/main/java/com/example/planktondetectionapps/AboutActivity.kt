@@ -38,7 +38,7 @@ class AboutActivity : AppCompatActivity() {
         }
 
         developerContact.setOnClickListener {
-            openWebsite("https://github.com/strng-fer/PlanktonIdentificationApps/blob/main/README.md#contact")
+            openWebsite("https://github.com/strng-fer/PlanktonIdentificationApps?tab=readme-ov-file#-contact")
         }
 
         githubLink.setOnClickListener {
