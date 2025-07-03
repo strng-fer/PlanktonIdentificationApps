@@ -220,7 +220,7 @@
                     android:scaleType="centerCrop"
                     android:background="#F5F5F5"
                     android:src="@drawable/ic_plankton_logo"
-                    android:contentDescription="Image Preview"
+                    android:contentDescription="Preview Gambar"
                     android:layout_marginBottom="20dp" />
 
                 <!-- Results Section -->
@@ -284,7 +284,7 @@
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
                     android:background="@drawable/button_primary"
-                    android:text="Camera"
+                    android:text="Kamera"
                     android:drawableLeft="@drawable/ic_camera_capture"
                     android:drawablePadding="8dp"
                     android:textColor="#FFFFFF"
@@ -301,7 +301,7 @@
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
                     android:background="@drawable/button_secondary"
-                    android:text="Gallery"
+                    android:text="Galeri"
                     android:drawableLeft="@drawable/ic_gallery"
                     android:drawablePadding="8dp"
                     android:textColor="#FFFFFF"
