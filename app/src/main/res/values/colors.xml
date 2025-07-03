@@ -23,16 +23,31 @@
     <color name="save_green_night">#81C784</color>
     <color name="save_green_dark_night">#66BB6A</color>
 
-    <!-- Text Colors -->
-    <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-    <color name="text_primary">#212121</color>
-    <color name="text_secondary">#757575</color>
-
     <!-- Background Colors -->
     <color name="background_light">#FAFAFA</color>
     <color name="background_dark">#121212</color>
     <color name="surface_light">#FFFFFF</color>
     <color name="surface_dark">#1E1E1E</color>
-</resources>
+    <color name="background_color">#F5F5F5</color>
+    <color name="card_color">#FFFFFF</color>
+    <color name="border_color">#E0E0E0</color>
 
+    <!-- Text Colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="text_primary">#212121</color>
+    <color name="text_secondary">#757575</color>
+    <color name="primary_text_color">#212121</color>
+    <color name="secondary_text_color">#757575</color>
+    <color name="accent_color">#2196F3</color>
+
+    <!-- Night Mode Background Colors -->
+    <color name="background_color_night">#121212</color>
+    <color name="card_color_night">#1E1E1E</color>
+    <color name="border_color_night">#333333</color>
+
+    <!-- Night Mode Text Colors -->
+    <color name="primary_text_color_night">#FFFFFF</color>
+    <color name="secondary_text_color_night">#AAAAAA</color>
+    <color name="accent_color_night">#64B5F6</color>
+</resources>

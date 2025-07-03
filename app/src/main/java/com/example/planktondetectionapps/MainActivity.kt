@@ -1162,27 +1162,30 @@ class MainActivity : AppCompatActivity() {
 
         // Set up navigation options click listeners
         settingsOption?.setOnClickListener {
-            Toast.makeText(this, "Pengaturan dipilih", Toast.LENGTH_SHORT).show()
             // Close menu after selection
             navigationMenu?.visibility = View.GONE
             isNavigationMenuOpen = false
-            // TODO: Navigate to settings screen
+            // Navigate to settings screen
+            val intent = Intent(this, SettingsActivity::class.java)
+            startActivity(intent)
         }
 
         aboutOption?.setOnClickListener {
-            Toast.makeText(this, "Tentang dipilih", Toast.LENGTH_SHORT).show()
             // Close menu after selection
             navigationMenu?.visibility = View.GONE
             isNavigationMenuOpen = false
-            // TODO: Navigate to about screen
+            // Navigate to about screen
+            val intent = Intent(this, AboutActivity::class.java)
+            startActivity(intent)
         }
 
         documentationOption?.setOnClickListener {
-            Toast.makeText(this, "Dokumentasi dipilih", Toast.LENGTH_SHORT).show()
             // Close menu after selection
             navigationMenu?.visibility = View.GONE
             isNavigationMenuOpen = false
-            // TODO: Open documentation URL
+            // Navigate to documentation screen
+            val intent = Intent(this, DocumentationActivity::class.java)
+            startActivity(intent)
         }
     }
 }

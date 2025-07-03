@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/background_color">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Header -->
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp">
+
+            <ImageButton
+                android:id="@+id/backButton"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_alignParentStart="true"
+                android:layout_centerVertical="true"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_arrow_back"
+                android:tint="@color/primary_text_color" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:text="Dokumentasi"
+                android:textColor="@color/primary_text_color"
+                android:textSize="20sp"
+                android:textStyle="bold" />
+
+        </RelativeLayout>
+
+        <!-- How to Use Section -->
+        <LinearLayout
+            android:id="@+id/howToUseSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/card_background"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Cara Menggunakan"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:tag="arrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="▼"
+                    android:textColor="@color/accent_color"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+            <TextView
+                android:tag="content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="1. Buka aplikasi Plankton Detection\n\n2. Pilih model AI yang ingin digunakan:\n   • MobileNet V3 Small - Cepat dan ringan\n   • ResNet50 V2 - Akurasi tinggi\n   • EfficientNet V2 B0 - Seimbang antara kecepatan dan akurasi\n\n3. Ambil gambar plankton:\n   • Tekan tombol kamera untuk mengambil foto baru\n   • Atau pilih gambar dari galeri\n\n4. Tunggu proses deteksi selesai\n\n5. Lihat hasil klasifikasi dan tingkat kepercayaan\n\n6. Simpan hasil ke galeri jika diperlukan"
+                android:textColor="@color/secondary_text_color"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Model Information Section -->
+        <LinearLayout
+            android:id="@+id/modelInfoSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/card_background"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Informasi Model AI"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:tag="arrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="▼"
+                    android:textColor="@color/accent_color"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+            <TextView
+                android:tag="content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Model AI yang tersedia:\n\n🔸 MobileNet V3 Small\n• Ukuran: ~2.9MB\n• Kecepatan: Sangat cepat\n• Akurasi: Baik\n• Cocok untuk: Deteksi cepat real-time\n\n🔸 ResNet50 V2\n• Ukuran: ~25MB\n• Kecepatan: Sedang\n• Akurasi: Sangat tinggi\n• Cocok untuk: Analisis detail dan penelitian\n\n🔸 EfficientNet V2 B0\n• Ukuran: ~7MB\n• Kecepatan: Cepat\n• Akurasi: Tinggi\n• Cocok untuk: Penggunaan umum\n\nSemua model telah dilatih dengan dataset plankton yang komprehensif dan dapat mengidentifikasi berbagai jenis plankton dengan akurasi tinggi."
+                android:textColor="@color/secondary_text_color"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- Troubleshooting Section -->
+        <LinearLayout
+            android:id="@+id/troubleshootingSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/card_background"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Pemecahan Masalah"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:tag="arrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="▼"
+                    android:textColor="@color/accent_color"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+            <TextView
+                android:tag="content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Masalah umum dan solusinya:\n\n❌ Kamera tidak berfungsi:\n• Pastikan izin kamera telah diberikan\n• Restart aplikasi\n• Periksa apakah kamera digunakan aplikasi lain\n\n❌ Gambar tidak terdeteksi:\n• Pastikan gambar cukup terang\n• Plankton harus terlihat jelas\n• Coba gunakan model yang berbeda\n• Periksa format gambar (JPG/PNG)\n\n❌ Hasil tidak akurat:\n• Gunakan gambar berkualitas tinggi\n• Pastikan fokus pada objek plankton\n• Coba model ResNet50 untuk akurasi lebih tinggi\n• Sesuaikan pencahayaan\n\n❌ Aplikasi lambat:\n• Gunakan MobileNet untuk kecepatan lebih tinggi\n• Tutup aplikasi lain yang tidak diperlukan\n• Pastikan memori cukup tersedia\n\n❌ Tidak bisa menyimpan gambar:\n• Pastikan izin penyimpanan telah diberikan\n• Periksa ruang penyimpanan yang tersedia"
+                android:textColor="@color/secondary_text_color"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <!-- FAQ Section -->
+        <LinearLayout
+            android:id="@+id/faqSection"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/card_background"
+            android:orientation="vertical"
+            android:padding="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="Pertanyaan Umum (FAQ)"
+                    android:textColor="@color/primary_text_color"
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:tag="arrow"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="▼"
+                    android:textColor="@color/accent_color"
+                    android:textSize="16sp" />
+
+            </LinearLayout>
+
+            <TextView
+                android:tag="content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:text="Q: Apakah aplikasi ini gratis?\nA: Ya, aplikasi ini sepenuhnya gratis untuk digunakan.\n\nQ: Bisakah digunakan offline?\nA: Ya, setelah aplikasi diunduh, deteksi dapat dilakukan tanpa koneksi internet.\n\nQ: Berapa jenis plankton yang bisa dideteksi?\nA: Aplikasi dapat mendeteksi puluhan jenis plankton yang umum ditemukan.\n\nQ: Apakah hasil deteksi 100% akurat?\nA: Tidak ada sistem AI yang 100% akurat. Gunakan hasil sebagai referensi dan verifikasi manual tetap diperlukan.\n\nQ: Bagaimana cara meningkatkan akurasi?\nA: Gunakan gambar berkualitas tinggi, pencahayaan yang baik, dan pilih model ResNet50 untuk akurasi maksimal.\n\nQ: Apakah data gambar disimpan atau dikirim ke server?\nA: Tidak, semua proses dilakukan lokal di perangkat Anda. Data tidak dikirim ke server.\n\nQ: Bisakah digunakan untuk penelitian ilmiah?\nA: Ya, namun kami sarankan untuk melakukan verifikasi manual dan konsultasi dengan ahli."
+                android:textColor="@color/secondary_text_color"
+                android:textSize="14sp"
+                android:lineSpacingExtra="4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</ScrollView>

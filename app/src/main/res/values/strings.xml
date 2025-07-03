@@ -1,3 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">PlanktoScan</string>
+    <string name="app_name">Plankton Detection</string>
+
+    <!-- Activity Titles -->
+    <string name="settings_title">Pengaturan</string>
+    <string name="about_title">Tentang</string>
+    <string name="documentation_title">Dokumentasi</string>
+
+    <!-- Main Activity -->
+    <string name="welcome_title">Selamat Datang</string>
+    <string name="welcome_message">Aplikasi Deteksi Plankton menggunakan AI untuk mengidentifikasi berbagai jenis plankton</string>
+    <string name="camera_button">Ambil Foto</string>
+    <string name="gallery_button">Pilih dari Galeri</string>
+    <string name="save_button">Simpan Hasil</string>
+    <string name="model_selection">Pilih Model AI</string>
+
+    <!-- Settings Activity -->
+    <string name="appearance_section">Tampilan</string>
+    <string name="dark_mode">Mode Gelap</string>
+    <string name="dark_mode_description">Aktifkan tema gelap</string>
+    <string name="detection_settings">Pengaturan Deteksi</string>
+    <string name="confidence_threshold">Ambang Batas Kepercayaan</string>
+    <string name="confidence_description">Minimum tingkat kepercayaan untuk klasifikasi</string>
+    <string name="feedback_section">Feedback</string>
+    <string name="vibration">Getaran</string>
+    <string name="vibration_description">Berikan feedback getaran</string>
+    <string name="sound">Suara</string>
+    <string name="sound_description">Berikan feedback suara</string>
+    <string name="storage_section">Penyimpanan</string>
+    <string name="save_to_gallery">Simpan ke Galeri</string>
+    <string name="save_to_gallery_description">Otomatis simpan hasil ke galeri</string>
+
+    <!-- About Activity -->
+    <string name="app_description">Aplikasi deteksi plankton menggunakan teknologi AI yang canggih untuk mengidentifikasi berbagai jenis plankton melalui gambar. Aplikasi ini membantu peneliti dan mahasiswa dalam studi biologi laut dengan memberikan hasil klasifikasi yang akurat dan cepat.</string>
+    <string name="features_title">Fitur Utama</string>
+    <string name="contact_developer">Kontak Developer</string>
+    <string name="developer_profile">Profil Developer</string>
+    <string name="source_code">Source Code</string>
+    <string name="send_email">Kirim Email</string>
+    <string name="copyright">© 2025 Plankton Detection App\nAll rights reserved</string>
+
+    <!-- Documentation Activity -->
+    <string name="how_to_use">Cara Menggunakan</string>
+    <string name="model_information">Informasi Model AI</string>
+    <string name="troubleshooting">Pemecahan Masalah</string>
+    <string name="faq">Pertanyaan Umum (FAQ)</string>
+
+    <!-- Common -->
+    <string name="back">Kembali</string>
+    <string name="ok">OK</string>
+    <string name="cancel">Batal</string>
+    <string name="save">Simpan</string>
+    <string name="error">Error</string>
+    <string name="success">Berhasil</string>
 </resources>
+
