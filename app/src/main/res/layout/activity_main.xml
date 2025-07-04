@@ -333,7 +333,6 @@
                 android:enabled="false"
                 android:visibility="visible" />
 
-
             <!-- Model Selection Section -->
             <LinearLayout
                 android:layout_width="match_parent"
