@@ -39,54 +39,67 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.min
 
+/**
+ * Main activity for the Plankton Detection Application
+ * Handles camera capture, gallery selection, and AI model inference for plankton classification
+ */
 class MainActivity : AppCompatActivity() {
-    // Model enum untuk memilih jenis model AI
+
+    /**
+     * Enum untuk memilih jenis model AI yang akan digunakan
+     */
     enum class ModelType {
         MOBILENET_V3_SMALL,
         RESNET50_V2,
         EFFICIENTNET_V2_B0
     }
 
-    var result: TextView? = null
-    var confidence: TextView? = null
-    var imageView: ImageView? = null
-    var picture: Button? = null
-    var galleryButton: Button? = null
-    var saveButton: Button? = null
+    // UI Components
+    private var result: TextView? = null
+    private var confidence: TextView? = null
+    private var imageView: ImageView? = null
+    private var picture: Button? = null
+    private var galleryButton: Button? = null
+    private var saveButton: Button? = null
 
     // Custom dropdown UI elements
-    var customDropdownContainer: LinearLayout? = null
-    var dropdownOptions: LinearLayout? = null
-    var dropdownArrow: ImageView? = null
-    var selectedModelName: TextView? = null
-    var selectedModelDescription: TextView? = null
-    var option1: LinearLayout? = null
-    var option2: LinearLayout? = null
-    var option3: LinearLayout? = null
+    private var customDropdownContainer: LinearLayout? = null
+    private var dropdownOptions: LinearLayout? = null
+    private var dropdownArrow: ImageView? = null
+    private var selectedModelName: TextView? = null
+    private var selectedModelDescription: TextView? = null
+    private var option1: LinearLayout? = null
+    private var option2: LinearLayout? = null
+    private var option3: LinearLayout? = null
 
     // Navigation menu UI elements
-    var menuButton: android.widget.ImageButton? = null
-    var navigationMenu: LinearLayout? = null
-    var settingsOption: LinearLayout? = null
-    var aboutOption: LinearLayout? = null
-    var documentationOption: LinearLayout? = null
+    private var menuButton: android.widget.ImageButton? = null
+    private var navigationMenu: LinearLayout? = null
+    private var settingsOption: LinearLayout? = null
+    private var aboutOption: LinearLayout? = null
+    private var documentationOption: LinearLayout? = null
     private var isNavigationMenuOpen = false
 
-    var imageSize: Int = 224
+    // AI Model configuration
+    private var imageSize: Int = 224
+    private var selectedModel: ModelType = ModelType.MOBILENET_V3_SMALL
+    private var isDropdownOpen = false
 
-    // Variables to store current classification data for saving
+    // Classification data storage
     private var currentBitmap: Bitmap? = null
     private var currentClassificationResult: String? = null
     private var currentConfidence: Float = 0f
     private var currentPhotoUri: Uri? = null
-    private var selectedModel: ModelType = ModelType.MOBILENET_V3_SMALL // Default model
-    private var isDropdownOpen = false
 
+    // Activity result launchers
     private lateinit var cameraLauncher: ActivityResultLauncher<Intent>
     private lateinit var galleryLauncher: ActivityResultLauncher<Intent>
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
     private lateinit var storagePermissionLauncher: ActivityResultLauncher<String>
 
+    /**
+     * Inisialisasi activity dan setup UI components
+     */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -95,48 +108,51 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        result = findViewById<TextView>(R.id.result)
-        confidence = findViewById<TextView>(R.id.confidence)
-        imageView = findViewById<ImageView>(R.id.imageView)
-        picture = findViewById<Button>(R.id.button)
-        galleryButton = findViewById<Button>(R.id.galleryButton)
-        saveButton = findViewById<Button>(R.id.saveButton)
+        initializeViews()
+        showWelcomeDialog()
+        initializeLaunchers()
+        setupCustomDropdown()
+        setupNavigationMenu()
+        setupButtonListeners()
+    }
+
+    /**
+     * Inisialisasi semua view components
+     */
+    private fun initializeViews() {
+        result = findViewById(R.id.result)
+        confidence = findViewById(R.id.confidence)
+        imageView = findViewById(R.id.imageView)
+        picture = findViewById(R.id.button)
+        galleryButton = findViewById(R.id.galleryButton)
+        saveButton = findViewById(R.id.saveButton)
 
         // Initialize custom dropdown elements
-        customDropdownContainer = findViewById<LinearLayout>(R.id.customDropdownContainer)
-        dropdownOptions = findViewById<LinearLayout>(R.id.dropdownOptions)
-        dropdownArrow = findViewById<ImageView>(R.id.dropdownArrow)
-        selectedModelName = findViewById<TextView>(R.id.selectedModelName)
-        selectedModelDescription = findViewById<TextView>(R.id.selectedModelDescription)
-        option1 = findViewById<LinearLayout>(R.id.option1)
-        option2 = findViewById<LinearLayout>(R.id.option2)
-        option3 = findViewById<LinearLayout>(R.id.option3)
+        customDropdownContainer = findViewById(R.id.customDropdownContainer)
+        dropdownOptions = findViewById(R.id.dropdownOptions)
+        dropdownArrow = findViewById(R.id.dropdownArrow)
+        selectedModelName = findViewById(R.id.selectedModelName)
+        selectedModelDescription = findViewById(R.id.selectedModelDescription)
+        option1 = findViewById(R.id.option1)
+        option2 = findViewById(R.id.option2)
+        option3 = findViewById(R.id.option3)
 
         // Initialize navigation menu elements
-        menuButton = findViewById<android.widget.ImageButton>(R.id.menuButton)
-        navigationMenu = findViewById<LinearLayout>(R.id.navigationMenu)
-        settingsOption = findViewById<LinearLayout>(R.id.settingsOption)
-        aboutOption = findViewById<LinearLayout>(R.id.aboutOption)
-        documentationOption = findViewById<LinearLayout>(R.id.documentationOption)
+        menuButton = findViewById(R.id.menuButton)
+        navigationMenu = findViewById(R.id.navigationMenu)
+        settingsOption = findViewById(R.id.settingsOption)
+        aboutOption = findViewById(R.id.aboutOption)
+        documentationOption = findViewById(R.id.documentationOption)
+    }
 
-        // Show welcome dialog when app starts
-        showWelcomeDialog()
-
-        // Initialize ActivityResultLaunchers
-        initializeLaunchers()
-
-        // Setup custom dropdown functionality
-        setupCustomDropdown()
-
-        // Setup navigation menu functionality
-        setupNavigationMenu()
-
+    /**
+     * Setup listener untuk button clicks
+     */
+    private fun setupButtonListeners() {
         picture?.setOnClickListener {
-            // Launch camera if we have permission
             if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
                 showCameraSelectionDialog()
             } else {
-                //Request camera permission if we don't have it.
                 permissionLauncher.launch(Manifest.permission.CAMERA)
             }
         }
@@ -146,7 +162,6 @@ class MainActivity : AppCompatActivity() {
             galleryLauncher.launch(galleryIntent)
         }
 
-        // Add save button click listener
         saveButton?.setOnClickListener {
             if (currentBitmap != null && currentClassificationResult != null) {
                 checkStoragePermissionAndSave()
@@ -156,13 +171,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Setup dropdown untuk pemilihan model AI
+     */
     private fun setupCustomDropdown() {
-        // Toggle dropdown when container is clicked
         customDropdownContainer?.setOnClickListener {
             toggleDropdown()
         }
 
-        // Set up option click listeners
         option1?.setOnClickListener {
             selectModel(ModelType.MOBILENET_V3_SMALL, "MobileNetV3 Small", "Model ringan dengan performa cepat")
         }
@@ -176,20 +192,24 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Toggle visibility dropdown model selection
+     */
     private fun toggleDropdown() {
         if (isDropdownOpen) {
-            // Close dropdown
             dropdownOptions?.visibility = View.GONE
             dropdownArrow?.rotation = 0f
             isDropdownOpen = false
         } else {
-            // Open dropdown
             dropdownOptions?.visibility = View.VISIBLE
             dropdownArrow?.rotation = 180f
             isDropdownOpen = true
         }
     }
 
+    /**
+     * Pilih model AI yang akan digunakan
+     */
     private fun selectModel(modelType: ModelType, modelName: String, modelDescription: String) {
         selectedModel = modelType
         selectedModelName?.text = modelName
@@ -200,17 +220,16 @@ class MainActivity : AppCompatActivity() {
         dropdownArrow?.rotation = 0f
         isDropdownOpen = false
 
-        // Show selection feedback
         Toast.makeText(this, "Model dipilih: $modelName", Toast.LENGTH_SHORT).show()
     }
 
+    /**
+     * Cek permission storage dan simpan gambar
+     */
     private fun checkStoragePermissionAndSave() {
-        // For Android 10 and above, WRITE_EXTERNAL_STORAGE permission is not needed
-        // when using MediaStore API
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             saveImageToGallery()
         } else {
-            // For Android 9 and below, check for WRITE_EXTERNAL_STORAGE permission
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 == PackageManager.PERMISSION_GRANTED) {
                 saveImageToGallery()
@@ -220,8 +239,10 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Tampilkan dialog selamat datang saat aplikasi pertama kali dibuka
+     */
     private fun showWelcomeDialog() {
-        // Create custom dialog with stylish layout
         val dialogBuilder = AlertDialog.Builder(this)
         val dialogView = layoutInflater.inflate(R.layout.dialog_welcome, null)
 
@@ -229,11 +250,8 @@ class MainActivity : AppCompatActivity() {
         dialogBuilder.setCancelable(false)
 
         val dialog = dialogBuilder.create()
-
-        // Make dialog background transparent to show custom card background
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        // Set up start button click listener
         val startButton = dialogView.findViewById<Button>(R.id.welcomeStartButton)
         startButton.setOnClickListener {
             dialog.dismiss()
@@ -242,9 +260,12 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun showErrorDialog(title: String, message: String) {
+    /**
+     * Tampilkan dialog error dengan pesan tertentu
+     */
+    private fun showErrorDialog(message: String) {
         val dialogBuilder = AlertDialog.Builder(this)
-        dialogBuilder.setTitle(title)
+        dialogBuilder.setTitle("Gagal")
         dialogBuilder.setMessage(message)
         dialogBuilder.setPositiveButton("OK") { dialog, _ ->
             dialog.dismiss()
@@ -253,9 +274,12 @@ class MainActivity : AppCompatActivity() {
         dialogBuilder.create().show()
     }
 
-    private fun showSuccessDialog(title: String, message: String) {
+    /**
+     * Tampilkan dialog sukses dengan pesan tertentu
+     */
+    private fun showSuccessDialog(message: String) {
         val dialogBuilder = AlertDialog.Builder(this)
-        dialogBuilder.setTitle(title)
+        dialogBuilder.setTitle("Berhasil Disimpan")
         dialogBuilder.setMessage(message)
         dialogBuilder.setPositiveButton("OK") { dialog, _ ->
             dialog.dismiss()
@@ -264,31 +288,30 @@ class MainActivity : AppCompatActivity() {
         dialogBuilder.create().show()
     }
 
+    /**
+     * Inisialisasi ActivityResultLaunchers untuk kamera, galeri, dan permissions
+     */
     private fun initializeLaunchers() {
         // Camera launcher - using full resolution capture with file output
         cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
                 try {
-                    // Check if we have a photo URI from full resolution capture
                     currentPhotoUri?.let { photoUri ->
                         android.util.Log.d("PlanktonDebug", "Loading full resolution image from URI")
                         val bitmap = loadHighQualityImageFromUri(photoUri)
                         android.util.Log.d("PlanktonDebug", "Full resolution camera image size: ${bitmap.width}x${bitmap.height}")
 
-                        // Store high-quality image for preview and saving
                         currentBitmap = bitmap
                         imageView?.setImageBitmap(bitmap)
 
-                        // Create AI processing image
                         val aiImage = createHighQualitySquareImage(bitmap, imageSize)
                         classifyImage(aiImage)
 
-                        // Clean up temporary file
                         cleanupTempFile(photoUri)
                         return@registerForActivityResult
                     }
 
-                    // Fallback to thumbnail if no URI (shouldn't happen with new implementation)
+                    // Fallback to thumbnail if no URI
                     val extras = result.data?.extras
                     @Suppress("DEPRECATION")
                     val photo = extras?.get("data") as? Bitmap
@@ -297,7 +320,6 @@ class MainActivity : AppCompatActivity() {
                         android.util.Log.d("PlanktonDebug", "Fallback to thumbnail - size: ${photo.width}x${photo.height}")
                         showError("Kualitas gambar rendah (thumbnail). Menggunakan kualitas yang tersedia.")
 
-                        // Still process the thumbnail but warn user
                         currentBitmap = photo
                         imageView?.setImageBitmap(photo)
                         val aiImage = createHighQualitySquareImage(photo, imageSize)
@@ -324,11 +346,9 @@ class MainActivity : AppCompatActivity() {
                         val bitmap = loadHighQualityImageFromUri(imageUri)
                         android.util.Log.d("PlanktonDebug", "Gallery image size: ${bitmap.width}x${bitmap.height}")
 
-                        // Store high-quality image for preview and saving
                         currentBitmap = bitmap
                         imageView?.setImageBitmap(bitmap)
 
-                        // Create AI processing image
                         val aiImage = createHighQualitySquareImage(bitmap, imageSize)
                         classifyImage(aiImage)
                     } else {
@@ -361,15 +381,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Tampilkan pesan error dan reset UI
+     */
     private fun showError(message: String) {
-        showErrorDialog("Gagal", message)
+        showErrorDialog(message)
         result?.text = "Terjadi kesalahan"
         confidence?.text = "Silakan coba lagi"
-        // Disable save button when there's an error
         saveButton?.isEnabled = false
     }
 
-    fun loadLabels(context: Context): List<String> {
+    /**
+     * Load labels dari file assets
+     */
+    private fun loadLabels(context: Context): List<String> {
         val labels = mutableListOf<String>()
         try {
             context.assets.open("labels.txt").bufferedReader().useLines { lines ->
@@ -377,24 +402,26 @@ class MainActivity : AppCompatActivity() {
             }
         } catch (e: IOException) {
             e.printStackTrace()
-            labels.add("Unknown") // fallback jika file tidak ditemukan
+            labels.add("Unknown")
         }
         return labels
     }
 
-    fun classifyImage(image: Bitmap) {
+    /**
+     * Klasifikasi gambar menggunakan model AI yang dipilih
+     */
+    private fun classifyImage(image: Bitmap) {
         try {
             android.util.Log.d("PlanktonDebug", "=== CLASSIFICATION START ===")
             android.util.Log.d("PlanktonDebug", "Selected model: ${selectedModel.name}")
 
-            // Creates inputs for reference.
             val inputFeature0 = TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
 
             // Choose preprocessing based on model type
             val byteBuffer = when (selectedModel) {
-                ModelType.MOBILENET_V3_SMALL -> preprocessImageForMobileNetV3BuildIn(image) // Use raw pixel values
-                ModelType.RESNET50_V2 -> preprocessImageForResNetV2(image) // Use [-1,1] normalization
-                ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetV2BuildIn(image) // Use raw pixel values
+                ModelType.MOBILENET_V3_SMALL -> preprocessImageForMobileNetV3BuildIn(image)
+                ModelType.RESNET50_V2 -> preprocessImageForResNetV2(image)
+                ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetV2BuildIn(image)
             }
             inputFeature0.loadBuffer(byteBuffer)
 
@@ -416,19 +443,17 @@ class MainActivity : AppCompatActivity() {
                     }
                     ModelType.RESNET50_V2 -> {
                         try {
-                            // Try different possible model names
                             val modelClass = try {
                                 Class.forName("com.example.planktondetectionapps.ml.ResNet50V2")
-                            } catch (e: ClassNotFoundException) {
+                            } catch (_: ClassNotFoundException) {
                                 try {
                                     Class.forName("com.example.planktondetectionapps.ml.ResNet50V2with300Data")
-                                } catch (e2: ClassNotFoundException) {
+                                } catch (_: ClassNotFoundException) {
                                     Class.forName("com.example.planktondetectionapps.ml.Resnet50v2")
                                 }
                             }
 
-                            // Use reflection to create and run the model
-                            val modelInstance = modelClass.getMethod("newInstance", android.content.Context::class.java)
+                            val modelInstance = modelClass.getMethod("newInstance", Context::class.java)
                                 .invoke(null, applicationContext)
                             val processMethod = modelClass.getMethod("process", TensorBuffer::class.java)
                             val outputs = processMethod.invoke(modelInstance, inputFeature0)
@@ -436,7 +461,6 @@ class MainActivity : AppCompatActivity() {
                             val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
                             val result = tensorBuffer.floatArray
 
-                            // Close model
                             val closeMethod = modelClass.getMethod("close")
                             closeMethod.invoke(modelInstance)
 
@@ -449,19 +473,17 @@ class MainActivity : AppCompatActivity() {
                     }
                     ModelType.EFFICIENTNET_V2_B0 -> {
                         try {
-                            // Try different possible model names
                             val modelClass = try {
                                 Class.forName("com.example.planktondetectionapps.ml.EfficientNetV2B0")
-                            } catch (e: ClassNotFoundException) {
+                            } catch (_: ClassNotFoundException) {
                                 try {
                                     Class.forName("com.example.planktondetectionapps.ml.EfficientNetV2B0with300Data")
-                                } catch (e2: ClassNotFoundException) {
+                                } catch (_: ClassNotFoundException) {
                                     Class.forName("com.example.planktondetectionapps.ml.Efficientnetv2b0")
                                 }
                             }
 
-                            // Use reflection to create and run the model
-                            val modelInstance = modelClass.getMethod("newInstance", android.content.Context::class.java)
+                            val modelInstance = modelClass.getMethod("newInstance", Context::class.java)
                                 .invoke(null, applicationContext)
                             val processMethod = modelClass.getMethod("process", TensorBuffer::class.java)
                             val outputs = processMethod.invoke(modelInstance, inputFeature0)
@@ -469,7 +491,6 @@ class MainActivity : AppCompatActivity() {
                             val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
                             val result = tensorBuffer.floatArray
 
-                            // Close model
                             val closeMethod = modelClass.getMethod("close")
                             closeMethod.invoke(modelInstance)
 
@@ -487,78 +508,8 @@ class MainActivity : AppCompatActivity() {
                 return
             }
 
-            // Comprehensive debugging
-            android.util.Log.d("PlanktonDebug", "=== MODEL OUTPUT DEBUG ===")
-            android.util.Log.d("PlanktonDebug", "Total classes: ${confidences.size}")
-            android.util.Log.d("PlanktonDebug", "Raw output values (first 5):")
-            for (i in 0 until minOf(5, confidences.size)) {
-                android.util.Log.d("PlanktonDebug", "Class $i: ${confidences[i]}")
-            }
-
-            // Check if output is already probabilities or needs softmax
-            val sumConfidences = confidences.sum()
-            android.util.Log.d("PlanktonDebug", "Sum of all confidences: $sumConfidences")
-
-            val finalConfidences = if (sumConfidences > 0.99 && sumConfidences < 1.01) {
-                // Output sudah dalam bentuk probabilitas (sum ≈ 1.0)
-                android.util.Log.d("PlanktonDebug", "Using raw output (already probabilities)")
-                confidences
-            } else {
-                // Output masih berupa logits, perlu softmax
-                android.util.Log.d("PlanktonDebug", "Applying softmax to raw logits")
-                applySoftmax(confidences)
-            }
-
-            // Find max confidence
-            var maxPos = 0
-            var maxConfidence = 0f
-            for (i in finalConfidences.indices) {
-                if (finalConfidences[i] > maxConfidence) {
-                    maxConfidence = finalConfidences[i]
-                    maxPos = i
-                }
-            }
-
-            val classes = loadLabels(this)
-            android.util.Log.d("PlanktonDebug", "Predicted class index: $maxPos")
-            android.util.Log.d("PlanktonDebug", "Max confidence: $maxConfidence")
-            if (maxPos < classes.size) {
-                android.util.Log.d("PlanktonDebug", "Predicted class name: ${classes[maxPos]}")
-            }
-
-
-            if (maxPos < classes.size) {
-                // Store classification results for saving
-                currentClassificationResult = classes[maxPos]
-                currentConfidence = maxConfidence
-
-                result!!.text = classes[maxPos]
-
-                // Create sorted confidence pairs
-                val classConfidencePairs = mutableListOf<Pair<Int, Float>>()
-                for (i in finalConfidences.indices) {
-                    classConfidencePairs.add(Pair(i, finalConfidences[i]))
-                }
-
-                // Sort by confidence descending
-                classConfidencePairs.sortByDescending { it.second }
-
-                // Show top 3 predictions with model name
-                val top3 = classConfidencePairs.take(3)
-                var s = "Model: ${selectedModel.name}\nTop 3 Predictions:\n"
-                for ((index, conf) in top3) {
-                    if (index < classes.size) {
-                        s += String.format(Locale.getDefault(), "%s: %.1f%%\n", classes[index], conf * 100)
-                    }
-                }
-
-                confidence!!.text = s
-
-                // Enable save button after successful classification
-                saveButton?.isEnabled = true
-            } else {
-                showError("Error: Invalid classification result")
-            }
+            // Process results
+            processClassificationResults(confidences)
 
         } catch (e: Exception) {
             android.util.Log.e("PlanktonDebug", "Error in classifyImage", e)
@@ -567,22 +518,77 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
+     * Proses hasil klasifikasi dan update UI
+     */
+    private fun processClassificationResults(confidences: FloatArray) {
+        android.util.Log.d("PlanktonDebug", "=== MODEL OUTPUT DEBUG ===")
+        android.util.Log.d("PlanktonDebug", "Total classes: ${confidences.size}")
+
+        val sumConfidences = confidences.sum()
+        android.util.Log.d("PlanktonDebug", "Sum of all confidences: $sumConfidences")
+
+        val finalConfidences = if (sumConfidences > 0.99 && sumConfidences < 1.01) {
+            android.util.Log.d("PlanktonDebug", "Using raw output (already probabilities)")
+            confidences
+        } else {
+            android.util.Log.d("PlanktonDebug", "Applying softmax to raw logits")
+            applySoftmax(confidences)
+        }
+
+        var maxPos = 0
+        var maxConfidence = 0f
+        for (i in finalConfidences.indices) {
+            if (finalConfidences[i] > maxConfidence) {
+                maxConfidence = finalConfidences[i]
+                maxPos = i
+            }
+        }
+
+        val classes = loadLabels(this)
+        android.util.Log.d("PlanktonDebug", "Predicted class index: $maxPos")
+        android.util.Log.d("PlanktonDebug", "Max confidence: $maxConfidence")
+
+        if (maxPos < classes.size) {
+            currentClassificationResult = classes[maxPos]
+            currentConfidence = maxConfidence
+
+            result?.text = classes[maxPos]
+
+            val classConfidencePairs = mutableListOf<Pair<Int, Float>>()
+            for (i in finalConfidences.indices) {
+                classConfidencePairs.add(Pair(i, finalConfidences[i]))
+            }
+
+            classConfidencePairs.sortByDescending { it.second }
+
+            val top3 = classConfidencePairs.take(3)
+            var s = "Model: ${selectedModel.name}\nTop 3 Predictions:\n"
+            for ((index, conf) in top3) {
+                if (index < classes.size) {
+                    s += String.format(Locale.getDefault(), "%s: %.1f%%\n", classes[index], conf * 100)
+                }
+            }
+
+            confidence?.text = s
+            saveButton?.isEnabled = true
+        } else {
+            showError("Error: Invalid classification result")
+        }
+    }
+
+    /**
      * Apply softmax function to convert logits to probabilities
      */
     private fun applySoftmax(logits: FloatArray): FloatArray {
         val result = FloatArray(logits.size)
-
-        // Find max for numerical stability
         val maxLogit = logits.maxOrNull() ?: 0f
 
-        // Calculate exp(x - max) for all elements
         var sumExp = 0f
         for (i in logits.indices) {
             result[i] = kotlin.math.exp(logits[i] - maxLogit)
             sumExp += result[i]
         }
 
-        // Normalize
         for (i in result.indices) {
             result[i] = result[i] / sumExp
         }
@@ -591,96 +597,41 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * MobileNetV3Small preprocessing: Scales image to [-1, 1] range
-     * Uses tf.keras.applications.mobilenet_v3.preprocess_input equivalent
-     */
-    private fun preprocessImageForMobileNetV3(image: Bitmap): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
-        byteBuffer.order(ByteOrder.nativeOrder())
-
-        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
-        val intValues = IntArray(imageSize * imageSize)
-        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
-
-        android.util.Log.d("PlanktonDebug", "Using MobileNetV3 preprocessing: [-1, 1] normalization")
-
-        var pixel = 0
-        for (i in 0 until imageSize) {
-            for (j in 0 until imageSize) {
-                val value = intValues[pixel++]
-
-                // Extract RGB values
-                val red = (value shr 16) and 0xFF
-                val green = (value shr 8) and 0xFF
-                val blue = value and 0xFF
-
-                // MobileNetV3 preprocessing: normalize to [-1, 1]
-                // Formula: (pixel_value / 127.5) - 1.0
-                byteBuffer.putFloat((red / 127.5f) - 1.0f)
-                byteBuffer.putFloat((green / 127.5f) - 1.0f)
-                byteBuffer.putFloat((blue / 127.5f) - 1.0f)
-            }
-        }
-
-        byteBuffer.rewind()
-        return byteBuffer
-    }
-
-    /**
-     * MobileNetV3Small preprocessing with built-in preprocessing: Uses raw pixel values [0-255]
-     * For models that have built-in preprocessing layers and expect unnormalized input
+     * Preprocessing untuk MobileNetV3 dengan built-in preprocessing
      */
     private fun preprocessImageForMobileNetV3BuildIn(image: Bitmap): ByteBuffer {
         val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
         byteBuffer.order(ByteOrder.nativeOrder())
 
-        // Create properly scaled bitmap
         val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
-
         val intValues = IntArray(imageSize * imageSize)
         scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
 
         android.util.Log.d("PlanktonDebug", "Processing image for MobileNetV3 with built-in preprocessing")
-        android.util.Log.d("PlanktonDebug", "Image size: ${imageSize}x${imageSize}")
 
         var pixel = 0
-        for (i in 0 until imageSize) {
-            for (j in 0 until imageSize) {
+        for (y in 0 until imageSize) {
+            for (x in 0 until imageSize) {
                 val value = intValues[pixel++]
 
-                // Extract RGB values (Android uses ARGB format)
                 val red = (value shr 16) and 0xFF
                 val green = (value shr 8) and 0xFF
                 val blue = value and 0xFF
 
-                // MobileNetV3 dengan built-in preprocessing expects raw pixel values [0-255]
-                // TIDAK melakukan normalisasi karena model akan melakukannya secara internal
                 byteBuffer.putFloat(red.toFloat())
                 byteBuffer.putFloat(green.toFloat())
                 byteBuffer.putFloat(blue.toFloat())
             }
         }
 
-        android.util.Log.d("PlanktonDebug", "ByteBuffer filled with raw pixel values [0-255]")
-
-        // Reset position for reading
         byteBuffer.rewind()
-
         return byteBuffer
     }
 
     /**
-     * ResNetV2 preprocessing following tf.keras.applications.resnet_v2.preprocess_input
-     * Preprocesses a batch of images by scaling pixel values to [-1, 1] sample-wise.
-     *
-     * The inputs pixel values are scaled between -1 and 1, sample-wise using:
-     * normalized_pixel = (pixel / 127.5) - 1.0
-     *
-     * This is the official preprocessing for ResNetV2 models as documented in:
-     * https://www.tensorflow.org/api_docs/python/tf/keras/applications/resnet_v2/preprocess_input
+     * Preprocessing untuk ResNetV2 dengan normalisasi [-1, 1]
      */
     private fun preprocessImageForResNetV2(image: Bitmap): ByteBuffer {
-        val imageSize = 224
         val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
         byteBuffer.order(ByteOrder.nativeOrder())
 
@@ -688,21 +639,17 @@ class MainActivity : AppCompatActivity() {
         val intValues = IntArray(imageSize * imageSize)
         scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
 
-        android.util.Log.d("PlanktonDebug", "Using ResNetV2 preprocessing: tf.keras.applications.resnet_v2.preprocess_input - scaling to [-1, 1]")
+        android.util.Log.d("PlanktonDebug", "Using ResNetV2 preprocessing: scaling to [-1, 1]")
 
         var pixel = 0
-        for (i in 0 until imageSize) {
-            for (j in 0 until imageSize) {
+        for (y in 0 until imageSize) {
+            for (x in 0 until imageSize) {
                 val value = intValues[pixel++]
 
-                // Extract RGB values (0-255 range)
                 val red = (value shr 16) and 0xFF
                 val green = (value shr 8) and 0xFF
                 val blue = value and 0xFF
 
-                // ResNetV2 preprocessing: scale from [0, 255] to [-1, 1]
-                // Formula: (pixel / 127.5) - 1.0
-                // This ensures: 0 -> -1.0, 127.5 -> 0.0, 255 -> 1.0
                 byteBuffer.putFloat((red / 127.5f) - 1.0f)
                 byteBuffer.putFloat((green / 127.5f) - 1.0f)
                 byteBuffer.putFloat((blue / 127.5f) - 1.0f)
@@ -714,150 +661,60 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * EfficientNetV2 preprocessing: Rescales from [0, 255] to [0, 1]
-     * Uses tf.keras.applications.efficientnet_v2.preprocess_input equivalent
-     * Includes scaling without per-channel mean subtraction
-     */
-    private fun preprocessImageForEfficientNetV2(image: Bitmap): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
-        byteBuffer.order(ByteOrder.nativeOrder())
-
-        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
-        val intValues = IntArray(imageSize * imageSize)
-        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
-
-        android.util.Log.d("PlanktonDebug", "Using EfficientNetV2 preprocessing: [0, 1] normalization")
-
-        var pixel = 0
-        for (i in 0 until imageSize) {
-            for (j in 0 until imageSize) {
-                val value = intValues[pixel++]
-
-                // Extract RGB values
-                val red = (value shr 16) and 0xFF
-                val green = (value shr 8) and 0xFF
-                val blue = value and 0xFF
-
-                // EfficientNetV2 preprocessing: rescale to [0, 1]
-                // Formula: pixel_value / 255.0
-                byteBuffer.putFloat(red / 255.0f)
-                byteBuffer.putFloat(green / 255.0f)
-                byteBuffer.putFloat(blue / 255.0f)
-            }
-        }
-
-        byteBuffer.rewind()
-        return byteBuffer
-    }
-
-    /**
-     * EfficientNetV2 preprocessing with built-in preprocessing: Uses raw pixel values [0-255]
-     * For models that have built-in preprocessing layers and expect unnormalized input
+     * Preprocessing untuk EfficientNetV2 dengan built-in preprocessing
      */
     private fun preprocessImageForEfficientNetV2BuildIn(image: Bitmap): ByteBuffer {
         val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
         byteBuffer.order(ByteOrder.nativeOrder())
 
-        // Create properly scaled bitmap
         val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
-
         val intValues = IntArray(imageSize * imageSize)
         scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
 
         android.util.Log.d("PlanktonDebug", "Processing image for EfficientNetV2 with built-in preprocessing")
-        android.util.Log.d("PlanktonDebug", "Image size: ${imageSize}x${imageSize}")
 
         var pixel = 0
-        for (i in 0 until imageSize) {
-            for (j in 0 until imageSize) {
+        for (y in 0 until imageSize) {
+            for (x in 0 until imageSize) {
                 val value = intValues[pixel++]
 
-                // Extract RGB values (Android uses ARGB format)
                 val red = (value shr 16) and 0xFF
                 val green = (value shr 8) and 0xFF
                 val blue = value and 0xFF
 
-                // EfficientNetV2 dengan built-in preprocessing expects raw pixel values [0-255]
-                // TIDAK melakukan normalisasi karena model akan melakukannya secara internal
                 byteBuffer.putFloat(red.toFloat())
                 byteBuffer.putFloat(green.toFloat())
                 byteBuffer.putFloat(blue.toFloat())
             }
         }
 
-        android.util.Log.d("PlanktonDebug", "ByteBuffer filled with raw pixel values [0-255]")
-
-        // Reset position for reading
         byteBuffer.rewind()
-
         return byteBuffer
     }
 
     /**
-     * Fixed preprocessing that tries to match the exact preprocessing used during training
-     * @deprecated Use specific preprocessing functions for each model instead
+     * Tampilkan dialog pemilihan kamera
      */
-    private fun preprocessImageFixed(image: Bitmap): ByteBuffer {
-        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
-        byteBuffer.order(ByteOrder.nativeOrder())
-
-        // Create properly scaled bitmap
-        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
-
-        val intValues = IntArray(imageSize * imageSize)
-        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
-
-        android.util.Log.d("PlanktonDebug", "Processing image size: ${imageSize}x${imageSize}")
-
-        var pixel = 0
-        for (i in 0 until imageSize) {
-            for (j in 0 until imageSize) {
-                val value = intValues[pixel++]
-
-                // Extract RGB values (Android uses ARGB format)
-                val red = (value shr 16) and 0xFF
-                val green = (value shr 8) and 0xFF
-                val blue = value and 0xFF
-
-                // Try standard [0,1] normalization first
-                byteBuffer.putFloat(red / 255.0f)
-                byteBuffer.putFloat(green / 255.0f)
-                byteBuffer.putFloat(blue / 255.0f)
-            }
-        }
-
-        android.util.Log.d("PlanktonDebug", "ByteBuffer size: ${byteBuffer.capacity()}, position after fill: ${byteBuffer.position()}")
-
-        // Reset position for reading
-        byteBuffer.rewind()
-
-        return byteBuffer
-    }
-
     private fun showCameraSelectionDialog() {
         try {
-            val cameraManager = getSystemService(Context.CAMERA_SERVICE) as CameraManager
+            val cameraManager = getSystemService(CAMERA_SERVICE) as CameraManager
             val availableCameras = getAvailableCameras(cameraManager)
 
             if (availableCameras.isEmpty()) {
-                // Jika tidak ada kamera yang terdeteksi, gunakan kamera default
                 launchDefaultCamera()
                 return
             }
 
-            // Filter hanya kamera default dan USB eksternal
             val filteredCameras = availableCameras.filter { camera ->
-                camera.second == "Kamera Default" || camera.second == "Kamera USB Eksternal"
+                camera.second == "Kamera Default"
             }
 
             if (filteredCameras.size == 1) {
-                // Jika hanya ada satu pilihan, langsung buka
-                launchCameraWithId(filteredCameras[0].first)
+                launchDefaultCamera()
                 return
             }
 
             if (filteredCameras.isEmpty()) {
-                // Jika tidak ada kamera yang sesuai filter, gunakan default
                 launchDefaultCamera()
                 return
             }
@@ -867,20 +724,21 @@ class MainActivity : AppCompatActivity() {
             val builder = AlertDialog.Builder(this)
             builder.setTitle("Pilih Kamera")
                 .setIcon(R.drawable.ic_camera_capture)
-                .setItems(cameraNames) { dialog, which ->
-                    val selectedCameraId = filteredCameras[which].first
-                    launchCameraWithId(selectedCameraId)
+                .setItems(cameraNames) { _, _ ->
+                    launchDefaultCamera()
                 }
                 .setNegativeButton("Batal") { dialog, _ ->
                     dialog.dismiss()
                 }
                 .show()
-        } catch (e: Exception) {
-            // Jika terjadi error, gunakan kamera default
+        } catch (_: Exception) {
             launchDefaultCamera()
         }
     }
 
+    /**
+     * Dapatkan list kamera yang tersedia
+     */
     private fun getAvailableCameras(cameraManager: CameraManager): List<Pair<String, String>> {
         val cameras = mutableListOf<Pair<String, String>>()
 
@@ -891,30 +749,24 @@ class MainActivity : AppCompatActivity() {
                 val characteristics = cameraManager.getCameraCharacteristics(cameraId)
                 val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
 
-                // Hanya tambahkan kamera yang sesuai kriteria
                 when (facing) {
                     CameraCharacteristics.LENS_FACING_BACK -> {
-                        // Gunakan kamera belakang sebagai kamera default
                         cameras.add(Pair(cameraId, "Kamera Default"))
                     }
-                    CameraCharacteristics.LENS_FACING_EXTERNAL -> {
-                        // Tambahkan kamera USB eksternal
-                        cameras.add(Pair(cameraId, "Kamera USB Eksternal"))
-                    }
-                    // Abaikan kamera depan dan lainnya
                 }
             }
-        } catch (e: Exception) {
-            // Fallback untuk perangkat yang tidak mendukung Camera2 API
+        } catch (_: Exception) {
             cameras.add(Pair("0", "Kamera Default"))
         }
 
         return cameras
     }
 
+    /**
+     * Launch kamera default
+     */
     private fun launchDefaultCamera() {
         try {
-            // Create temporary file for full resolution capture
             val photoFile = createImageFile()
             currentPhotoUri = FileProvider.getUriForFile(
                 this,
@@ -931,34 +783,8 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun launchCameraWithId(cameraId: String) {
-        try {
-            // Create temporary file for full resolution capture
-            val photoFile = createImageFile()
-            currentPhotoUri = FileProvider.getUriForFile(
-                this,
-                "${applicationContext.packageName}.fileprovider",
-                photoFile
-            )
-
-            val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-            cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, currentPhotoUri)
-            cameraLauncher.launch(cameraIntent)
-
-            val cameraType = if (cameraId.contains("external") || (cameraId.toIntOrNull() ?: 0) > 1) {
-                "kamera USB eksternal"
-            } else {
-                "kamera default"
-            }
-
-            Toast.makeText(this, "Membuka $cameraType untuk foto resolusi penuh...", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            showError("Error launching camera: ${e.message}")
-        }
-    }
-
     /**
-     * Create temporary file for full resolution camera capture
+     * Buat file temporary untuk capture kamera
      */
     private fun createImageFile(): File {
         val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
@@ -968,7 +794,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Clean up temporary file after processing
+     * Hapus file temporary setelah diproses
      */
     private fun cleanupTempFile(uri: Uri) {
         try {
@@ -982,6 +808,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * Simpan gambar hasil klasifikasi ke galeri
+     */
     private fun saveImageToGallery() {
         if (currentBitmap == null || currentClassificationResult == null) {
             showError("Tidak ada gambar atau hasil klasifikasi untuk disimpan.")
@@ -993,61 +822,10 @@ class MainActivity : AppCompatActivity() {
             val fileName = "${currentClassificationResult}_${timeStamp}.png"
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Android 10 and above - use MediaStore API
-                val contentValues = ContentValues().apply {
-                    put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
-                    put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-                    put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/PlanktonDetection")
-                    put(MediaStore.Images.Media.IS_PENDING, 1)
-                }
-
-                val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
-
-                if (uri != null) {
-                    val outputStream: OutputStream? = contentResolver.openOutputStream(uri)
-                    outputStream?.use { stream ->
-                        currentBitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                    }
-
-                    // Clear the IS_PENDING flag
-                    contentValues.clear()
-                    contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
-                    contentResolver.update(uri, contentValues, null, null)
-
-                    showSuccessDialog(
-                        "Berhasil Disimpan",
-                        "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format(Locale.getDefault(), "%.1f%%", currentConfidence * 100)}"
-                    )
-                } else {
-                    showError("Gagal menyimpan gambar ke galeri.")
-                }
+                saveImageToGalleryModern(fileName)
             } else {
-                // Android 9 and below - use traditional file storage
-                val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
-                val planktonDir = File(picturesDir, "PlanktonDetection")
-
-                if (!planktonDir.exists()) {
-                    planktonDir.mkdirs()
-                }
-
-                val imageFile = File(planktonDir, fileName)
-                val outputStream = FileOutputStream(imageFile)
-
-                outputStream.use { stream ->
-                    currentBitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
-                }
-
-                // Notify media scanner about the new file
-                val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
-                mediaScanIntent.data = Uri.fromFile(imageFile)
-                sendBroadcast(mediaScanIntent)
-
-                showSuccessDialog(
-                    "Berhasil Disimpan",
-                    "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format(Locale.getDefault(), "%.1f%%", currentConfidence * 100)}"
-                )
+                saveImageToGalleryLegacy(fileName)
             }
-
         } catch (e: Exception) {
             android.util.Log.e("PlanktonDebug", "Error saving image to gallery", e)
             showError("Gagal menyimpan gambar: ${e.message}")
@@ -1055,23 +833,80 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Load high-quality image from URI without quality loss
+     * Simpan gambar ke galeri untuk Android 10+
+     */
+    private fun saveImageToGalleryModern(fileName: String) {
+        val contentValues = ContentValues().apply {
+            put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
+            put(MediaStore.Images.Media.MIME_TYPE, "image/png")
+            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/PlanktonDetection")
+            put(MediaStore.Images.Media.IS_PENDING, 1)
+        }
+
+        val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+
+        if (uri != null) {
+            val outputStream: OutputStream? = contentResolver.openOutputStream(uri)
+            outputStream?.use { stream ->
+                currentBitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
+            }
+
+            contentValues.clear()
+            contentValues.put(MediaStore.Images.Media.IS_PENDING, 0)
+            contentResolver.update(uri, contentValues, null, null)
+
+            showSuccessDialog(
+                "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format(Locale.getDefault(), "%.1f%%", currentConfidence * 100)}"
+            )
+        } else {
+            showError("Gagal menyimpan gambar ke galeri.")
+        }
+    }
+
+    /**
+     * Simpan gambar ke galeri untuk Android 9 dan bawah
+     */
+    private fun saveImageToGalleryLegacy(fileName: String) {
+        val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        val planktonDir = File(picturesDir, "PlanktonDetection")
+
+        if (!planktonDir.exists()) {
+            planktonDir.mkdirs()
+        }
+
+        val imageFile = File(planktonDir, fileName)
+        val outputStream = FileOutputStream(imageFile)
+
+        outputStream.use { stream ->
+            currentBitmap!!.compress(Bitmap.CompressFormat.PNG, 100, stream)
+        }
+
+        // Notify media scanner about the new file
+        val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+        mediaScanIntent.data = Uri.fromFile(imageFile)
+        sendBroadcast(mediaScanIntent)
+
+        showSuccessDialog(
+            "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format(Locale.getDefault(), "%.1f%%", currentConfidence * 100)}"
+        )
+    }
+
+    /**
+     * Load gambar berkualitas tinggi dari URI
      */
     private fun loadHighQualityImageFromUri(uri: Uri): Bitmap {
         return try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                // Use newer ImageDecoder for better quality
                 val source = android.graphics.ImageDecoder.createSource(contentResolver, uri)
                 android.graphics.ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
                     decoder.allocator = android.graphics.ImageDecoder.ALLOCATOR_SOFTWARE
                     decoder.isMutableRequired = true
                 }
             } else {
-                // Fallback for older versions with better options
                 val options = android.graphics.BitmapFactory.Options().apply {
                     inJustDecodeBounds = false
                     inPreferredConfig = Bitmap.Config.ARGB_8888
-                    inSampleSize = 1 // Don't downsample
+                    inSampleSize = 1
                     inMutable = true
                 }
                 val inputStream = contentResolver.openInputStream(uri)
@@ -1080,35 +915,28 @@ class MainActivity : AppCompatActivity() {
             }
         } catch (e: Exception) {
             android.util.Log.e("PlanktonDebug", "Error loading image from URI", e)
-            // Fallback to the deprecated method if others fail
             @Suppress("DEPRECATION")
             MediaStore.Images.Media.getBitmap(contentResolver, uri)
         }
     }
 
     /**
-     * Create high-quality square image without losing quality
-     * Using advanced filtering and processing for maximum sharpness
+     * Buat gambar persegi berkualitas tinggi untuk AI processing
      */
     private fun createHighQualitySquareImage(originalBitmap: Bitmap, targetSize: Int): Bitmap {
         val width = originalBitmap.width
         val height = originalBitmap.height
 
-        // Ensure we start with ARGB_8888 for best quality
         val sourceBitmap = if (originalBitmap.config != Bitmap.Config.ARGB_8888) {
             originalBitmap.copy(Bitmap.Config.ARGB_8888, false)
         } else {
             originalBitmap
         }
 
-        // Calculate the size of the square (use the smaller dimension)
         val squareSize = min(width, height)
-
-        // Calculate the starting coordinates for cropping (center crop)
         val xOffset = (width - squareSize) / 2
         val yOffset = (height - squareSize) / 2
 
-        // Create square bitmap by cropping from center with highest quality
         val squareBitmap = Bitmap.createBitmap(
             sourceBitmap,
             xOffset,
@@ -1117,73 +945,60 @@ class MainActivity : AppCompatActivity() {
             squareSize
         )
 
-        // If target size is same as square size, return as-is to avoid unnecessary scaling
         if (squareSize == targetSize) {
             return squareBitmap
         }
 
-        // Use Paint with anti-aliasing and filtering for best quality scaling
         val paint = android.graphics.Paint().apply {
             isAntiAlias = true
             isFilterBitmap = true
             isDither = true
         }
 
-        // Create target bitmap with best config
         val scaledBitmap = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888)
         val canvas = android.graphics.Canvas(scaledBitmap)
 
-        // Create rect for source and destination
         val srcRect = android.graphics.Rect(0, 0, squareSize, squareSize)
         val dstRect = android.graphics.Rect(0, 0, targetSize, targetSize)
 
-        // Draw with high-quality scaling
         canvas.drawBitmap(squareBitmap, srcRect, dstRect, paint)
 
         return scaledBitmap
     }
 
+    /**
+     * Setup navigation menu functionality
+     */
     private fun setupNavigationMenu() {
-        // Hide navigation menu by default
         navigationMenu?.visibility = View.GONE
 
-        // Toggle navigation menu visibility when menu button is clicked
         menuButton?.setOnClickListener {
             if (isNavigationMenuOpen) {
-                // Close menu
                 navigationMenu?.visibility = View.GONE
                 isNavigationMenuOpen = false
             } else {
-                // Open menu
                 navigationMenu?.visibility = View.VISIBLE
                 isNavigationMenuOpen = true
             }
         }
 
-        // Set up navigation options click listeners
         settingsOption?.setOnClickListener {
-            // Close menu after selection
             navigationMenu?.visibility = View.GONE
             isNavigationMenuOpen = false
-            // Navigate to settings screen
             val intent = Intent(this, SettingsActivity::class.java)
             startActivity(intent)
         }
 
         aboutOption?.setOnClickListener {
-            // Close menu after selection
             navigationMenu?.visibility = View.GONE
             isNavigationMenuOpen = false
-            // Navigate to about screen
             val intent = Intent(this, AboutActivity::class.java)
             startActivity(intent)
         }
 
         documentationOption?.setOnClickListener {
-            // Close menu after selection
             navigationMenu?.visibility = View.GONE
             isNavigationMenuOpen = false
-            // Navigate to documentation screen
             val intent = Intent(this, DocumentationActivity::class.java)
             startActivity(intent)
         }
