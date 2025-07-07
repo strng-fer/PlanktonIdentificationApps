@@ -7,6 +7,7 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AlertDialog
 
 /**
  * Activity untuk menampilkan informasi tentang aplikasi
@@ -53,7 +54,7 @@ class AboutActivity : AppCompatActivity() {
         }
 
         developerContact.setOnClickListener {
-            openWebsite(DEVELOPER_CONTACT_URL)
+            showDeveloperInfoDialog()
         }
 
         githubLink.setOnClickListener {
@@ -96,6 +97,27 @@ class AboutActivity : AppCompatActivity() {
         if (intent.resolveActivity(packageManager) != null) {
             startActivity(intent)
         }
+    }
+
+    /**
+     * Tampilkan dialog informasi developer
+     */
+    private fun showDeveloperInfoDialog() {
+        val dialogBuilder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_developer_info, null)
+
+        dialogBuilder.setView(dialogView)
+        dialogBuilder.setCancelable(true)
+
+        val dialog = dialogBuilder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val closeButton = dialogView.findViewById<android.widget.Button>(R.id.closeButton)
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     companion object {

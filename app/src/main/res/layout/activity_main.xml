@@ -596,7 +596,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Dikembangkan oleh"
-                    android:textSize="12sp"
+                    android:textSize="10sp"
                     android:textColor="#666666"
                     android:layout_marginBottom="4dp" />
 
@@ -604,7 +604,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Pusat Riset Sains Data dan Informasi"
-                    android:textSize="14sp"
+                    android:textSize="11sp"
                     android:textColor="#1565C0"
                     android:textStyle="bold"
                     android:gravity="center"
@@ -614,7 +614,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="© 2025 Badan Riset dan Inovasi Nasional"
-                    android:textSize="11sp"
+                    android:textSize="10sp"
                     android:textColor="#888888"
                     android:gravity="center" />
 

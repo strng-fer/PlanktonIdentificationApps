@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/card_background"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginEnd="8dp"
+            android:src="@mipmap/icon_only"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tim Pengembang"
+            android:textColor="@color/primary_text_color"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <!-- Data Scientist Intern Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/card_background"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Data Scientist Magang di BRIN"
+            android:textColor="@color/accent_color"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="Feryadi Yulius"
+            android:textColor="@color/primary_text_color"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Email: feryadi.122450087@student.itera.ac.id"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="Seorang mahasiswa Data Science di Institut Teknologi Sumatera yang memiliki passion di computer vision"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="13sp"
+            android:lineSpacingExtra="2dp" />
+
+    </LinearLayout>
+
+    <!-- Second Developer Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/card_background"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Data Scientist Magang di BRIN"
+            android:textColor="@color/accent_color"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="Raid Muhammad Naufal"
+            android:textColor="@color/primary_text_color"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Email: raid122450027@student.itera.ac.id"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="Seorang mahasiswa Data Science di Institut Teknologi Sumatera yang memiliki passion di computer vision"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="13sp"
+            android:lineSpacingExtra="2dp" />
+
+    </LinearLayout>
+
+    <!-- BRIN Supervisor Section -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:background="@drawable/card_background"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Pembimbing BRIN"
+            android:textColor="@color/accent_color"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dr. Esa Prakasa, M.T"
+            android:textColor="@color/primary_text_color"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Email: esap001@brin.go.id"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="12sp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="4dp"
+            android:text="Peneliti Utama dan Kepala Pusat Riset Sains Data dan Informasi, BRIN"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="13sp"
+            android:lineSpacingExtra="2dp" />
+
+
+    </LinearLayout>
+
+    <!-- Close Button -->
+    <Button
+        android:id="@+id/closeButton"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/button_primary"
+        android:text="Tutup"
+        android:textColor="@color/save_button_text_color"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+</LinearLayout>
