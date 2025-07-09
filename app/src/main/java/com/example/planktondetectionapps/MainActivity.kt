@@ -50,6 +50,7 @@ class MainActivity : AppCompatActivity() {
      */
     enum class ModelType {
         MOBILENET_V3_SMALL,
+        MOBILENET_V3_LARGE,
         RESNET50_V2,
         EFFICIENTNET_V2_B0
     }
@@ -71,6 +72,7 @@ class MainActivity : AppCompatActivity() {
     private var option1: LinearLayout? = null
     private var option2: LinearLayout? = null
     private var option3: LinearLayout? = null
+    private var option4: LinearLayout? = null
 
     // Navigation menu UI elements
     private var menuButton: android.widget.ImageButton? = null
@@ -136,6 +138,7 @@ class MainActivity : AppCompatActivity() {
         option1 = findViewById(R.id.option1)
         option2 = findViewById(R.id.option2)
         option3 = findViewById(R.id.option3)
+        option4 = findViewById(R.id.option4)
 
         // Initialize navigation menu elements
         menuButton = findViewById(R.id.menuButton)
@@ -184,12 +187,18 @@ class MainActivity : AppCompatActivity() {
         }
 
         option2?.setOnClickListener {
-            selectModel(ModelType.RESNET50_V2, "ResNet50 V2 (300 Data)", "Model menengah dengan akurasi tinggi")
+            selectModel(ModelType.MOBILENET_V3_LARGE, "MobileNetV3 Large", "Model ringan dengan performa cepat dan lebih akurat")
         }
 
         option3?.setOnClickListener {
+            selectModel(ModelType.RESNET50_V2, "ResNet50 V2 (300 Data)", "Model menengah dengan akurasi tinggi")
+        }
+
+        option4?.setOnClickListener {
             selectModel(ModelType.EFFICIENTNET_V2_B0, "EfficientNet V2 B0 (300 Data)", "Model terbaru dengan efisiensi optimal")
         }
+
+
     }
 
     /**
@@ -420,6 +429,7 @@ class MainActivity : AppCompatActivity() {
             // Choose preprocessing based on model type
             val byteBuffer = when (selectedModel) {
                 ModelType.MOBILENET_V3_SMALL -> preprocessImageForMobileNetV3BuildIn(image)
+                ModelType.MOBILENET_V3_LARGE -> preprocessImageForMobileNetV3BuildIn(image)
                 ModelType.RESNET50_V2 -> preprocessImageForResNetV2(image)
                 ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetV2BuildIn(image)
             }
@@ -441,6 +451,21 @@ class MainActivity : AppCompatActivity() {
                             return
                         }
                     }
+
+                    ModelType.MOBILENET_V3_LARGE -> {
+                        try {
+                            val model = com.example.planktondetectionapps.ml.MobileNetV3LargeWith300Data.newInstance(applicationContext)
+                            val outputs = model.process(inputFeature0)
+                            val result = outputs.outputFeature0AsTensorBuffer.floatArray
+                            model.close()
+                            result
+                        } catch (e: Exception) {
+                            android.util.Log.e("PlanktonDebug", "MobileNetV3Small model not found", e)
+                            showError("Model MobileNetV3Large tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                            return
+                        }
+                    }
+
                     ModelType.RESNET50_V2 -> {
                         try {
                             val modelClass = try {

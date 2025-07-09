@@ -397,7 +397,7 @@
                                 android:id="@+id/selectedModelName"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="MobileNetV3 Small"
+                                android:text="MobileNetV3 Small (300 Data)"
                                 android:textSize="16sp"
                                 android:textColor="#424242"
                                 android:textStyle="bold" />
@@ -456,7 +456,7 @@
                                 android:layout_height="24dp"
                                 android:src="@drawable/ic_model_ai"
                                 android:layout_marginEnd="12dp"
-                                app:tint="#4CAF50" />
+                                app:tint="#2196F3" />
 
                             <LinearLayout
                                 android:layout_width="0dp"
@@ -467,7 +467,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="MobileNetV3 Small"
+                                    android:text="MobileNetV3 Small (300 Data)"
                                     android:textSize="15sp"
                                     android:textColor="#424242"
                                     android:textStyle="bold" />
@@ -484,9 +484,55 @@
 
                         </LinearLayout>
 
-                        <!-- Option 2: ResNet50 V2 -->
+                        <!-- Option 2: MobileNetv3 Large -->
                         <LinearLayout
                             android:id="@+id/option2"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:background="?android:attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:minHeight="56dp">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/ic_model_ai"
+                                android:layout_marginEnd="12dp"
+                                app:tint="#4CAF50" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="MobileNetV3 Large (300 Data)"
+                                    android:textSize="15sp"
+                                    android:textColor="#424242"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Model ringan dengan performa tinggi dan akurasi lebih baik"
+                                    android:textSize="11sp"
+                                    android:textColor="#666666"
+                                    android:layout_marginTop="2dp" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <!-- Option 3: ResNet50 V2 -->
+                        <LinearLayout
+                            android:id="@+id/option3"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
@@ -530,9 +576,9 @@
 
                         </LinearLayout>
 
-                        <!-- Option 3: EfficientNet V2 B0 -->
+                        <!-- Option 4: EfficientNet V2 B0 -->
                         <LinearLayout
-                            android:id="@+id/option3"
+                            android:id="@+id/option4"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
