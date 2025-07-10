@@ -52,7 +52,9 @@ class MainActivity : AppCompatActivity() {
         MOBILENET_V3_SMALL,
         MOBILENET_V3_LARGE,
         RESNET50_V2,
-        EFFICIENTNET_V2_B0
+        RESNET101_V2,
+        EFFICIENTNET_V2_B0,
+
     }
 
     // UI Components
@@ -73,6 +75,7 @@ class MainActivity : AppCompatActivity() {
     private var option2: LinearLayout? = null
     private var option3: LinearLayout? = null
     private var option4: LinearLayout? = null
+    private var option5: LinearLayout? = null
 
     // Navigation menu UI elements
     private var menuButton: android.widget.ImageButton? = null
@@ -139,6 +142,7 @@ class MainActivity : AppCompatActivity() {
         option2 = findViewById(R.id.option2)
         option3 = findViewById(R.id.option3)
         option4 = findViewById(R.id.option4)
+        option5 = findViewById(R.id.option5)
 
         // Initialize navigation menu elements
         menuButton = findViewById(R.id.menuButton)
@@ -195,6 +199,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         option4?.setOnClickListener {
+            selectModel(ModelType.RESNET101_V2, "ResNet101 V2 (300 Data)", "Model tinggi dengan keakuratan sangat tinggi")
+        }
+
+        option5?.setOnClickListener {
             selectModel(ModelType.EFFICIENTNET_V2_B0, "EfficientNet V2 B0 (300 Data)", "Model terbaru dengan efisiensi optimal")
         }
 
@@ -431,6 +439,7 @@ class MainActivity : AppCompatActivity() {
                 ModelType.MOBILENET_V3_SMALL -> preprocessImageForMobileNetV3BuildIn(image)
                 ModelType.MOBILENET_V3_LARGE -> preprocessImageForMobileNetV3BuildIn(image)
                 ModelType.RESNET50_V2 -> preprocessImageForResNetV2(image)
+                ModelType.RESNET101_V2 -> preprocessImageForResNetV2(image)
                 ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetV2BuildIn(image)
             }
             inputFeature0.loadBuffer(byteBuffer)
@@ -496,6 +505,38 @@ class MainActivity : AppCompatActivity() {
                             return
                         }
                     }
+
+                    ModelType.RESNET101_V2 -> {
+                        try {
+                            val modelClass = try {
+                                Class.forName("com.example.planktondetectionapps.ml.ResNet101V2")
+                            } catch (_: ClassNotFoundException) {
+                                try {
+                                    Class.forName("com.example.planktondetectionapps.ml.ResNet101V2with300Data")
+                                } catch (_: ClassNotFoundException) {
+                                    Class.forName("com.example.planktondetectionapps.ml.Resnet101v2")
+                                }
+                            }
+
+                            val modelInstance = modelClass.getMethod("newInstance", Context::class.java)
+                                .invoke(null, applicationContext)
+                            val processMethod = modelClass.getMethod("process", TensorBuffer::class.java)
+                            val outputs = processMethod.invoke(modelInstance, inputFeature0)
+                            val outputMethod = outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
+                            val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
+                            val result = tensorBuffer.floatArray
+
+                            val closeMethod = modelClass.getMethod("close")
+                            closeMethod.invoke(modelInstance)
+
+                            result
+                        } catch (e: Exception) {
+                            android.util.Log.e("PlanktonDebug", "ResNet101V2 model not found", e)
+                            showError("Model ResNet101V2 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                            return
+                        }
+                    }
+
                     ModelType.EFFICIENTNET_V2_B0 -> {
                         try {
                             val modelClass = try {

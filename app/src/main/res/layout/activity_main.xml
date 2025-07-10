@@ -576,9 +576,56 @@
 
                         </LinearLayout>
 
-                        <!-- Option 4: EfficientNet V2 B0 -->
+
+                        <!-- Option 4: ResNet101 V2 -->
                         <LinearLayout
                             android:id="@+id/option4"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:padding="16dp"
+                            android:background="?android:attr/selectableItemBackground"
+                            android:clickable="true"
+                            android:focusable="true"
+                            android:gravity="center_vertical"
+                            android:minHeight="56dp">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/ic_model_ai"
+                                android:layout_marginEnd="12dp"
+                                app:tint="#8BC34A" />
+
+                            <LinearLayout
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="ResNet50 V2 (300 Data)"
+                                    android:textSize="15sp"
+                                    android:textColor="#424242"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:text="Model menengah dengan akurasi tinggi"
+                                    android:textSize="11sp"
+                                    android:textColor="#666666"
+                                    android:layout_marginTop="2dp" />
+
+                            </LinearLayout>
+
+                        </LinearLayout>
+
+                        <!-- Option 5: EfficientNet V2 B0 -->
+                        <LinearLayout
+                            android:id="@+id/option5"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
