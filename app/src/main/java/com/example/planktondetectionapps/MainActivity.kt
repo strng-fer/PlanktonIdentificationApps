@@ -53,6 +53,7 @@ class MainActivity : AppCompatActivity() {
         MOBILENET_V3_LARGE,
         RESNET50_V2,
         RESNET101_V2,
+        EFFICIENTNET_V1_B0,
         EFFICIENTNET_V2_B0,
 
     }
@@ -76,6 +77,7 @@ class MainActivity : AppCompatActivity() {
     private var option3: LinearLayout? = null
     private var option4: LinearLayout? = null
     private var option5: LinearLayout? = null
+    private var option6: LinearLayout? = null
 
     // Navigation menu UI elements
     private var menuButton: android.widget.ImageButton? = null
@@ -143,6 +145,7 @@ class MainActivity : AppCompatActivity() {
         option3 = findViewById(R.id.option3)
         option4 = findViewById(R.id.option4)
         option5 = findViewById(R.id.option5)
+        option6 = findViewById(R.id.option6)
 
         // Initialize navigation menu elements
         menuButton = findViewById(R.id.menuButton)
@@ -203,6 +206,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         option5?.setOnClickListener {
+            selectModel(ModelType.EFFICIENTNET_V1_B0, "EfficientNet V1 B0 (300 Data)", "Model dengan efisiensi optimal")
+        }
+
+        option6?.setOnClickListener {
             selectModel(ModelType.EFFICIENTNET_V2_B0, "EfficientNet V2 B0 (300 Data)", "Model terbaru dengan efisiensi optimal")
         }
 
@@ -440,7 +447,8 @@ class MainActivity : AppCompatActivity() {
                 ModelType.MOBILENET_V3_LARGE -> preprocessImageForMobileNetV3BuildIn(image)
                 ModelType.RESNET50_V2 -> preprocessImageForResNetV2(image)
                 ModelType.RESNET101_V2 -> preprocessImageForResNetV2(image)
-                ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetV2BuildIn(image)
+                ModelType.EFFICIENTNET_V1_B0 -> preprocessImageForEfficientNetBuildIn(image)
+                ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetBuildIn(image)
             }
             inputFeature0.loadBuffer(byteBuffer)
 
@@ -533,6 +541,37 @@ class MainActivity : AppCompatActivity() {
                         } catch (e: Exception) {
                             android.util.Log.e("PlanktonDebug", "ResNet101V2 model not found", e)
                             showError("Model ResNet101V2 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                            return
+                        }
+                    }
+
+                    ModelType.EFFICIENTNET_V1_B0 -> {
+                        try {
+                            val modelClass = try {
+                                Class.forName("com.example.planktondetectionapps.ml.EfficientNetV1")
+                            } catch (_: ClassNotFoundException) {
+                                try {
+                                    Class.forName("com.example.planktondetectionapps.ml.EfficientNetV1with300Data")
+                                } catch (_: ClassNotFoundException) {
+                                    Class.forName("com.example.planktondetectionapps.ml.Efficientnetv1")
+                                }
+                            }
+
+                            val modelInstance = modelClass.getMethod("newInstance", Context::class.java)
+                                .invoke(null, applicationContext)
+                            val processMethod = modelClass.getMethod("process", TensorBuffer::class.java)
+                            val outputs = processMethod.invoke(modelInstance, inputFeature0)
+                            val outputMethod = outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
+                            val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
+                            val result = tensorBuffer.floatArray
+
+                            val closeMethod = modelClass.getMethod("close")
+                            closeMethod.invoke(modelInstance)
+
+                            result
+                        } catch (e: Exception) {
+                            android.util.Log.e("PlanktonDebug", "EfficientNetV1B0 model not found", e)
+                            showError("Model EfficientNetV1B0 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
                             return
                         }
                     }
@@ -729,7 +768,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * Preprocessing untuk EfficientNetV2 dengan built-in preprocessing
      */
-    private fun preprocessImageForEfficientNetV2BuildIn(image: Bitmap): ByteBuffer {
+    private fun preprocessImageForEfficientNetBuildIn(image: Bitmap): ByteBuffer {
         val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
         byteBuffer.order(ByteOrder.nativeOrder())
 
