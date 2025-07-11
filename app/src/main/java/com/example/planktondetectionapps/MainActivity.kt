@@ -55,7 +55,9 @@ class MainActivity : AppCompatActivity() {
         RESNET101_V2,
         EFFICIENTNET_V1_B0,
         EFFICIENTNET_V2_B0,
-
+        CONVNEXT_TINY,
+        DENSENET121,
+        INCEPTION_V3
     }
 
     // UI Components
@@ -78,6 +80,9 @@ class MainActivity : AppCompatActivity() {
     private var option4: LinearLayout? = null
     private var option5: LinearLayout? = null
     private var option6: LinearLayout? = null
+    private var option7: LinearLayout? = null
+    private var option8: LinearLayout? = null
+    private var option9: LinearLayout? = null
 
     // Navigation menu UI elements
     private var menuButton: android.widget.ImageButton? = null
@@ -146,6 +151,9 @@ class MainActivity : AppCompatActivity() {
         option4 = findViewById(R.id.option4)
         option5 = findViewById(R.id.option5)
         option6 = findViewById(R.id.option6)
+        option7 = findViewById(R.id.option7)
+        option8 = findViewById(R.id.option8)
+        option9 = findViewById(R.id.option9)
 
         // Initialize navigation menu elements
         menuButton = findViewById(R.id.menuButton)
@@ -213,7 +221,17 @@ class MainActivity : AppCompatActivity() {
             selectModel(ModelType.EFFICIENTNET_V2_B0, "EfficientNet V2 B0 (300 Data)", "Model terbaru dengan efisiensi optimal")
         }
 
+        option7?.setOnClickListener {
+            selectModel(ModelType.CONVNEXT_TINY, "ConvNext Tiny", "Model modern dengan arsitektur ConvNext")
+        }
 
+        option8?.setOnClickListener {
+            selectModel(ModelType.DENSENET121, "DenseNet121", "Model dengan koneksi dense yang efisien")
+        }
+
+        option9?.setOnClickListener {
+            selectModel(ModelType.INCEPTION_V3, "Inception V3", "Model dengan arsitektur Inception yang powerful")
+        }
     }
 
     /**
@@ -449,6 +467,9 @@ class MainActivity : AppCompatActivity() {
                 ModelType.RESNET101_V2 -> preprocessImageForResNetV2(image)
                 ModelType.EFFICIENTNET_V1_B0 -> preprocessImageForEfficientNetBuildIn(image)
                 ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetBuildIn(image)
+                ModelType.CONVNEXT_TINY -> preprocessImageForConvNext(image)
+                ModelType.DENSENET121 -> preprocessImageForDenseNet(image)
+                ModelType.INCEPTION_V3 -> preprocessImageForInception(image)
             }
             inputFeature0.loadBuffer(byteBuffer)
 
@@ -603,6 +624,48 @@ class MainActivity : AppCompatActivity() {
                         } catch (e: Exception) {
                             android.util.Log.e("PlanktonDebug", "EfficientNetV2B0 model not found", e)
                             showError("Model EfficientNetV2B0 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                            return
+                        }
+                    }
+
+                    ModelType.CONVNEXT_TINY -> {
+                        try {
+                            val model = com.example.planktondetectionapps.ml.ConvNeXtTinywith300Data.newInstance(applicationContext)
+                            val outputs = model.process(inputFeature0)
+                            val result = outputs.outputFeature0AsTensorBuffer.floatArray
+                            model.close()
+                            result
+                        } catch (e: Exception) {
+                            android.util.Log.e("PlanktonDebug", "ConvNextTiny model not found", e)
+                            showError("Model ConvNextTiny tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                            return
+                        }
+                    }
+
+                    ModelType.DENSENET121 -> {
+                        try {
+                            val model = com.example.planktondetectionapps.ml.DenseNet121with300Data.newInstance(applicationContext)
+                            val outputs = model.process(inputFeature0)
+                            val result = outputs.outputFeature0AsTensorBuffer.floatArray
+                            model.close()
+                            result
+                        } catch (e: Exception) {
+                            android.util.Log.e("PlanktonDebug", "DenseNet121 model not found", e)
+                            showError("Model DenseNet121 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                            return
+                        }
+                    }
+
+                    ModelType.INCEPTION_V3 -> {
+                        try {
+                            val model = com.example.planktondetectionapps.ml.InceptionV3with300Data.newInstance(applicationContext)
+                            val outputs = model.process(inputFeature0)
+                            val result = outputs.outputFeature0AsTensorBuffer.floatArray
+                            model.close()
+                            result
+                        } catch (e: Exception) {
+                            android.util.Log.e("PlanktonDebug", "InceptionV3 model not found", e)
+                            showError("Model InceptionV3 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
                             return
                         }
                     }
@@ -790,6 +853,102 @@ class MainActivity : AppCompatActivity() {
                 byteBuffer.putFloat(red.toFloat())
                 byteBuffer.putFloat(green.toFloat())
                 byteBuffer.putFloat(blue.toFloat())
+            }
+        }
+
+        byteBuffer.rewind()
+        return byteBuffer
+    }
+
+    /**
+     * Preprocessing untuk ConvNext dengan normalisasi [-1, 1]
+     */
+    private fun preprocessImageForConvNext(image: Bitmap): ByteBuffer {
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
+        val intValues = IntArray(imageSize * imageSize)
+        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
+
+        android.util.Log.d("PlanktonDebug", "Using ConvNext preprocessing: scaling to [-1, 1]")
+
+        var pixel = 0
+        for (y in 0 until imageSize) {
+            for (x in 0 until imageSize) {
+                val value = intValues[pixel++]
+
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                byteBuffer.putFloat((red / 127.5f) - 1.0f)
+                byteBuffer.putFloat((green / 127.5f) - 1.0f)
+                byteBuffer.putFloat((blue / 127.5f) - 1.0f)
+            }
+        }
+
+        byteBuffer.rewind()
+        return byteBuffer
+    }
+
+    /**
+     * Preprocessing untuk DenseNet dengan normalisasi [-1, 1]
+     */
+    private fun preprocessImageForDenseNet(image: Bitmap): ByteBuffer {
+        val byteBuffer = ByteBuffer.allocateDirect(4 * imageSize * imageSize * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        val scaledBitmap = Bitmap.createScaledBitmap(image, imageSize, imageSize, true)
+        val intValues = IntArray(imageSize * imageSize)
+        scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
+
+        android.util.Log.d("PlanktonDebug", "Using DenseNet preprocessing: scaling to [-1, 1]")
+
+        var pixel = 0
+        for (y in 0 until imageSize) {
+            for (x in 0 until imageSize) {
+                val value = intValues[pixel++]
+
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                byteBuffer.putFloat((red / 127.5f) - 1.0f)
+                byteBuffer.putFloat((green / 127.5f) - 1.0f)
+                byteBuffer.putFloat((blue / 127.5f) - 1.0f)
+            }
+        }
+
+        byteBuffer.rewind()
+        return byteBuffer
+    }
+
+    /**
+     * Preprocessing untuk Inception dengan ukuran tetap 299x299
+     */
+    private fun preprocessImageForInception(image: Bitmap): ByteBuffer {
+        val byteBuffer = ByteBuffer.allocateDirect(4 * 299 * 299 * 3)
+        byteBuffer.order(ByteOrder.nativeOrder())
+
+        val scaledBitmap = Bitmap.createScaledBitmap(image, 299, 299, true)
+        val intValues = IntArray(299 * 299)
+        scaledBitmap.getPixels(intValues, 0, 299, 0, 0, 299, 299)
+
+        android.util.Log.d("PlanktonDebug", "Processing image for Inception with fixed size 299x299")
+
+        var pixel = 0
+        for (y in 0 until 299) {
+            for (x in 0 until 299) {
+                val value = intValues[pixel++]
+
+                val red = (value shr 16) and 0xFF
+                val green = (value shr 8) and 0xFF
+                val blue = value and 0xFF
+
+                byteBuffer.putFloat((red / 127.5f) - 1.0f)
+                byteBuffer.putFloat((green / 127.5f) - 1.0f)
+                byteBuffer.putFloat((blue / 127.5f) - 1.0f)
             }
         }
 
