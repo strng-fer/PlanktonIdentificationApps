@@ -147,7 +147,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Dokumentasi Plankton"
+                    android:text="Galeri Plankton"
                     android:textSize="16sp"
                     android:textColor="#424242" />
 
@@ -169,30 +169,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
-
-            <!-- Header Section (Only Description) -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="24dp"
-                android:background="@drawable/card_background"
-                android:elevation="4dp"
-                android:orientation="vertical"
-                android:padding="20dp">
-
-                <!-- Deskripsi Aplikasi -->
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_gravity="center_horizontal"
-                    android:gravity="center"
-                    android:lineSpacingExtra="4dp"
-                    android:text="Aplikasi untuk melakukan klasifikasi jenis fitoplankton yang diambil dari kamera atau galeri secara langsung menggunakan teknologi Deep Learning."
-                    android:textColor="#666666"
-                    android:textSize="14sp" />
-
-            </LinearLayout>
-
             <!-- Preview and Results Section (Combined) -->
             <LinearLayout
                 android:layout_width="match_parent"

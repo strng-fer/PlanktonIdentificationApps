@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp"
+    android:background="@drawable/card_background">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <!-- Plankton Image -->
+        <ImageView
+            android:id="@+id/planktonImage"
+            android:layout_width="match_parent"
+            android:layout_height="200dp"
+            android:layout_marginBottom="12dp"
+            android:scaleType="centerCrop"
+            android:background="@color/secondary_text_color"
+            android:src="@drawable/ic_microscope" />
+
+        <!-- Plankton Name -->
+        <TextView
+            android:id="@+id/planktonName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:text="Nama Plankton"
+            android:textColor="@color/primary_text_color"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center" />
+
+        <!-- Plankton Description -->
+        <TextView
+            android:id="@+id/planktonDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Deskripsi plankton akan ditampilkan di sini"
+            android:textColor="@color/secondary_text_color"
+            android:textSize="14sp"
+            android:lineSpacingExtra="4dp"
+            android:justificationMode="inter_word" />
+
+        <!-- Sample Images Label -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:layout_marginBottom="8dp"
+            android:text="Contoh Gambar:"
+            android:textColor="@color/primary_text_color"
+            android:textSize="14sp"
+            android:textStyle="bold" />
+
+        <!-- Sample Images Grid -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center">
+
+            <ImageView
+                android:id="@+id/sampleImage1"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp"
+                android:scaleType="centerCrop"
+                android:background="@color/secondary_text_color"
+                android:src="@drawable/ic_microscope" />
+
+            <ImageView
+                android:id="@+id/sampleImage2"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp"
+                android:scaleType="centerCrop"
+                android:background="@color/secondary_text_color"
+                android:src="@drawable/ic_microscope" />
+
+            <ImageView
+                android:id="@+id/sampleImage3"
+                android:layout_width="60dp"
+                android:layout_height="60dp"
+                android:layout_margin="4dp"
+                android:scaleType="centerCrop"
+                android:background="@color/secondary_text_color"
+                android:src="@drawable/ic_microscope" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
