@@ -6,8 +6,8 @@ package com.example.planktondetectionapps
 data class PlanktonInfo(
     val name: String,
     val description: String,
-    val classification: String, // Klasifikasi plankton (Diatom, Dinoflagellata, dll)
-    val mainImage: Int = R.drawable.ic_microscope, // Gambar utama
+    val classification: String = "Diatom", // Klasifikasi plankton (Diatom, Dinoflagellata, dll)
+    val imageResource: Int = R.drawable.ic_microscope, // Gambar utama
     val sampleImages: List<Int> = listOf(
         R.drawable.ic_microscope,
         R.drawable.ic_microscope,
