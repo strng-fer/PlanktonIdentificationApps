@@ -139,6 +139,34 @@ class MainActivity : AppCompatActivity() {
         galleryButton = findViewById(R.id.galleryButton)
         saveButton = findViewById(R.id.saveButton)
 
+        // Setup click listener untuk result TextView
+        result?.setOnClickListener {
+            if (!currentClassificationResult.isNullOrEmpty()) {
+                PlanktonInfoManager.showPlanktonInfoPopup(this, currentClassificationResult!!)
+            }
+        }
+
+        // Membuat result TextView terlihat clickable dengan styling yang tepat
+        result?.setTextColor(ContextCompat.getColor(this, android.R.color.holo_blue_dark))
+        result?.setPadding(12, 8, 12, 8)
+        result?.isClickable = true
+        result?.isFocusable = true
+
+        // Tambahkan visual hint bahwa text bisa diklik
+        result?.setOnTouchListener { view, event ->
+            when (event.action) {
+                android.view.MotionEvent.ACTION_DOWN -> {
+                    view.alpha = 0.7f
+                    false
+                }
+                android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
+                    view.alpha = 1.0f
+                    false
+                }
+                else -> false
+            }
+        }
+
         // Initialize custom dropdown elements
         customDropdownContainer = findViewById(R.id.customDropdownContainer)
         dropdownOptions = findViewById(R.id.dropdownOptions)
