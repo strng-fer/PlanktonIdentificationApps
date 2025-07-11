@@ -137,7 +137,7 @@
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:text="Deteksi plankton dengan 3 arsitektur model Deep Learning berbeda (MobileNet, ResNet, EfficientNet)"
+                    android:text="Deteksi plankton dengan 9 arsitektur model Deep Learning berbeda (MobileNetV3, ResNet50V2, ResNet101V2, EfficientNetV1, EfficientNetV2, ConvNext, DenseNet121, InceptionV3)"
                     android:textColor="@color/secondary_text_color"
                     android:textSize="14sp" />
 
