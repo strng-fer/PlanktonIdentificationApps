@@ -173,31 +173,32 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:background="@drawable/card_background"
-                android:padding="20dp"
                 android:layout_marginBottom="24dp"
-                android:elevation="2dp">
+                android:background="@drawable/card_background"
+                android:elevation="2dp"
+                android:orientation="vertical"
+                android:padding="20dp">
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginBottom="16dp"
                     android:text="Preview Gambar"
-                    android:textSize="18sp"
-                    android:textStyle="bold"
                     android:textColor="#424242"
-                    android:layout_marginBottom="16dp" />
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
 
                 <ImageView
                     android:id="@+id/imageView"
                     android:layout_width="match_parent"
                     android:layout_height="300dp"
                     android:layout_gravity="center"
-                    android:scaleType="centerCrop"
-                    android:background="#F5F5F5"
-                    android:src="@drawable/ic_plankton_logo"
+                    android:layout_marginBottom="20dp"
+                    android:background="#F4EDED"
+                    android:baselineAligned="false"
                     android:contentDescription="Preview Gambar"
-                    android:layout_marginBottom="20dp" />
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_plankton_logo" />
 
                 <!-- Results Section -->
                 <TextView
@@ -205,44 +206,44 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="12dp"
                     android:text="Hasil Klasifikasi:"
-                    android:textStyle="bold"
-                    android:textSize="18sp"
                     android:textColor="#424242"
-                    android:layout_marginBottom="12dp" />
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/result"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="20dp"
                     android:text="Belum ada hasil"
                     android:textColor="#1976D2"
-                    android:textStyle="bold"
                     android:textSize="24sp"
-                    android:layout_marginBottom="20dp" />
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/confidencesText"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
+                    android:layout_marginBottom="12dp"
                     android:text="Tingkat Kepercayaan:"
-                    android:textStyle="bold"
-                    android:textSize="16sp"
                     android:textColor="#424242"
-                    android:layout_marginBottom="12dp" />
+                    android:textSize="16sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/confidence"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center_horizontal"
-                    android:text="Silakan pilih gambar untuk memulai deteksi"
-                    android:textSize="14sp"
-                    android:textColor="#666666"
                     android:gravity="center"
-                    android:lineSpacingExtra="4dp" />
+                    android:lineSpacingExtra="4dp"
+                    android:text="Silakan pilih gambar untuk memulai deteksi"
+                    android:textColor="#666666"
+                    android:textSize="14sp" />
 
             </LinearLayout>
 
@@ -259,7 +260,7 @@
                     android:layout_height="56dp"
                     android:layout_weight="1"
                     android:layout_marginEnd="8dp"
-                    android:background="@drawable/button_primary"
+                    android:background="@drawable/button_camera_animated"
                     android:text="Kamera"
                     android:drawableLeft="@drawable/ic_camera_capture"
                     android:drawablePadding="8dp"
@@ -276,7 +277,7 @@
                     android:layout_height="56dp"
                     android:layout_weight="1"
                     android:layout_marginStart="8dp"
-                    android:background="@drawable/button_secondary"
+                    android:background="@drawable/button_gallery_animated"
                     android:text="Galeri"
                     android:drawableLeft="@drawable/ic_gallery"
                     android:drawablePadding="8dp"
@@ -295,7 +296,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginBottom="24dp"
-                android:background="@drawable/button_save"
+                android:background="@drawable/button_save_animated"
                 android:text="Simpan ke Galeri"
                 android:drawableLeft="@drawable/ic_save"
                 android:drawablePadding="8dp"
