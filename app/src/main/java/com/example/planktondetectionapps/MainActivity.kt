@@ -62,7 +62,16 @@ class MainActivity : AppCompatActivity() {
 
     // UI Components
     private var result: TextView? = null
-    private var confidence: TextView? = null
+    private var confidence: LinearLayout? = null
+    private var defaultMessage: TextView? = null
+    private var resultsTable: android.widget.TableLayout? = null
+    private var modelInfo: TextView? = null
+    private var pred1: TextView? = null
+    private var pred2: TextView? = null
+    private var pred3: TextView? = null
+    private var prob1: TextView? = null
+    private var prob2: TextView? = null
+    private var prob3: TextView? = null
     private var imageView: ImageView? = null
     private var picture: Button? = null
     private var galleryButton: Button? = null
@@ -134,6 +143,15 @@ class MainActivity : AppCompatActivity() {
     private fun initializeViews() {
         result = findViewById(R.id.result)
         confidence = findViewById(R.id.confidence)
+        defaultMessage = findViewById(R.id.defaultMessage)
+        resultsTable = findViewById(R.id.resultsTable)
+        modelInfo = findViewById(R.id.modelInfo)
+        pred1 = findViewById(R.id.pred1)
+        pred2 = findViewById(R.id.pred2)
+        pred3 = findViewById(R.id.pred3)
+        prob1 = findViewById(R.id.prob1)
+        prob2 = findViewById(R.id.prob2)
+        prob3 = findViewById(R.id.prob3)
         imageView = findViewById(R.id.imageView)
         picture = findViewById(R.id.button)
         galleryButton = findViewById(R.id.galleryButton)
@@ -457,7 +475,7 @@ class MainActivity : AppCompatActivity() {
     private fun showError(message: String) {
         showErrorDialog(message)
         result?.text = "Terjadi kesalahan"
-        confidence?.text = "Silakan coba lagi"
+        confidence?.visibility = View.GONE
         saveButton?.isEnabled = false
     }
 
@@ -750,25 +768,56 @@ class MainActivity : AppCompatActivity() {
 
             result?.text = classes[maxPos]
 
-            val classConfidencePairs = mutableListOf<Pair<Int, Float>>()
-            for (i in finalConfidences.indices) {
-                classConfidencePairs.add(Pair(i, finalConfidences[i]))
+            // Update UI for table results
+            if (confidence?.visibility != View.VISIBLE) {
+                confidence?.visibility = View.VISIBLE
             }
 
-            classConfidencePairs.sortByDescending { it.second }
+            defaultMessage?.visibility = View.GONE
+            resultsTable?.visibility = View.VISIBLE
 
-            val top3 = classConfidencePairs.take(3)
-            var s = "Model: ${selectedModel.name}\nTop 3 Predictions:\n"
-            for ((index, conf) in top3) {
-                if (index < classes.size) {
-                    s += String.format(Locale.getDefault(), "%s: %.1f%%\n", classes[index], conf * 100)
-                }
+            // Update model info with formatted name and show it
+            modelInfo?.text = "Model: ${formatModelName(selectedModel)}"
+            modelInfo?.visibility = View.VISIBLE
+
+            // Update predictions and probabilities
+            val top3 = finalConfidences.mapIndexed { index, confidence ->
+                Pair(index, confidence)
+            }.sortedByDescending { it.second }.take(3)
+
+            if (top3.size > 0) {
+                pred1?.text = classes[top3[0].first]
+                prob1?.text = String.format(Locale.getDefault(), "%.1f%%", top3[0].second * 100)
+            }
+            if (top3.size > 1) {
+                pred2?.text = classes[top3[1].first]
+                prob2?.text = String.format(Locale.getDefault(), "%.1f%%", top3[1].second * 100)
+            }
+            if (top3.size > 2) {
+                pred3?.text = classes[top3[2].first]
+                prob3?.text = String.format(Locale.getDefault(), "%.1f%%", top3[2].second * 100)
             }
 
-            confidence?.text = s
             saveButton?.isEnabled = true
         } else {
             showError("Error: Invalid classification result")
+        }
+    }
+
+    /**
+     * Format model name untuk ditampilkan dengan lebih rapi
+     */
+    private fun formatModelName(modelType: ModelType): String {
+        return when (modelType) {
+            ModelType.MOBILENET_V3_SMALL -> "MobileNet V3 Small"
+            ModelType.MOBILENET_V3_LARGE -> "MobileNet V3 Large"
+            ModelType.RESNET50_V2 -> "ResNet50 V2"
+            ModelType.RESNET101_V2 -> "ResNet101 V2"
+            ModelType.EFFICIENTNET_V1_B0 -> "EfficientNet V1 B0"
+            ModelType.EFFICIENTNET_V2_B0 -> "EfficientNet V2 B0"
+            ModelType.CONVNEXT_TINY -> "ConvNeXt Tiny"
+            ModelType.DENSENET121 -> "DenseNet121"
+            ModelType.INCEPTION_V3 -> "Inception V3"
         }
     }
 
