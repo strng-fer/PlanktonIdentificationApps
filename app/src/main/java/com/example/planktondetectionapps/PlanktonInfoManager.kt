@@ -155,7 +155,7 @@ object PlanktonInfoManager {
                 description = "Diatom dengan bentuk yang menyerupai taji ayam. Memiliki struktur silika yang kuat dengan proyeksi tajam.",
                 type = "Diatom",
                 mainImageResId = R.drawable.pseudosolenia_calcar_avis_1,
-                additionalImages = listOf(R.drawable.pseudosolenia_calcar_avis_1, R.drawable.pseudosolenia_calcar_avis_2)
+                additionalImages = listOf(R.drawable.pseudosolenia_calcar_avis_1, R.drawable.pseudosolenia_calcar_avis_1)
             ),
             PlanktonInfo(
                 name = "Rhizosolenia calcar-avis",

@@ -225,7 +225,7 @@ class DocumentationActivity : AppCompatActivity() {
                 "Diatom dengan bentuk yang menyerupai taji ayam. Memiliki struktur silika yang kuat dengan proyeksi tajam. Adaptasi untuk hidup planktonik dengan efisiensi flotasi tinggi.",
                 "Diatom",
                 R.drawable.pseudosolenia_calcar_avis_1,
-                listOf(R.drawable.pseudosolenia_calcar_avis_1, R.drawable.pseudosolenia_calcar_avis_2, R.drawable.pseudosolenia_calcar_avis_3)
+                listOf(R.drawable.pseudosolenia_calcar_avis_1, R.drawable.pseudosolenia_calcar_avis_1, R.drawable.pseudosolenia_calcar_avis_2)
             ),
             PlanktonInfo(
                 "Rhizosolenia calcar-avis",

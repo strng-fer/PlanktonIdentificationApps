@@ -97,34 +97,6 @@
 
             </LinearLayout>
 
-            <!-- About Option -->
-            <LinearLayout
-                android:id="@+id/aboutOption"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="12dp"
-                android:background="?android:attr/selectableItemBackground"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_info"
-                    android:layout_marginEnd="12dp"
-                    android:contentDescription="About Icon" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Tentang Aplikasi"
-                    android:textSize="16sp"
-                    android:textColor="#424242" />
-
-            </LinearLayout>
-
             <!-- Plankton Documentation Option -->
             <LinearLayout
                 android:id="@+id/documentationOption"
@@ -148,6 +120,34 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="Galeri Plankton"
+                    android:textSize="16sp"
+                    android:textColor="#424242" />
+
+            </LinearLayout>
+
+            <!-- About Option -->
+            <LinearLayout
+                android:id="@+id/aboutOption"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:padding="12dp"
+                android:background="?android:attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical">
+
+                <ImageView
+                    android:layout_width="24dp"
+                    android:layout_height="24dp"
+                    android:src="@drawable/ic_info"
+                    android:layout_marginEnd="12dp"
+                    android:contentDescription="About Icon" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Tentang Aplikasi"
                     android:textSize="16sp"
                     android:textColor="#424242" />
 
