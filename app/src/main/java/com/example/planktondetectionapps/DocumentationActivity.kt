@@ -1,7 +1,6 @@
 package com.example.planktondetectionapps
 
 import android.os.Bundle
-import android.view.View
 import android.widget.ImageButton
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -15,7 +14,7 @@ class DocumentationActivity : AppCompatActivity() {
     // UI Components
     private lateinit var backButton: ImageButton
     private lateinit var planktonRecyclerView: RecyclerView
-    private lateinit var planktonAdapter: PlanktonAdapter
+    private lateinit var optimizedAdapter: OptimizedPlanktonAdapter
 
     /**
      * Inisialisasi activity dan setup UI
@@ -26,7 +25,7 @@ class DocumentationActivity : AppCompatActivity() {
 
         initializeViews()
         setupListeners()
-        setupPlanktonGallery()
+        setupOptimizedPlanktonGallery()
     }
 
     /**
@@ -47,29 +46,40 @@ class DocumentationActivity : AppCompatActivity() {
     }
 
     /**
-     * Setup galeri plankton dengan RecyclerView dan optimasi performa maksimal
+     * Setup galeri plankton dengan optimasi performa maksimal
+     * Menggunakan thumbnail loading dan lazy loading untuk mencegah lag
      */
-    private fun setupPlanktonGallery() {
+    private fun setupOptimizedPlanktonGallery() {
         val planktonList = getPlanktonData()
 
-        // Debug logging
-        android.util.Log.d("DocumentationActivity", "Total plankton data: ${planktonList.size}")
-        planktonList.forEachIndexed { index, plankton ->
-            android.util.Log.d("DocumentationActivity", "Item $index: ${plankton.name}")
-        }
+        // Gunakan OptimizedPlanktonAdapter untuk performa terbaik
+        optimizedAdapter = OptimizedPlanktonAdapter(this, planktonList)
 
-        // Gunakan SimplePlanktonAdapter untuk testing
-        val simpleAdapter = SimplePlanktonAdapter(planktonList)
         planktonRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@DocumentationActivity)
-            adapter = simpleAdapter
+            adapter = optimizedAdapter
 
-            // Minimal optimizations untuk testing
+            // Optimasi RecyclerView untuk performa
             setHasFixedSize(true)
+            setItemViewCacheSize(20) // Cache lebih banyak view
+            setDrawingCacheEnabled(true)
+            setDrawingCacheQuality(android.view.View.DRAWING_CACHE_QUALITY_LOW)
+
+            // Enable recycler view pool
+            recycledViewPool.setMaxRecycledViews(0, 15)
         }
 
-        // Log setelah setup
-        android.util.Log.d("DocumentationActivity", "Simple adapter item count: ${simpleAdapter.itemCount}")
+        android.util.Log.d("DocumentationActivity", "Optimized adapter setup complete with ${planktonList.size} items")
+    }
+
+    /**
+     * Clean up resources when activity is destroyed
+     */
+    override fun onDestroy() {
+        super.onDestroy()
+        if (::optimizedAdapter.isInitialized) {
+            optimizedAdapter.cleanup()
+        }
     }
 
     /**

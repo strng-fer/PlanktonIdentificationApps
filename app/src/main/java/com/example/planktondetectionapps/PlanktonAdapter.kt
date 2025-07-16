@@ -14,6 +14,7 @@ import android.util.LruCache
 
 /**
  * Adapter untuk menampilkan daftar plankton dalam RecyclerView dengan optimasi performa
+ * Compatible dengan PlanktonInfo data class yang baru
  */
 class PlanktonAdapter(private val planktonList: List<PlanktonInfo>) :
     RecyclerView.Adapter<PlanktonAdapter.PlanktonViewHolder>() {
@@ -24,15 +25,13 @@ class PlanktonAdapter(private val planktonList: List<PlanktonInfo>) :
     }
 
     /**
-     * ViewHolder untuk item plankton
+     * ViewHolder untuk item plankton dengan property yang sesuai
      */
     class PlanktonViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val planktonImage: ImageView = itemView.findViewById(R.id.planktonImage)
+        val planktonThumbnail: ImageView = itemView.findViewById(R.id.planktonThumbnail)
         val planktonName: TextView = itemView.findViewById(R.id.planktonName)
+        val planktonType: TextView = itemView.findViewById(R.id.planktonType)
         val planktonDescription: TextView = itemView.findViewById(R.id.planktonDescription)
-        val sampleImage1: ImageView = itemView.findViewById(R.id.sampleImage1)
-        val sampleImage2: ImageView = itemView.findViewById(R.id.sampleImage2)
-        val sampleImage3: ImageView = itemView.findViewById(R.id.sampleImage3)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PlanktonViewHolder {
@@ -48,54 +47,21 @@ class PlanktonAdapter(private val planktonList: List<PlanktonInfo>) :
         // Log untuk debugging
         android.util.Log.d("PlanktonAdapter", "Binding item $position: ${plankton.name}")
 
-        holder.planktonName.text = plankton.name
-        holder.planktonDescription.text = plankton.description
-
-        // Load main image with simple approach first
         try {
-            holder.planktonImage.setImageResource(plankton.imageResource)
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonAdapter", "Error loading main image for ${plankton.name}: ${e.message}")
-            holder.planktonImage.setImageResource(R.drawable.ic_microscope)
-        }
+            // Set text data
+            holder.planktonName.text = plankton.name
+            holder.planktonType.text = plankton.type
+            holder.planktonDescription.text = plankton.description
 
-        // Set sample images with simple loading
-        if (plankton.sampleImages.isNotEmpty()) {
+            // Load main image with simple approach first
             try {
-                val imageRes1 = plankton.sampleImages.getOrElse(0) { plankton.imageResource }
-                val imageRes2 = plankton.sampleImages.getOrElse(1) { plankton.imageResource }
-                val imageRes3 = plankton.sampleImages.getOrElse(2) { plankton.imageResource }
-
-                holder.sampleImage1.setImageResource(imageRes1)
-                holder.sampleImage2.setImageResource(imageRes2)
-                holder.sampleImage3.setImageResource(imageRes3)
+                holder.planktonThumbnail.setImageResource(plankton.mainImageResId)
             } catch (e: Exception) {
-                android.util.Log.e("PlanktonAdapter", "Error loading sample images for ${plankton.name}: ${e.message}")
-                holder.sampleImage1.setImageResource(R.drawable.ic_microscope)
-                holder.sampleImage2.setImageResource(R.drawable.ic_microscope)
-                holder.sampleImage3.setImageResource(R.drawable.ic_microscope)
+                android.util.Log.e("PlanktonAdapter", "Error loading main image for ${plankton.name}: ${e.message}")
+                holder.planktonThumbnail.setImageResource(R.drawable.ic_microscope)
             }
-        }
-
-        // Set click listener untuk gambar utama
-        holder.planktonImage.setOnClickListener {
-            showImagePopup(holder.itemView, plankton.imageResource, plankton.name)
-        }
-
-        // Set click listeners untuk gambar contoh
-        holder.sampleImage1.setOnClickListener {
-            val imageRes = plankton.sampleImages.getOrElse(0) { plankton.imageResource }
-            showImagePopup(holder.itemView, imageRes, "${plankton.name} - Contoh 1")
-        }
-
-        holder.sampleImage2.setOnClickListener {
-            val imageRes = plankton.sampleImages.getOrElse(1) { plankton.imageResource }
-            showImagePopup(holder.itemView, imageRes, "${plankton.name} - Contoh 2")
-        }
-
-        holder.sampleImage3.setOnClickListener {
-            val imageRes = plankton.sampleImages.getOrElse(2) { plankton.imageResource }
-            showImagePopup(holder.itemView, imageRes, "${plankton.name} - Contoh 3")
+        } catch (e: Exception) {
+            android.util.Log.e("PlanktonAdapter", "Error binding data: ${e.message}")
         }
     }
 

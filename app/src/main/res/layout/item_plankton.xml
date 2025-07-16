@@ -1,99 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_margin="8dp"
-    app:cardCornerRadius="12dp"
-    app:cardElevation="4dp"
-    android:background="@drawable/card_background">
+    android:background="@drawable/card_background"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?android:attr/selectableItemBackground"
+    android:orientation="horizontal"
+    android:padding="12dp">
 
+    <!-- Thumbnail Image dengan ukuran optimal -->
+    <ImageView
+        android:id="@+id/planktonThumbnail"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginEnd="16dp"
+        android:background="@drawable/custom_dropdown_background"
+        android:contentDescription="Thumbnail Plankton"
+        android:padding="4dp"
+        android:scaleType="centerCrop"
+        android:src="@drawable/ic_plankton_logo" />
+
+    <!-- Content Area -->
     <LinearLayout
-        android:layout_width="match_parent"
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
-
-        <!-- Plankton Image -->
-        <ImageView
-            android:id="@+id/planktonImage"
-            android:layout_width="match_parent"
-            android:layout_height="200dp"
-            android:layout_marginBottom="12dp"
-            android:scaleType="centerCrop"
-            android:background="@color/secondary_text_color"
-            android:src="@drawable/ic_microscope" />
+        android:layout_weight="1"
+        android:orientation="vertical">
 
         <!-- Plankton Name -->
         <TextView
             android:id="@+id/planktonName"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
+            android:layout_marginBottom="4dp"
+            android:ellipsize="end"
+            android:maxLines="1"
             android:text="Nama Plankton"
             android:textColor="@color/primary_text_color"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:gravity="center" />
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
-        <!-- Plankton Description -->
+        <!-- Plankton Type -->
+        <TextView
+            android:id="@+id/planktonType"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="8dp"
+            android:background="@drawable/custom_dropdown_background"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="2dp"
+            android:text="Diatom"
+            android:textColor="@color/accent_color"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <!-- Plankton Description (Preview) -->
         <TextView
             android:id="@+id/planktonDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Deskripsi plankton akan ditampilkan di sini"
+            android:ellipsize="end"
+            android:lineSpacingExtra="2dp"
+            android:maxLines="2"
+            android:text="Deskripsi plankton akan ditampilkan di sini dengan batasan 2 baris untuk preview..."
             android:textColor="@color/secondary_text_color"
-            android:textSize="14sp"
-            android:lineSpacingExtra="4dp"
-            android:justificationMode="inter_word" />
-
-        <!-- Sample Images Label -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:layout_marginBottom="8dp"
-            android:text="Contoh Gambar:"
-            android:textColor="@color/primary_text_color"
-            android:textSize="14sp"
-            android:textStyle="bold" />
-
-        <!-- Sample Images Grid -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center">
-
-            <ImageView
-                android:id="@+id/sampleImage1"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="4dp"
-                android:scaleType="centerCrop"
-                android:background="@color/secondary_text_color"
-                android:src="@drawable/ic_microscope" />
-
-            <ImageView
-                android:id="@+id/sampleImage2"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="4dp"
-                android:scaleType="centerCrop"
-                android:background="@color/secondary_text_color"
-                android:src="@drawable/ic_microscope" />
-
-            <ImageView
-                android:id="@+id/sampleImage3"
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:layout_margin="4dp"
-                android:scaleType="centerCrop"
-                android:background="@color/secondary_text_color"
-                android:src="@drawable/ic_microscope" />
-
-        </LinearLayout>
+            android:textSize="13sp" />
 
     </LinearLayout>
 
-</androidx.cardview.widget.CardView>
+    <!-- Arrow Indicator -->
+    <ImageView
+        android:layout_width="24dp"
+        android:layout_height="24dp"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="8dp"
+        android:contentDescription="Lihat Detail"
+        android:src="@drawable/ic_arrow_forward"
+        android:tint="@color/secondary_text_color" />
+
+</LinearLayout>

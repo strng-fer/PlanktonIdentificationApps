@@ -3,51 +3,59 @@
     <!-- Primary Colors -->
     <color name="primary_blue">#2196F3</color>
     <color name="primary_blue_dark">#1976D2</color>
-    <color name="primary_blue_light">#64B5F6</color>
+    <color name="primary_blue_light">#BBDEFB</color>
 
     <!-- Secondary Colors -->
     <color name="secondary_orange">#FF9800</color>
     <color name="secondary_orange_dark">#F57C00</color>
-    <color name="secondary_orange_light">#FFB74D</color>
+    <color name="secondary_orange_light">#FFE0B2</color>
+
+    <!-- Secondary Button Colors -->
+    <color name="secondary_button">#E3F2FD</color>
+    <color name="secondary_button_pressed">#BBDEFB</color>
 
     <!-- Save Button Colors -->
     <color name="save_green">#4CAF50</color>
     <color name="save_green_dark">#388E3C</color>
-    <color name="save_green_light">#81C784</color>
-
-    <!-- Night Mode Colors -->
-    <color name="primary_blue_night">#64B5F6</color>
-    <color name="primary_blue_dark_night">#42A5F5</color>
-    <color name="secondary_orange_night">#FFB74D</color>
-    <color name="secondary_orange_dark_night">#FFA726</color>
-    <color name="save_green_night">#81C784</color>
-    <color name="save_green_dark_night">#66BB6A</color>
-
-    <!-- Background Colors -->
-    <color name="background_light">#FAFAFA</color>
-    <color name="background_dark">#121212</color>
-    <color name="surface_light">#FFFFFF</color>
-    <color name="surface_dark">#1E1E1E</color>
-    <color name="background_color">#F5F5F5</color>
-    <color name="card_color">#FFFFFF</color>
-    <color name="border_color">#E0E0E0</color>
+    <color name="save_green_light">#E8F5E8</color>
 
     <!-- Text Colors -->
-    <color name="white">#FFFFFF</color>
-    <color name="black">#000000</color>
-    <color name="text_primary">#212121</color>
-    <color name="text_secondary">#757575</color>
     <color name="primary_text_color">#212121</color>
     <color name="secondary_text_color">#757575</color>
-    <color name="accent_color">#2196F3</color>
+    <color name="accent_color">#1976D2</color>
 
-    <!-- Night Mode Background Colors -->
-    <color name="background_color_night">#121212</color>
-    <color name="card_color_night">#1E1E1E</color>
-    <color name="border_color_night">#333333</color>
+    <!-- Base Colors -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
 
-    <!-- Night Mode Text Colors -->
-    <color name="primary_text_color_night">#FFFFFF</color>
-    <color name="secondary_text_color_night">#AAAAAA</color>
-    <color name="accent_color_night">#64B5F6</color>
+    <!-- Background Colors -->
+    <color name="background_color">#F5F5F5</color>
+    <color name="card_background">#FFFFFF</color>
+    <color name="surface_color">#FAFAFA</color>
+
+    <!-- Material Design 3 Surface Colors -->
+    <color name="surface_variant">#F3F3F3</color>
+    <color name="on_surface">#1C1B1F</color>
+    <color name="on_surface_variant">#49454F</color>
+
+    <!-- Status Colors -->
+    <color name="success_color">#4CAF50</color>
+    <color name="warning_color">#FF9800</color>
+    <color name="error_color">#F44336</color>
+
+    <!-- Border and Divider Colors -->
+    <color name="border_color">#E0E0E0</color>
+    <color name="divider_color">#EEEEEE</color>
+
+    <!-- Transparent Colors -->
+    <color name="transparent">#00000000</color>
+
+    <!-- Missing colors that are referenced in themes.xml -->
+    <color name="background_light">#FAFAFA</color>
+    <color name="surface_light">#FFFFFF</color>
+    <color name="text_primary">#212121</color>
+
+    <!-- Night Mode Support -->
+    <color name="surface_dark">#1C1B1F</color>
+    <color name="on_surface_dark">#E6E1E5</color>
 </resources>
