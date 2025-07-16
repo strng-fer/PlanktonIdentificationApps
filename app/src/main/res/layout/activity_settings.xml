@@ -12,57 +12,66 @@
         android:padding="16dp">
 
         <!-- Header -->
-        <RelativeLayout
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="24dp">
+            android:layout_marginBottom="24dp"
+            android:background="@drawable/card_background"
+            android:orientation="horizontal"
+            android:padding="16dp"
+            android:gravity="center_vertical">
 
             <ImageButton
                 android:id="@+id/backButton"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true"
                 android:background="?android:attr/selectableItemBackgroundBorderless"
                 android:src="@drawable/ic_arrow_back"
-                android:tint="@color/primary_text_color" />
+                android:tint="@color/primary_text_color"
+                android:layout_marginEnd="16dp" />
 
             <TextView
-                android:layout_width="wrap_content"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_centerInParent="true"
+                android:layout_weight="1"
                 android:text="Pengaturan"
                 android:textColor="@color/primary_text_color"
                 android:textSize="20sp"
-                android:textStyle="bold" />
+                android:textStyle="bold"
+                android:gravity="center" />
 
-        </RelativeLayout>
+            <View
+                android:layout_width="40dp"
+                android:layout_height="40dp" />
 
+        </LinearLayout>
 
-        <!-- Feedback Settings -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:text="Feedback"
-            android:textColor="@color/primary_text_color"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
+        <!-- Feedback Settings Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginBottom="24dp"
             android:background="@drawable/card_background"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="20dp">
 
-            <!-- Vibration -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="Feedback"
+                android:textColor="@color/primary_text_color"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <!-- Vibration Setting -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:orientation="horizontal">
+                android:background="@drawable/custom_dropdown_background"
+                android:orientation="horizontal"
+                android:padding="16dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -96,11 +105,13 @@
 
             </LinearLayout>
 
-            <!-- Sound -->
+            <!-- Sound Setting -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:background="@drawable/custom_dropdown_background"
+                android:orientation="horizontal"
+                android:padding="16dp">
 
                 <LinearLayout
                     android:layout_width="0dp"
@@ -136,27 +147,29 @@
 
         </LinearLayout>
 
-        <!-- Storage Settings -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:text="Penyimpanan"
-            android:textColor="@color/primary_text_color"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
+        <!-- Storage Settings Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:background="@drawable/card_background"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="20dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                android:text="Penyimpanan"
+                android:textColor="@color/primary_text_color"
+                android:textSize="18sp"
+                android:textStyle="bold" />
 
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:background="@drawable/custom_dropdown_background"
+                android:orientation="horizontal"
+                android:padding="16dp">
 
                 <LinearLayout
                     android:layout_width="0dp"

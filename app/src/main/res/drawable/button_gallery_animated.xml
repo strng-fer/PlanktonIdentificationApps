@@ -1,13 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
-<selector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:enterFadeDuration="200"
-    android:exitFadeDuration="200">
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Pressed state -->
     <item android:state_pressed="true">
         <shape android:shape="rectangle">
             <solid android:color="@color/secondary_orange_dark"/>
-            <corners android:radius="8dp"/>
+            <corners android:radius="16dp"/>
         </shape>
     </item>
 
@@ -15,7 +13,7 @@
     <item android:state_enabled="false">
         <shape android:shape="rectangle">
             <solid android:color="#CCCCCC"/>
-            <corners android:radius="8dp"/>
+            <corners android:radius="16dp"/>
         </shape>
     </item>
 
@@ -23,7 +21,7 @@
     <item>
         <shape android:shape="rectangle">
             <solid android:color="@color/secondary_orange"/>
-            <corners android:radius="8dp"/>
+            <corners android:radius="16dp"/>
             <stroke android:width="0dp"/>
         </shape>
     </item>

@@ -63,7 +63,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="#F8F9FA"
+            android:background="@drawable/card_background"
             android:visibility="gone"
             android:layout_marginTop="8dp"
             android:padding="8dp"
