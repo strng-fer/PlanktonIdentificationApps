@@ -6,42 +6,43 @@
     android:clickable="true"
     android:focusable="true">
 
-    <!-- Close Button -->
-    <ImageButton
+    <!-- Close button -->
+    <ImageView
         android:id="@+id/closeButton"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
         android:layout_margin="16dp"
         android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="Tutup"
+        android:padding="12dp"
         android:src="@android:drawable/ic_menu_close_clear_cancel"
-        android:tint="@android:color/white"
-        android:contentDescription="Tutup" />
+        android:tint="#FFFFFF" />
 
-    <!-- Full Size Image -->
+    <!-- Image title -->
+    <TextView
+        android:id="@+id/imageTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="64dp"
+        android:text="Nama Plankton"
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <!-- Full size image -->
     <ImageView
         android:id="@+id/fullSizeImage"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_centerInParent="true"
         android:layout_margin="32dp"
-        android:scaleType="fitCenter"
-        android:adjustViewBounds="true" />
-
-    <!-- Image Title -->
-    <TextView
-        android:id="@+id/imageTitle"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_alignParentBottom="true"
-        android:layout_margin="16dp"
-        android:background="#88000000"
-        android:padding="12dp"
-        android:text="Nama Plankton"
-        android:textColor="@android:color/white"
-        android:textSize="18sp"
-        android:textStyle="bold"
-        android:gravity="center" />
+        android:adjustViewBounds="true"
+        android:contentDescription="Gambar plankton ukuran penuh"
+        android:scaleType="fitCenter" />
 
 </RelativeLayout>

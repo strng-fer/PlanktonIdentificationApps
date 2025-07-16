@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Classification type - Medium radius (12dp) untuk komponen penting -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
     <solid android:color="#E3F2FD" />
-    <corners android:radius="12dp" />
+    <corners android:radius="8dp" />
     <stroke
         android:width="1dp"
-        android:color="#BBDEFB" />
+        android:color="#1976D2" />
 </shape>
 

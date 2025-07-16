@@ -5,7 +5,6 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.widget.ImageView
 import android.widget.TextView
-import com.example.planktondetectionapps.PlanktonInfoManager
 
 /**
  * Manager untuk menyediakan informasi plankton
@@ -273,6 +272,11 @@ object PlanktonInfoManager {
             // Deskripsi tetap menampilkan deskripsi lengkap
             descriptionText.text = planktonInfo.description
 
+            // Set close button listener
+            closeButton?.setOnClickListener {
+                dialog.dismiss()
+            }
+
             // Load gambar-gambar contoh
             try {
                 // Gambar pertama - selalu ada
@@ -325,12 +329,14 @@ object PlanktonInfoManager {
                 imageView1.setImageResource(android.R.drawable.ic_menu_gallery)
                 imageView2.setImageResource(android.R.drawable.ic_menu_gallery)
                 imageView3.setImageResource(android.R.drawable.ic_menu_gallery)
+                android.util.Log.e("PlanktonInfoManager", "Error loading images: ${e.message}")
             }
 
             // Tampilkan dialog
             dialog.show()
 
         } catch (e: Exception) {
+            android.util.Log.e("PlanktonInfoManager", "Error creating dialog: ${e.message}")
             // Fallback to simple dialog if layout inflation fails
             AlertDialog.Builder(context)
                 .setTitle("Informasi Plankton")

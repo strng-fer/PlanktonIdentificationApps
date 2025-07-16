@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Dialog utama - Large radius (16dp) untuk komponen yang berisi konten kompleks -->
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
     <solid android:color="#FFFFFF" />
     <corners android:radius="16dp" />
     <stroke

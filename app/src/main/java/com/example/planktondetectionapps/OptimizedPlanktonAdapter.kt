@@ -157,63 +157,18 @@ class OptimizedPlanktonAdapter(
      * Show full image dialog dengan loading yang optimized
      */
     private fun showFullImageDialog(plankton: PlanktonInfo) {
-        val dialogView = LayoutInflater.from(context)
-            .inflate(R.layout.dialog_image_popup, null)
+        // Use the centralized popup system from PlanktonInfoManager
+        try {
+            PlanktonInfoManager.showPlanktonInfoPopup(context, plankton.name)
+        } catch (e: Exception) {
+            android.util.Log.e("OptimizedPlanktonAdapter", "Error showing plankton info popup: ${e.message}")
 
-        val dialog = AlertDialog.Builder(context)
-            .setView(dialogView)
-            .create()
-
-        // Set transparent background
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        val fullImageView = dialogView.findViewById<ImageView>(R.id.fullSizeImage)
-        val titleTextView = dialogView.findViewById<TextView>(R.id.imageTitle)
-        val closeButton = dialogView.findViewById<ImageView>(R.id.closeButton)
-
-        // Set title
-        titleTextView.text = plankton.name
-
-        // Load full image asynchronously
-        loadFullImage(fullImageView, plankton.mainImageResId)
-
-        // Close button
-        closeButton.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        // Close on background click
-        dialogView.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        dialog.show()
-    }
-
-    /**
-     * Load full image dengan optimasi untuk dialog
-     */
-    private fun loadFullImage(imageView: ImageView, imageResId: Int) {
-        // Show thumbnail first if available
-        thumbnailCache[imageResId]?.let { thumbnail ->
-            imageView.setImageBitmap(thumbnail)
-        }
-
-        adapterScope.launch {
-            try {
-                val fullImage = withContext(Dispatchers.IO) {
-                    // Load with reasonable quality for dialog display
-                    val options = BitmapFactory.Options().apply {
-                        inSampleSize = 2 // Reduce size by half to prevent OOM
-                        inPreferredConfig = Bitmap.Config.RGB_565
-                    }
-                    BitmapFactory.decodeResource(context.resources, imageResId, options)
-                }
-
-                imageView.setImageBitmap(fullImage)
-            } catch (e: Exception) {
-                android.util.Log.e("OptimizedAdapter", "Error loading full image: ${e.message}")
-            }
+            // Fallback to simple AlertDialog
+            AlertDialog.Builder(context)
+                .setTitle(plankton.name)
+                .setMessage("${plankton.type}\n\n${plankton.description}")
+                .setPositiveButton("Tutup", null)
+                .show()
         }
     }
 
