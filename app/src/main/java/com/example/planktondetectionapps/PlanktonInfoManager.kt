@@ -240,17 +240,29 @@ object PlanktonInfoManager {
         }
 
         try {
-            // Inflate custom layout untuk popup
-            val inflater = LayoutInflater.from(context)
-            val popupView = inflater.inflate(R.layout.dialog_plankton_info, null)
+            // Buat custom dialog dengan background transparan untuk rounded corners
+            val dialog = android.app.Dialog(context)
+            dialog.requestWindowFeature(android.view.Window.FEATURE_NO_TITLE)
+            dialog.setContentView(R.layout.dialog_plankton_info)
+
+            // Set dialog window properties untuk rounded corners
+            dialog.window?.let { window ->
+                window.setBackgroundDrawableResource(android.R.color.transparent)
+                window.setLayout(
+                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                    android.view.ViewGroup.LayoutParams.WRAP_CONTENT
+                )
+                window.attributes?.windowAnimations = android.R.style.Animation_Dialog
+            }
 
             // Set data ke views dengan logika yang benar
-            val titleText = popupView.findViewById<TextView>(R.id.planktonTitle)
-            val typeText = popupView.findViewById<TextView>(R.id.classificationType)
-            val descriptionText = popupView.findViewById<TextView>(R.id.planktonDescription)
-            val imageView1 = popupView.findViewById<ImageView>(R.id.sampleImage1)
-            val imageView2 = popupView.findViewById<ImageView>(R.id.sampleImage2)
-            val imageView3 = popupView.findViewById<ImageView>(R.id.sampleImage3)
+            val titleText = dialog.findViewById<TextView>(R.id.planktonTitle)
+            val typeText = dialog.findViewById<TextView>(R.id.classificationType)
+            val descriptionText = dialog.findViewById<TextView>(R.id.planktonDescription)
+            val imageView1 = dialog.findViewById<ImageView>(R.id.sampleImage1)
+            val imageView2 = dialog.findViewById<ImageView>(R.id.sampleImage2)
+            val imageView3 = dialog.findViewById<ImageView>(R.id.sampleImage3)
+            val closeButton = dialog.findViewById<ImageView>(R.id.closeButton)
 
             // Header tetap "Informasi Plankton"
             titleText.text = "Informasi Plankton"
@@ -316,10 +328,8 @@ object PlanktonInfoManager {
             }
 
             // Tampilkan dialog
-            AlertDialog.Builder(context)
-                .setView(popupView)
-                .setPositiveButton("Tutup", null)
-                .show()
+            dialog.show()
+
         } catch (e: Exception) {
             // Fallback to simple dialog if layout inflation fails
             AlertDialog.Builder(context)

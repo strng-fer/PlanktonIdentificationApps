@@ -4,7 +4,8 @@
     android:layout_height="wrap_content"
     android:background="@drawable/dialog_rounded_background"
     android:padding="16dp"
-    android:layout_margin="16dp">
+    android:layout_margin="16dp"
+    android:elevation="8dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -15,7 +16,9 @@
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp">
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/header_rounded_background"
+            android:padding="12dp">
 
             <TextView
                 android:id="@+id/planktonTitle"
@@ -42,100 +45,122 @@
             android:padding="12dp"
             android:layout_marginBottom="16dp"
             android:gravity="center"
+            android:background="@drawable/classification_rounded_background"
             android:drawablePadding="8dp" />
 
-        <!-- Description -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Deskripsi:"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#424242"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
-            android:id="@+id/planktonDescription"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Deskripsi plankton akan ditampilkan di sini"
-            android:textSize="14sp"
-            android:textColor="#666666"
-            android:lineSpacingExtra="4dp"
-            android:layout_marginBottom="16dp"
-            android:background="#F8F9FA"
-            android:padding="12dp" />
-
-        <!-- Sample Images Section -->
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="Contoh Gambar:"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:textColor="#424242"
-            android:layout_marginBottom="12dp" />
-
-        <!-- Sample Images Grid -->
+        <!-- Description Section -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:weightSum="3"
+            android:orientation="vertical"
+            android:background="@drawable/content_rounded_background"
+            android:padding="16dp"
             android:layout_marginBottom="16dp">
 
-            <ImageView
-                android:id="@+id/sampleImage1"
-                android:layout_width="0dp"
-                android:layout_height="100dp"
-                android:layout_weight="1"
-                android:layout_margin="4dp"
-                android:scaleType="centerCrop"
-                android:background="@drawable/card_background"
-                android:contentDescription="Contoh gambar 1"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Deskripsi:"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#424242"
+                android:layout_marginBottom="8dp" />
 
-            <ImageView
-                android:id="@+id/sampleImage2"
-                android:layout_width="0dp"
-                android:layout_height="100dp"
-                android:layout_weight="1"
-                android:layout_margin="4dp"
-                android:scaleType="centerCrop"
-                android:background="@drawable/card_background"
-                android:contentDescription="Contoh gambar 2"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground" />
-
-            <ImageView
-                android:id="@+id/sampleImage3"
-                android:layout_width="0dp"
-                android:layout_height="100dp"
-                android:layout_weight="1"
-                android:layout_margin="4dp"
-                android:scaleType="centerCrop"
-                android:background="@drawable/card_background"
-                android:contentDescription="Contoh gambar 3"
-                android:clickable="true"
-                android:focusable="true"
-                android:foreground="?android:attr/selectableItemBackground" />
+            <TextView
+                android:id="@+id/planktonDescription"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Deskripsi plankton akan ditampilkan di sini"
+                android:textSize="14sp"
+                android:textColor="#666666"
+                android:lineSpacingExtra="4dp"
+                android:background="@drawable/description_rounded_background"
+                android:padding="12dp" />
 
         </LinearLayout>
 
-        <!-- Additional Info -->
-        <TextView
+        <!-- Sample Images Section -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Klik pada gambar contoh untuk melihat dalam ukuran penuh"
-            android:textSize="12sp"
-            android:textColor="#999999"
-            android:gravity="center"
-            android:textStyle="italic"
-            android:background="#FFFDE7"
-            android:padding="8dp" />
+            android:orientation="vertical"
+            android:background="@drawable/content_rounded_background"
+            android:padding="16dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Contoh Gambar:"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="#424242"
+                android:layout_marginBottom="12dp" />
+
+            <!-- Sample Images Grid -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:weightSum="3"
+                android:layout_marginBottom="16dp">
+
+                <ImageView
+                    android:id="@+id/sampleImage1"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:scaleType="centerCrop"
+                    android:background="@drawable/image_rounded_background"
+                    android:contentDescription="Contoh gambar 1"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="@drawable/image_ripple_effect"
+                    android:padding="2dp" />
+
+                <ImageView
+                    android:id="@+id/sampleImage2"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:scaleType="centerCrop"
+                    android:background="@drawable/image_rounded_background"
+                    android:contentDescription="Contoh gambar 2"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="@drawable/image_ripple_effect"
+                    android:padding="2dp" />
+
+                <ImageView
+                    android:id="@+id/sampleImage3"
+                    android:layout_width="0dp"
+                    android:layout_height="100dp"
+                    android:layout_weight="1"
+                    android:layout_margin="4dp"
+                    android:scaleType="centerCrop"
+                    android:background="@drawable/image_rounded_background"
+                    android:contentDescription="Contoh gambar 3"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:foreground="@drawable/image_ripple_effect"
+                    android:padding="2dp" />
+
+            </LinearLayout>
+
+            <!-- Additional Info -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Klik pada gambar contoh untuk melihat dalam ukuran penuh"
+                android:textSize="12sp"
+                android:textColor="#999999"
+                android:gravity="center"
+                android:textStyle="italic"
+                android:background="@drawable/info_rounded_background"
+                android:padding="8dp" />
+
+        </LinearLayout>
 
     </LinearLayout>
 
