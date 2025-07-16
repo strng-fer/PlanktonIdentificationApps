@@ -1,10 +1,8 @@
 package com.example.planktondetectionapps
 
-import android.app.Dialog
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.Window
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -21,7 +19,6 @@ class SimplePlanktonAdapter(private val planktonList: List<PlanktonInfo>) :
     class PlanktonViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val planktonThumbnail: ImageView = itemView.findViewById(R.id.planktonThumbnail)
         val planktonName: TextView = itemView.findViewById(R.id.planktonName)
-        val planktonType: TextView = itemView.findViewById(R.id.planktonType)
         val planktonDescription: TextView = itemView.findViewById(R.id.planktonDescription)
     }
 
@@ -39,8 +36,9 @@ class SimplePlanktonAdapter(private val planktonList: List<PlanktonInfo>) :
 
         // Set text data
         holder.planktonName.text = plankton.name
-        holder.planktonType.text = plankton.type
-        holder.planktonDescription.text = plankton.description
+        // Gabungkan type dan description karena layout tidak memiliki field terpisah untuk type
+        val fullDescription = "${plankton.type} - ${plankton.description}"
+        holder.planktonDescription.text = fullDescription
 
         // Load main image
         try {

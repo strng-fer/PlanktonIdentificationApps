@@ -44,18 +44,6 @@
             android:textStyle="bold" />
 
         <!-- Plankton Type -->
-        <TextView
-            android:id="@+id/planktonType"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="8dp"
-            android:background="@drawable/custom_dropdown_background"
-            android:paddingHorizontal="8dp"
-            android:paddingVertical="2dp"
-            android:text="Diatom"
-            android:textColor="@color/accent_color"
-            android:textSize="12sp"
-            android:textStyle="bold" />
 
         <!-- Plankton Description (Preview) -->
         <TextView

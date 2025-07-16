@@ -3,7 +3,6 @@ package com.example.planktondetectionapps
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.drawable.Drawable
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -34,7 +33,6 @@ class OptimizedPlanktonAdapter(
     class PlanktonViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val thumbnailImageView: ImageView = itemView.findViewById(R.id.planktonThumbnail)
         val nameTextView: TextView = itemView.findViewById(R.id.planktonName)
-        val typeTextView: TextView = itemView.findViewById(R.id.planktonType)
         val descriptionTextView: TextView = itemView.findViewById(R.id.planktonDescription)
     }
 
@@ -49,19 +47,33 @@ class OptimizedPlanktonAdapter(
 
         // Set text data immediately
         holder.nameTextView.text = plankton.name
-        holder.typeTextView.text = plankton.type
-        holder.descriptionTextView.text = if (plankton.description.length > 100) {
-            "${plankton.description.take(100)}..."
+        // Gabungkan type dan description karena tidak ada field terpisah untuk type
+        val fullDescription = "${plankton.type} - ${plankton.description}"
+        holder.descriptionTextView.text = if (fullDescription.length > 100) {
+            "${fullDescription.take(100)}..."
         } else {
-            plankton.description
+            fullDescription
         }
 
         // Load thumbnail asynchronously
         loadThumbnail(holder.thumbnailImageView, plankton.mainImageResId)
 
-        // Set click listener untuk menampilkan full image
+        // Set click listener untuk menampilkan full image dengan error handling
         holder.itemView.setOnClickListener {
-            showFullImageDialog(plankton)
+            try {
+                showFullImageDialog(plankton)
+            } catch (e: Exception) {
+                android.util.Log.e("OptimizedPlanktonAdapter", "Error showing popup for ${plankton.name}: ${e.message}")
+            }
+        }
+
+        // Tambahkan click listener untuk thumbnail juga
+        holder.thumbnailImageView.setOnClickListener {
+            try {
+                showFullImageDialog(plankton)
+            } catch (e: Exception) {
+                android.util.Log.e("OptimizedPlanktonAdapter", "Error showing popup for ${plankton.name}: ${e.message}")
+            }
         }
     }
 

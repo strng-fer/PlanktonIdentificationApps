@@ -30,7 +30,6 @@ class PlanktonAdapter(private val planktonList: List<PlanktonInfo>) :
     class PlanktonViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         val planktonThumbnail: ImageView = itemView.findViewById(R.id.planktonThumbnail)
         val planktonName: TextView = itemView.findViewById(R.id.planktonName)
-        val planktonType: TextView = itemView.findViewById(R.id.planktonType)
         val planktonDescription: TextView = itemView.findViewById(R.id.planktonDescription)
     }
 
@@ -42,16 +41,16 @@ class PlanktonAdapter(private val planktonList: List<PlanktonInfo>) :
 
     override fun onBindViewHolder(holder: PlanktonViewHolder, position: Int) {
         val plankton = planktonList[position]
-        val context = holder.itemView.context
 
         // Log untuk debugging
-        android.util.Log.d("PlanktonAdapter", "Binding item $position: ${plankton.name}")
+        android.util.Log.d("PlanktonAdapter", "Binding item ${holder.adapterPosition}: ${plankton.name}")
 
         try {
             // Set text data
             holder.planktonName.text = plankton.name
-            holder.planktonType.text = plankton.type
-            holder.planktonDescription.text = plankton.description
+            // Gabungkan type dan description karena layout tidak memiliki field terpisah untuk type
+            val fullDescription = "${plankton.type} - ${plankton.description}"
+            holder.planktonDescription.text = fullDescription
 
             // Load main image with simple approach first
             try {
@@ -60,6 +59,25 @@ class PlanktonAdapter(private val planktonList: List<PlanktonInfo>) :
                 android.util.Log.e("PlanktonAdapter", "Error loading main image for ${plankton.name}: ${e.message}")
                 holder.planktonThumbnail.setImageResource(R.drawable.ic_microscope)
             }
+
+            // Tambahkan click listener yang aman untuk gambar
+            holder.planktonThumbnail.setOnClickListener {
+                try {
+                    showImagePopup(it, plankton.mainImageResId, plankton.name, plankton)
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonAdapter", "Error showing popup for ${plankton.name}: ${e.message}")
+                }
+            }
+
+            // Tambahkan click listener untuk seluruh item
+            holder.itemView.setOnClickListener {
+                try {
+                    showImagePopup(it, plankton.mainImageResId, plankton.name, plankton)
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonAdapter", "Error showing popup for ${plankton.name}: ${e.message}")
+                }
+            }
+
         } catch (e: Exception) {
             android.util.Log.e("PlanktonAdapter", "Error binding data: ${e.message}")
         }
@@ -148,37 +166,45 @@ class PlanktonAdapter(private val planktonList: List<PlanktonInfo>) :
     /**
      * Menampilkan popup gambar full size dengan optimasi loading
      */
-    private fun showImagePopup(view: View, imageResource: Int, planktonName: String) {
+    private fun showImagePopup(view: View, imageResource: Int, planktonName: String, plankton: PlanktonInfo) {
         val context = view.context
-        val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
 
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setContentView(R.layout.dialog_image_popup)
+        try {
+            val dialog = Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
 
-        val fullSizeImage = dialog.findViewById<ImageView>(R.id.fullSizeImage)
-        val imageTitle = dialog.findViewById<TextView>(R.id.imageTitle)
-        val closeButton = dialog.findViewById<ImageView>(R.id.closeButton)
-        val backgroundLayout = dialog.findViewById<View>(android.R.id.content)
+            dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
+            dialog.setContentView(R.layout.dialog_image_popup)
 
-        // Load image dengan optimasi untuk popup
-        loadImageOptimized(context, imageResource, fullSizeImage, 800)
-        imageTitle.text = planktonName
+            // Get elements from the popup layout (sesuai dengan layout yang ada)
+            val fullSizeImage = dialog.findViewById<ImageView>(R.id.fullSizeImage)
+            val imageTitle = dialog.findViewById<TextView>(R.id.imageTitle)
+            val closeButton = dialog.findViewById<ImageView>(R.id.closeButton)
 
-        // Set listener untuk tombol close
-        closeButton.setOnClickListener {
-            dialog.dismiss()
+            // Set data plankton
+            imageTitle.text = "${plankton.name} (${plankton.type})"
+
+            // Load main image dengan optimasi
+            loadImageOptimized(context, plankton.mainImageResId, fullSizeImage, 800)
+
+            // Set listener untuk tombol close
+            closeButton.setOnClickListener {
+                dialog.dismiss()
+            }
+
+            // Set listener untuk menutup dialog ketika area background diklik
+            dialog.findViewById<View>(android.R.id.content).setOnClickListener {
+                dialog.dismiss()
+            }
+
+            // Mencegah dialog menutup ketika gambar diklik
+            fullSizeImage.setOnClickListener {
+                // Do nothing - prevent dialog from closing when image is clicked
+            }
+
+            dialog.show()
+
+        } catch (e: Exception) {
+            android.util.Log.e("PlanktonAdapter", "Error creating popup dialog: ${e.message}")
         }
-
-        // Set listener untuk menutup dialog ketika area background diklik
-        backgroundLayout.setOnClickListener {
-            dialog.dismiss()
-        }
-
-        // Mencegah dialog menutup ketika gambar diklik
-        fullSizeImage.setOnClickListener {
-            // Do nothing - prevent dialog from closing when image is clicked
-        }
-
-        dialog.show()
     }
 }

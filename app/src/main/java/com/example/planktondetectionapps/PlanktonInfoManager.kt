@@ -5,6 +5,7 @@ import android.content.Context
 import android.view.LayoutInflater
 import android.widget.ImageView
 import android.widget.TextView
+import com.example.planktondetectionapps.PlanktonInfoManager
 
 /**
  * Manager untuk menyediakan informasi plankton
@@ -241,16 +242,16 @@ object PlanktonInfoManager {
         try {
             // Inflate custom layout untuk popup
             val inflater = LayoutInflater.from(context)
-            val popupView = inflater.inflate(R.layout.popup_plankton_info, null)
+            val popupView = inflater.inflate(R.layout.dialog_plankton_info, null)
 
-            // Set data ke views
-            val titleText = popupView.findViewById<TextView>(R.id.titleText)
-            val typeText = popupView.findViewById<TextView>(R.id.typeText)
-            val descriptionText = popupView.findViewById<TextView>(R.id.descriptionText)
-            val imageView = popupView.findViewById<ImageView>(R.id.planktonImage)
+            // Set data ke views dengan ID yang benar sesuai layout
+            val titleText = popupView.findViewById<TextView>(R.id.planktonTitle)
+            val typeText = popupView.findViewById<TextView>(R.id.classificationType)
+            val descriptionText = popupView.findViewById<TextView>(R.id.planktonDescription)
+            val imageView = popupView.findViewById<ImageView>(R.id.sampleImage1)
 
             titleText.text = planktonInfo.name
-            typeText.text = "Tipe: ${planktonInfo.type}"
+            typeText.text = planktonInfo.type
             descriptionText.text = planktonInfo.description
 
             // Safely set image resource
