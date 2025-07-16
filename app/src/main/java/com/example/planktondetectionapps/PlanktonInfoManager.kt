@@ -244,22 +244,75 @@ object PlanktonInfoManager {
             val inflater = LayoutInflater.from(context)
             val popupView = inflater.inflate(R.layout.dialog_plankton_info, null)
 
-            // Set data ke views dengan ID yang benar sesuai layout
+            // Set data ke views dengan logika yang benar
             val titleText = popupView.findViewById<TextView>(R.id.planktonTitle)
             val typeText = popupView.findViewById<TextView>(R.id.classificationType)
             val descriptionText = popupView.findViewById<TextView>(R.id.planktonDescription)
-            val imageView = popupView.findViewById<ImageView>(R.id.sampleImage1)
+            val imageView1 = popupView.findViewById<ImageView>(R.id.sampleImage1)
+            val imageView2 = popupView.findViewById<ImageView>(R.id.sampleImage2)
+            val imageView3 = popupView.findViewById<ImageView>(R.id.sampleImage3)
 
-            titleText.text = planktonInfo.name
-            typeText.text = planktonInfo.type
+            // Header tetap "Informasi Plankton"
+            titleText.text = "Informasi Plankton"
+
+            // Spesies menampilkan nama hasil klasifikasi
+            typeText.text = planktonInfo.name
+
+            // Deskripsi tetap menampilkan deskripsi lengkap
             descriptionText.text = planktonInfo.description
 
-            // Safely set image resource
+            // Load gambar-gambar contoh
             try {
-                imageView.setImageResource(planktonInfo.mainImageResId)
+                // Gambar pertama - selalu ada
+                imageView1.setImageResource(planktonInfo.mainImageResId)
+
+                // Gambar kedua dan ketiga dari additionalImages jika tersedia
+                if (planktonInfo.additionalImages.isNotEmpty()) {
+                    if (planktonInfo.additionalImages.size > 1) {
+                        imageView2.setImageResource(planktonInfo.additionalImages[1])
+                    } else {
+                        imageView2.setImageResource(planktonInfo.mainImageResId)
+                    }
+
+                    if (planktonInfo.additionalImages.size > 2) {
+                        imageView3.setImageResource(planktonInfo.additionalImages[2])
+                    } else {
+                        imageView3.setImageResource(planktonInfo.mainImageResId)
+                    }
+                } else {
+                    // Jika tidak ada additional images, gunakan main image untuk semua
+                    imageView2.setImageResource(planktonInfo.mainImageResId)
+                    imageView3.setImageResource(planktonInfo.mainImageResId)
+                }
+
+                // Tambahkan click listeners untuk masing-masing gambar preview
+                imageView1.setOnClickListener {
+                    showFullSizeImage(context, planktonInfo.mainImageResId, "${planktonInfo.name} - Gambar 1")
+                }
+
+                imageView2.setOnClickListener {
+                    val imageResId = if (planktonInfo.additionalImages.size > 1) {
+                        planktonInfo.additionalImages[1]
+                    } else {
+                        planktonInfo.mainImageResId
+                    }
+                    showFullSizeImage(context, imageResId, "${planktonInfo.name} - Gambar 2")
+                }
+
+                imageView3.setOnClickListener {
+                    val imageResId = if (planktonInfo.additionalImages.size > 2) {
+                        planktonInfo.additionalImages[2]
+                    } else {
+                        planktonInfo.mainImageResId
+                    }
+                    showFullSizeImage(context, imageResId, "${planktonInfo.name} - Gambar 3")
+                }
+
             } catch (e: Exception) {
-                // If image resource doesn't exist, use a default placeholder
-                imageView.setImageResource(android.R.drawable.ic_menu_gallery)
+                // If image resources don't exist, use default placeholder
+                imageView1.setImageResource(android.R.drawable.ic_menu_gallery)
+                imageView2.setImageResource(android.R.drawable.ic_menu_gallery)
+                imageView3.setImageResource(android.R.drawable.ic_menu_gallery)
             }
 
             // Tampilkan dialog
@@ -273,6 +326,58 @@ object PlanktonInfoManager {
                 .setTitle("Informasi Plankton")
                 .setMessage("${planktonInfo.name}\n\nTipe: ${planktonInfo.type}\n\n${planktonInfo.description}")
                 .setPositiveButton("Tutup", null)
+                .show()
+        }
+    }
+
+    /**
+     * Menampilkan gambar dalam ukuran penuh saat preview gambar diklik
+     */
+    private fun showFullSizeImage(context: Context, imageResId: Int, title: String) {
+        try {
+            // Buat dialog fullscreen untuk menampilkan gambar
+            val dialog = android.app.Dialog(context, android.R.style.Theme_Black_NoTitleBar_Fullscreen)
+
+            // Inflate layout untuk fullsize image
+            val inflater = LayoutInflater.from(context)
+            val fullImageView = inflater.inflate(R.layout.dialog_image_popup, null)
+
+            dialog.setContentView(fullImageView)
+
+            // Get UI elements
+            val fullSizeImage = fullImageView.findViewById<ImageView>(R.id.fullSizeImage)
+            val imageTitle = fullImageView.findViewById<TextView>(R.id.imageTitle)
+            val closeButton = fullImageView.findViewById<ImageView>(R.id.closeButton)
+
+            // Set image dan title
+            fullSizeImage.setImageResource(imageResId)
+            imageTitle.text = title
+
+            // Set close button listener
+            closeButton.setOnClickListener {
+                dialog.dismiss()
+            }
+
+            // Set background click listener untuk menutup dialog
+            fullImageView.setOnClickListener {
+                dialog.dismiss()
+            }
+
+            // Prevent image click from closing dialog
+            fullSizeImage.setOnClickListener {
+                // Do nothing - prevent dialog from closing when image is clicked
+            }
+
+            dialog.show()
+
+        } catch (e: Exception) {
+            android.util.Log.e("PlanktonInfoManager", "Error showing full size image: ${e.message}")
+
+            // Fallback: tampilkan toast atau alert sederhana
+            AlertDialog.Builder(context)
+                .setTitle(title)
+                .setMessage("Tidak dapat menampilkan gambar dalam ukuran penuh")
+                .setPositiveButton("OK", null)
                 .show()
         }
     }

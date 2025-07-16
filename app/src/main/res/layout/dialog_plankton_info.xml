@@ -27,15 +27,6 @@
                 android:textStyle="bold"
                 android:textColor="#093266" />
 
-            <ImageButton
-                android:id="@+id/closeButton"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
-                android:src="@android:drawable/ic_menu_close_clear_cancel"
-                android:contentDescription="Tutup" />
 
         </RelativeLayout>
 
