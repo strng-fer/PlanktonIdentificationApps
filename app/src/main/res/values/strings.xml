@@ -15,6 +15,10 @@
     <string name="save_button">Simpan Hasil</string>
     <string name="model_selection">Pilih Model AI</string>
 
+    <!-- Batch Processing -->
+    <string name="processing_images_progress">Memproses %1$d dari %2$d gambar...</string>
+    <string name="processing_complete">Selesai! %1$d gambar berhasil diproses</string>
+
     <!-- Settings Activity -->
     <string name="appearance_section">Tampilan</string>
     <string name="dark_mode">Mode Gelap</string>
@@ -54,4 +58,3 @@
     <string name="error">Error</string>
     <string name="success">Berhasil</string>
 </resources>
-

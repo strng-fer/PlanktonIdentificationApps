@@ -48,6 +48,14 @@
             android:parentActivityName=".MainActivity"
             android:screenOrientation="portrait" />
 
+        <!-- Batch Processing Activity -->
+        <activity
+            android:name=".BatchProcessingActivity"
+            android:exported="false"
+            android:label="Batch Processing"
+            android:parentActivityName=".MainActivity"
+            android:screenOrientation="portrait" />
+
         <!-- About Activity -->
         <activity
             android:name=".AboutActivity"

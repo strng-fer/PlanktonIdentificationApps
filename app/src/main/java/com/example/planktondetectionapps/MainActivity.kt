@@ -115,6 +115,7 @@ class MainActivity : AppCompatActivity() {
     // Activity result launchers
     private lateinit var cameraLauncher: ActivityResultLauncher<Intent>
     private lateinit var galleryLauncher: ActivityResultLauncher<Intent>
+    private lateinit var batchGalleryLauncher: ActivityResultLauncher<Intent>
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
     private lateinit var storagePermissionLauncher: ActivityResultLauncher<String>
 
@@ -233,8 +234,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         galleryButton?.setOnClickListener {
-            val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-            galleryLauncher.launch(galleryIntent)
+            showGallerySelectionDialog()
         }
 
         saveButton?.setOnClickListener {
@@ -455,6 +455,44 @@ class MainActivity : AppCompatActivity() {
                     }
                 } catch (e: Exception) {
                     showError("Error processing gallery image: ${e.message}")
+                }
+            } else {
+                showError("Pemilihan gambar dibatalkan.")
+            }
+        }
+
+        // Batch gallery launcher
+        batchGalleryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK && result.data != null) {
+                try {
+                    val imageUris = mutableListOf<Uri>()
+
+                    // Handle multiple selection
+                    val clipData = result.data?.clipData
+                    if (clipData != null) {
+                        // Multiple images selected
+                        for (i in 0 until clipData.itemCount) {
+                            val item = clipData.getItemAt(i)
+                            imageUris.add(item.uri)
+                        }
+                    } else {
+                        // Single image selected (fallback)
+                        result.data?.data?.let { uri ->
+                            imageUris.add(uri)
+                        }
+                    }
+
+                    if (imageUris.isNotEmpty()) {
+                        // Launch batch processing activity
+                        val intent = Intent(this, BatchProcessingActivity::class.java)
+                        intent.putParcelableArrayListExtra("imageUris", ArrayList(imageUris))
+                        intent.putExtra("selectedModel", selectedModel)
+                        startActivity(intent)
+                    } else {
+                        showError("Tidak ada gambar yang dipilih.")
+                    }
+                } catch (e: Exception) {
+                    showError("Error processing gallery images: ${e.message}")
                 }
             } else {
                 showError("Pemilihan gambar dibatalkan.")
@@ -1354,5 +1392,33 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, DocumentationActivity::class.java)
             startActivity(intent)
         }
+    }
+
+    /**
+     * Tampilkan dialog pemilihan galeri (single atau batch)
+     */
+    private fun showGallerySelectionDialog() {
+        val options = arrayOf("Pilih Gambar Tunggal", "Pilih Beberapa Gambar")
+        val builder = AlertDialog.Builder(this)
+        builder.setTitle("Pilih Opsi Galeri")
+            .setItems(options) { dialog, which ->
+                when (which) {
+                    0 -> {
+                        // Single image selection
+                        val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+                        galleryLauncher.launch(galleryIntent)
+                    }
+                    1 -> {
+                        // Batch image selection
+                        val batchGalleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+                        batchGalleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+                        batchGalleryLauncher.launch(batchGalleryIntent)
+                    }
+                }
+            }
+            .setNegativeButton("Batal") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .show()
     }
 }
