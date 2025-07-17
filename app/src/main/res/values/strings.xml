@@ -18,6 +18,9 @@
     <!-- Batch Processing -->
     <string name="processing_images_progress">Memproses %1$d dari %2$d gambar...</string>
     <string name="processing_complete">Selesai! %1$d gambar berhasil diproses</string>
+    <string name="loading_filename">Memuat nama file...</string>
+    <string name="processing_prediction">Memproses...</string>
+    <string name="processing_confidence">--</string>
 
     <!-- Settings Activity -->
     <string name="appearance_section">Tampilan</string>
