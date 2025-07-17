@@ -1395,30 +1395,42 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Tampilkan dialog pemilihan galeri (single atau batch)
+     * Tampilkan dialog pemilihan galeri (single atau batch) dengan UI modern
      */
     private fun showGallerySelectionDialog() {
-        val options = arrayOf("Pilih Gambar Tunggal", "Pilih Beberapa Gambar")
-        val builder = AlertDialog.Builder(this)
-        builder.setTitle("Pilih Opsi Galeri")
-            .setItems(options) { dialog, which ->
-                when (which) {
-                    0 -> {
-                        // Single image selection
-                        val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-                        galleryLauncher.launch(galleryIntent)
-                    }
-                    1 -> {
-                        // Batch image selection
-                        val batchGalleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-                        batchGalleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
-                        batchGalleryLauncher.launch(batchGalleryIntent)
-                    }
-                }
-            }
-            .setNegativeButton("Batal") { dialog, _ ->
-                dialog.dismiss()
-            }
-            .show()
+        val dialogBuilder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_gallery_selection, null)
+
+        dialogBuilder.setView(dialogView)
+        dialogBuilder.setCancelable(true)
+
+        val dialog = dialogBuilder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        // Setup click listeners for options
+        val singleImageOption = dialogView.findViewById<LinearLayout>(R.id.singleImageOption)
+        val batchProcessingOption = dialogView.findViewById<LinearLayout>(R.id.batchProcessingOption)
+        val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
+
+        singleImageOption.setOnClickListener {
+            dialog.dismiss()
+            // Single image selection
+            val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+            galleryLauncher.launch(galleryIntent)
+        }
+
+        batchProcessingOption.setOnClickListener {
+            dialog.dismiss()
+            // Batch image selection
+            val batchGalleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+            batchGalleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
+            batchGalleryLauncher.launch(batchGalleryIntent)
+        }
+
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 }
