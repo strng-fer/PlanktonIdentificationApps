@@ -130,11 +130,22 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         initializeViews()
-        showWelcomeDialog()
         initializeLaunchers()
         setupCustomDropdown()
         setupNavigationMenu()
         setupButtonListeners()
+
+        // Delay welcome dialog until after layout is completely finished
+        // This prevents any flicker by ensuring everything is ready
+        window.decorView.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                // Remove listener to prevent multiple calls
+                window.decorView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+
+                // Now show welcome dialog when everything is fully rendered
+                showWelcomeDialog()
+            }
+        })
     }
 
     /**
