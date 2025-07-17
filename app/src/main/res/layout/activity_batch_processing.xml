@@ -30,7 +30,7 @@
             android:text="Batch Processing"
             android:textSize="20sp"
             android:textStyle="bold"
-            android:textColor="@android:color/white"
+            android:textColor="@color/primary_blue_dark"
             android:gravity="center"
             android:layout_marginEnd="40dp" />
 
