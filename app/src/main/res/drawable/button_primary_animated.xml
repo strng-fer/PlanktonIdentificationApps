@@ -3,19 +3,20 @@
     android:enterFadeDuration="150"
     android:exitFadeDuration="150">
 
-    <!-- Pressed state with enhanced layer effect -->
+    <!-- Pressed state with scale effect -->
     <item android:state_pressed="true">
         <layer-list>
             <item>
                 <shape android:shape="rectangle">
-                    <solid android:color="@color/secondary_orange_dark"/>
-                    <corners android:radius="16dp"/>
+                    <solid android:color="@color/primary_blue_dark"/>
+                    <corners android:radius="20dp"/>
                 </shape>
             </item>
+            <!-- Ripple effect overlay -->
             <item>
                 <shape android:shape="rectangle">
-                    <solid android:color="#30FFFFFF"/>
-                    <corners android:radius="16dp"/>
+                    <solid android:color="#20FFFFFF"/>
+                    <corners android:radius="20dp"/>
                 </shape>
             </item>
         </layer-list>
@@ -23,26 +24,30 @@
 
     <!-- Focused state -->
     <item android:state_focused="true">
-        <shape android:shape="rectangle">
-            <solid android:color="@color/secondary_orange"/>
-            <corners android:radius="16dp"/>
-            <stroke android:width="2dp" android:color="@color/secondary_orange_dark"/>
-        </shape>
+        <layer-list>
+            <item>
+                <shape android:shape="rectangle">
+                    <solid android:color="@color/primary_blue"/>
+                    <corners android:radius="20dp"/>
+                    <stroke android:width="2dp" android:color="@color/primary_blue_dark"/>
+                </shape>
+            </item>
+        </layer-list>
     </item>
 
     <!-- Disabled state -->
     <item android:state_enabled="false">
         <shape android:shape="rectangle">
             <solid android:color="#CCCCCC"/>
-            <corners android:radius="16dp"/>
+            <corners android:radius="20dp"/>
         </shape>
     </item>
 
     <!-- Default state -->
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/secondary_orange"/>
-            <corners android:radius="16dp"/>
+            <solid android:color="@color/primary_blue"/>
+            <corners android:radius="20dp"/>
         </shape>
     </item>
 </selector>

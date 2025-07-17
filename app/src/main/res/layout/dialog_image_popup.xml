@@ -14,7 +14,7 @@
         android:layout_alignParentTop="true"
         android:layout_alignParentEnd="true"
         android:layout_margin="16dp"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:background="@drawable/image_button_animated"
         android:contentDescription="Tutup"
         android:padding="12dp"
         android:src="@android:drawable/ic_menu_close_clear_cancel"

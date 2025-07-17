@@ -174,7 +174,7 @@
         android:layout_width="match_parent"
         android:layout_height="48dp"
         android:layout_marginTop="8dp"
-        android:background="@drawable/button_primary"
+        android:background="@drawable/button_primary_animated"
         android:text="Tutup"
         android:textColor="@color/save_button_text_color"
         android:textSize="14sp"

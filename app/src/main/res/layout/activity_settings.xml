@@ -24,7 +24,7 @@
                 android:id="@+id/backButton"
                 android:layout_width="40dp"
                 android:layout_height="40dp"
-                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:background="@drawable/image_button_animated"
                 android:src="@drawable/ic_arrow_back"
                 android:tint="@color/primary_text_color"
                 android:layout_marginEnd="16dp" />
@@ -68,7 +68,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
-                android:background="@drawable/custom_dropdown_background"
+                android:background="@drawable/card_button_animated"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
@@ -108,7 +108,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/custom_dropdown_background"
+                android:background="@drawable/card_button_animated"
                 android:orientation="horizontal"
                 android:padding="16dp">
 
@@ -166,7 +166,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@drawable/custom_dropdown_background"
+                android:background="@drawable/card_button_animated"
                 android:orientation="horizontal"
                 android:padding="16dp">
 

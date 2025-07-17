@@ -201,7 +201,7 @@
         android:id="@+id/welcomeStartButton"
         android:layout_width="match_parent"
         android:layout_height="56dp"
-        android:background="@drawable/button_primary"
+        android:background="@drawable/button_primary_animated"
         android:elevation="2dp"
         android:gravity="center"
         android:text="Mulai Menggunakan PlanktoScan"
