@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/card_background"
+    android:padding="24dp"
+    android:gravity="center">
+
+    <!-- Main Loading Animation Container -->
+    <RelativeLayout
+        android:layout_width="120dp"
+        android:layout_height="120dp"
+        android:layout_marginBottom="24dp">
+
+        <!-- Outer rotating circle -->
+        <ImageView
+            android:id="@+id/outerCircle"
+            android:layout_width="120dp"
+            android:layout_height="120dp"
+            android:layout_centerInParent="true"
+            android:src="@drawable/loading_outer_circle"
+            android:contentDescription="Loading outer circle" />
+
+        <!-- Inner rotating circle -->
+        <ImageView
+            android:id="@+id/innerCircle"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_centerInParent="true"
+            android:src="@drawable/loading_inner_circle"
+            android:contentDescription="Loading inner circle" />
+
+        <!-- Center plankton icon -->
+        <ImageView
+            android:id="@+id/centerIcon"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_centerInParent="true"
+            android:src="@mipmap/icon_only"
+            android:contentDescription="Plankton icon" />
+
+        <!-- Floating particles -->
+        <ImageView
+            android:id="@+id/particle1"
+            android:layout_width="8dp"
+            android:layout_height="8dp"
+            android:layout_alignTop="@id/outerCircle"
+            android:layout_alignStart="@id/outerCircle"
+            android:layout_marginTop="20dp"
+            android:layout_marginStart="20dp"
+            android:src="@drawable/particle_dot"
+            android:contentDescription="Particle 1" />
+
+        <ImageView
+            android:id="@+id/particle2"
+            android:layout_width="6dp"
+            android:layout_height="6dp"
+            android:layout_alignTop="@id/outerCircle"
+            android:layout_alignEnd="@id/outerCircle"
+            android:layout_marginTop="30dp"
+            android:layout_marginEnd="15dp"
+            android:src="@drawable/particle_dot"
+            android:contentDescription="Particle 2" />
+
+        <ImageView
+            android:id="@+id/particle3"
+            android:layout_width="10dp"
+            android:layout_height="10dp"
+            android:layout_alignBottom="@id/outerCircle"
+            android:layout_alignStart="@id/outerCircle"
+            android:layout_marginBottom="25dp"
+            android:layout_marginStart="25dp"
+            android:src="@drawable/particle_dot"
+            android:contentDescription="Particle 3" />
+
+    </RelativeLayout>
+
+    <!-- Loading Title -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Menganalisis Plankton"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="#093266"
+        android:layout_marginBottom="8dp" />
+
+    <!-- Current Model Processing -->
+    <TextView
+        android:id="@+id/currentModelText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Memproses dengan AI Model..."
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="16dp"
+        android:gravity="center" />
+
+    <!-- Progress Bar -->
+    <ProgressBar
+        android:id="@+id/progressBar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="8dp"
+        android:layout_marginBottom="8dp"
+        android:max="9"
+        android:progress="0"
+        android:progressDrawable="@drawable/progress_bar_custom" />
+
+    <!-- Progress Text -->
+    <TextView
+        android:id="@+id/progressText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0 / 9 Model Selesai"
+        android:textSize="12sp"
+        android:textColor="#888888"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Model List with Status -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/card_background_light"
+        android:padding="12dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Status Model AI:"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:textColor="#093266"
+            android:layout_marginBottom="8dp" />
+
+        <!-- Model Status Items -->
+        <LinearLayout
+            android:id="@+id/modelStatusContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Model status items will be added dynamically -->
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Fun Fact -->
+    <TextView
+        android:id="@+id/funFactText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="💡 Tahukah kamu? Plankton adalah organisme mikroskopis yang sangat penting untuk ekosistem laut!"
+        android:textSize="11sp"
+        android:textColor="#4CAF50"
+        android:layout_marginTop="16dp"
+        android:background="@drawable/card_background_light"
+        android:padding="8dp"
+        android:gravity="center" />
+
+</LinearLayout>

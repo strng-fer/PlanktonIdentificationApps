@@ -12,6 +12,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
+import android.os.Looper
 import android.provider.MediaStore
 import android.view.View
 import android.widget.Button
@@ -139,7 +141,8 @@ class MainActivity : AppCompatActivity() {
 
         // Delay welcome dialog until after layout is completely finished
         // This prevents any flicker by ensuring everything is ready
-        window.decorView.viewTreeObserver.addOnGlobalLayoutListener(object : android.view.ViewTreeObserver.OnGlobalLayoutListener {
+        window.decorView.viewTreeObserver.addOnGlobalLayoutListener(object :
+            android.view.ViewTreeObserver.OnGlobalLayoutListener {
             override fun onGlobalLayout() {
                 // Remove listener to prevent multiple calls
                 window.decorView.viewTreeObserver.removeOnGlobalLayoutListener(this)
@@ -190,10 +193,12 @@ class MainActivity : AppCompatActivity() {
                     view.alpha = 0.7f
                     false
                 }
+
                 android.view.MotionEvent.ACTION_UP, android.view.MotionEvent.ACTION_CANCEL -> {
                     view.alpha = 1.0f
                     false
                 }
+
                 else -> false
             }
         }
@@ -256,39 +261,75 @@ class MainActivity : AppCompatActivity() {
         }
 
         option1?.setOnClickListener {
-            selectModel(ModelType.MOBILENET_V3_SMALL, "MobileNetV3 Small", "Model ringan dengan performa cepat")
+            selectModel(
+                ModelType.MOBILENET_V3_SMALL,
+                "MobileNetV3 Small",
+                "Model ringan dengan performa cepat"
+            )
         }
 
         option2?.setOnClickListener {
-            selectModel(ModelType.MOBILENET_V3_LARGE, "MobileNetV3 Large", "Model ringan dengan performa cepat dan lebih akurat")
+            selectModel(
+                ModelType.MOBILENET_V3_LARGE,
+                "MobileNetV3 Large",
+                "Model ringan dengan performa cepat dan lebih akurat"
+            )
         }
 
         option3?.setOnClickListener {
-            selectModel(ModelType.RESNET50_V2, "ResNet50 V2 (300 Data)", "Model menengah dengan akurasi tinggi")
+            selectModel(
+                ModelType.RESNET50_V2,
+                "ResNet50 V2 (300 Data)",
+                "Model menengah dengan akurasi tinggi"
+            )
         }
 
         option4?.setOnClickListener {
-            selectModel(ModelType.RESNET101_V2, "ResNet101 V2 (300 Data)", "Model tinggi dengan keakuratan sangat tinggi")
+            selectModel(
+                ModelType.RESNET101_V2,
+                "ResNet101 V2 (300 Data)",
+                "Model tinggi dengan keakuratan sangat tinggi"
+            )
         }
 
         option5?.setOnClickListener {
-            selectModel(ModelType.EFFICIENTNET_V1_B0, "EfficientNet V1 B0 (300 Data)", "Model dengan efisiensi optimal")
+            selectModel(
+                ModelType.EFFICIENTNET_V1_B0,
+                "EfficientNet V1 B0 (300 Data)",
+                "Model dengan efisiensi optimal"
+            )
         }
 
         option6?.setOnClickListener {
-            selectModel(ModelType.EFFICIENTNET_V2_B0, "EfficientNet V2 B0 (300 Data)", "Model terbaru dengan efisiensi optimal")
+            selectModel(
+                ModelType.EFFICIENTNET_V2_B0,
+                "EfficientNet V2 B0 (300 Data)",
+                "Model terbaru dengan efisiensi optimal"
+            )
         }
 
         option7?.setOnClickListener {
-            selectModel(ModelType.CONVNEXT_TINY, "ConvNext Tiny", "Model modern dengan arsitektur ConvNext")
+            selectModel(
+                ModelType.CONVNEXT_TINY,
+                "ConvNext Tiny",
+                "Model modern dengan arsitektur ConvNext"
+            )
         }
 
         option8?.setOnClickListener {
-            selectModel(ModelType.DENSENET121, "DenseNet121", "Model dengan koneksi dense yang efisien")
+            selectModel(
+                ModelType.DENSENET121,
+                "DenseNet121",
+                "Model dengan koneksi dense yang efisien"
+            )
         }
 
         option9?.setOnClickListener {
-            selectModel(ModelType.MAJORITY_VOTING, "Majority Voting", "Ensemble dari 9 model untuk akurasi maksimal")
+            selectModel(
+                ModelType.MAJORITY_VOTING,
+                "Majority Voting",
+                "Ensemble dari 9 model untuk akurasi maksimal"
+            )
         }
     }
 
@@ -331,7 +372,8 @@ class MainActivity : AppCompatActivity() {
             saveImageToGallery()
         } else {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                == PackageManager.PERMISSION_GRANTED) {
+                == PackageManager.PERMISSION_GRANTED
+            ) {
                 saveImageToGallery()
             } else {
                 storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
@@ -393,130 +435,148 @@ class MainActivity : AppCompatActivity() {
      */
     private fun initializeLaunchers() {
         // Camera launcher - using full resolution capture with file output
-        cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK) {
-                try {
-                    currentPhotoUri?.let { photoUri ->
-                        android.util.Log.d("PlanktonDebug", "Loading full resolution image from URI")
-                        val bitmap = loadHighQualityImageFromUri(photoUri)
-                        android.util.Log.d("PlanktonDebug", "Full resolution camera image size: ${bitmap.width}x${bitmap.height}")
+        cameraLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == RESULT_OK) {
+                    try {
+                        currentPhotoUri?.let { photoUri ->
+                            android.util.Log.d(
+                                "PlanktonDebug",
+                                "Loading full resolution image from URI"
+                            )
+                            val bitmap = loadHighQualityImageFromUri(photoUri)
+                            android.util.Log.d(
+                                "PlanktonDebug",
+                                "Full resolution camera image size: ${bitmap.width}x${bitmap.height}"
+                            )
 
-                        currentBitmap = bitmap
-                        imageView?.setImageBitmap(bitmap)
+                            currentBitmap = bitmap
+                            imageView?.setImageBitmap(bitmap)
 
-                        val aiImage = createHighQualitySquareImage(bitmap, imageSize)
-                        classifyImage(aiImage)
+                            val aiImage = createHighQualitySquareImage(bitmap, imageSize)
+                            classifyImage(aiImage)
 
-                        cleanupTempFile(photoUri)
-                        return@registerForActivityResult
+                            cleanupTempFile(photoUri)
+                            return@registerForActivityResult
+                        }
+
+                        // Fallback to thumbnail if no URI
+                        val extras = result.data?.extras
+
+                        @Suppress("DEPRECATION")
+                        val photo = extras?.get("data") as? Bitmap
+
+                        if (photo != null) {
+                            android.util.Log.d(
+                                "PlanktonDebug",
+                                "Fallback to thumbnail - size: ${photo.width}x${photo.height}"
+                            )
+                            showError("Kualitas gambar rendah (thumbnail). Menggunakan kualitas yang tersedia.")
+
+                            currentBitmap = photo
+                            imageView?.setImageBitmap(photo)
+                            val aiImage = createHighQualitySquareImage(photo, imageSize)
+                            classifyImage(aiImage)
+                        } else {
+                            showError("Gagal mengambil gambar dari kamera.")
+                        }
+                    } catch (e: Exception) {
+                        showError("Error processing image: ${e.message}")
+                        currentPhotoUri?.let { cleanupTempFile(it) }
                     }
-
-                    // Fallback to thumbnail if no URI
-                    val extras = result.data?.extras
-                    @Suppress("DEPRECATION")
-                    val photo = extras?.get("data") as? Bitmap
-
-                    if (photo != null) {
-                        android.util.Log.d("PlanktonDebug", "Fallback to thumbnail - size: ${photo.width}x${photo.height}")
-                        showError("Kualitas gambar rendah (thumbnail). Menggunakan kualitas yang tersedia.")
-
-                        currentBitmap = photo
-                        imageView?.setImageBitmap(photo)
-                        val aiImage = createHighQualitySquareImage(photo, imageSize)
-                        classifyImage(aiImage)
-                    } else {
-                        showError("Gagal mengambil gambar dari kamera.")
-                    }
-                } catch (e: Exception) {
-                    showError("Error processing image: ${e.message}")
+                } else {
+                    showError("Pengambilan gambar dibatalkan.")
                     currentPhotoUri?.let { cleanupTempFile(it) }
                 }
-            } else {
-                showError("Pengambilan gambar dibatalkan.")
-                currentPhotoUri?.let { cleanupTempFile(it) }
             }
-        }
 
         // Gallery launcher
-        galleryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK && result.data != null) {
-                try {
-                    val imageUri = result.data?.data
-                    if (imageUri != null) {
-                        val bitmap = loadHighQualityImageFromUri(imageUri)
-                        android.util.Log.d("PlanktonDebug", "Gallery image size: ${bitmap.width}x${bitmap.height}")
+        galleryLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == RESULT_OK && result.data != null) {
+                    try {
+                        val imageUri = result.data?.data
+                        if (imageUri != null) {
+                            val bitmap = loadHighQualityImageFromUri(imageUri)
+                            android.util.Log.d(
+                                "PlanktonDebug",
+                                "Gallery image size: ${bitmap.width}x${bitmap.height}"
+                            )
 
-                        currentBitmap = bitmap
-                        imageView?.setImageBitmap(bitmap)
+                            currentBitmap = bitmap
+                            imageView?.setImageBitmap(bitmap)
 
-                        val aiImage = createHighQualitySquareImage(bitmap, imageSize)
-                        classifyImage(aiImage)
-                    } else {
-                        showError("Gagal mengambil gambar dari galeri.")
+                            val aiImage = createHighQualitySquareImage(bitmap, imageSize)
+                            classifyImage(aiImage)
+                        } else {
+                            showError("Gagal mengambil gambar dari galeri.")
+                        }
+                    } catch (e: Exception) {
+                        showError("Error processing gallery image: ${e.message}")
                     }
-                } catch (e: Exception) {
-                    showError("Error processing gallery image: ${e.message}")
+                } else {
+                    showError("Pemilihan gambar dibatalkan.")
                 }
-            } else {
-                showError("Pemilihan gambar dibatalkan.")
             }
-        }
 
         // Batch gallery launcher
-        batchGalleryLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            if (result.resultCode == RESULT_OK && result.data != null) {
-                try {
-                    val imageUris = mutableListOf<Uri>()
+        batchGalleryLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+                if (result.resultCode == RESULT_OK && result.data != null) {
+                    try {
+                        val imageUris = mutableListOf<Uri>()
 
-                    // Handle multiple selection
-                    val clipData = result.data?.clipData
-                    if (clipData != null) {
-                        // Multiple images selected
-                        for (i in 0 until clipData.itemCount) {
-                            val item = clipData.getItemAt(i)
-                            imageUris.add(item.uri)
+                        // Handle multiple selection
+                        val clipData = result.data?.clipData
+                        if (clipData != null) {
+                            // Multiple images selected
+                            for (i in 0 until clipData.itemCount) {
+                                val item = clipData.getItemAt(i)
+                                imageUris.add(item.uri)
+                            }
+                        } else {
+                            // Single image selected (fallback)
+                            result.data?.data?.let { uri ->
+                                imageUris.add(uri)
+                            }
                         }
-                    } else {
-                        // Single image selected (fallback)
-                        result.data?.data?.let { uri ->
-                            imageUris.add(uri)
-                        }
-                    }
 
-                    if (imageUris.isNotEmpty()) {
-                        // Launch batch processing activity
-                        val intent = Intent(this, BatchProcessingActivity::class.java)
-                        intent.putParcelableArrayListExtra("imageUris", ArrayList(imageUris))
-                        intent.putExtra("selectedModel", selectedModel)
-                        startActivity(intent)
-                    } else {
-                        showError("Tidak ada gambar yang dipilih.")
+                        if (imageUris.isNotEmpty()) {
+                            // Launch batch processing activity
+                            val intent = Intent(this, BatchProcessingActivity::class.java)
+                            intent.putParcelableArrayListExtra("imageUris", ArrayList(imageUris))
+                            intent.putExtra("selectedModel", selectedModel)
+                            startActivity(intent)
+                        } else {
+                            showError("Tidak ada gambar yang dipilih.")
+                        }
+                    } catch (e: Exception) {
+                        showError("Error processing gallery images: ${e.message}")
                     }
-                } catch (e: Exception) {
-                    showError("Error processing gallery images: ${e.message}")
+                } else {
+                    showError("Pemilihan gambar dibatalkan.")
                 }
-            } else {
-                showError("Pemilihan gambar dibatalkan.")
             }
-        }
 
         // Permission launcher
-        permissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                showCameraSelectionDialog()
-            } else {
-                showError("Izin kamera diperlukan untuk mengambil foto.")
+        permissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                if (isGranted) {
+                    showCameraSelectionDialog()
+                } else {
+                    showError("Izin kamera diperlukan untuk mengambil foto.")
+                }
             }
-        }
 
         // Storage permission launcher
-        storagePermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-            if (isGranted) {
-                saveImageToGallery()
-            } else {
-                showError("Izin penyimpanan diperlukan untuk menyimpan gambar ke galeri.")
+        storagePermissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                if (isGranted) {
+                    saveImageToGallery()
+                } else {
+                    showError("Izin penyimpanan diperlukan untuk menyimpan gambar ke galeri.")
+                }
             }
-        }
     }
 
     /**
@@ -559,233 +619,348 @@ class MainActivity : AppCompatActivity() {
                 return
             }
 
-            val inputFeature0 = TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
+            // Show loading dialog for single model classification too
+            val loadingDialog = ClassificationLoadingDialog(this)
+            loadingDialog.show()
 
-            // Choose preprocessing based on model type
-            val byteBuffer = when (selectedModel) {
-                ModelType.MOBILENET_V3_SMALL -> preprocessImageForMobileNetV3BuildIn(image)
-                ModelType.MOBILENET_V3_LARGE -> preprocessImageForMobileNetV3BuildIn(image)
-                ModelType.RESNET50_V2 -> preprocessImageForResNetV2(image)
-                ModelType.RESNET101_V2 -> preprocessImageForResNetV2(image)
-                ModelType.EFFICIENTNET_V1_B0 -> preprocessImageForEfficientNetBuildIn(image)
-                ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetBuildIn(image)
-                ModelType.CONVNEXT_TINY -> preprocessImageForConvNext(image)
-                ModelType.DENSENET121 -> preprocessImageForDenseNet(image)
-                ModelType.INCEPTION_V3 -> preprocessImageForInception(image)
-                ModelType.MAJORITY_VOTING -> throw IllegalStateException("Majority voting should be handled separately")
-            }
-            inputFeature0.loadBuffer(byteBuffer)
+            // Update dialog to show single model processing
+            loadingDialog.updateSingleModelProcessing(formatModelName(selectedModel))
 
-            // Run inference with selected model
-            val confidences = try {
-                when (selectedModel) {
-                    ModelType.MOBILENET_V3_SMALL -> {
-                        try {
-                            val model = com.example.planktondetectionapps.ml.MobileNetV3Small.newInstance(applicationContext)
-                            val outputs = model.process(inputFeature0)
-                            val result = outputs.outputFeature0AsTensorBuffer.floatArray
-                            model.close()
-                            result
-                        } catch (e: Exception) {
-                            android.util.Log.e("PlanktonDebug", "MobileNetV3Small model not found", e)
-                            showError("Model MobileNetV3Small tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
-                            return
-                        }
+            // Process in background thread
+            Thread {
+                try {
+                    val inputFeature0 =
+                        TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
+
+                    // Choose preprocessing based on model type
+                    val byteBuffer = when (selectedModel) {
+                        ModelType.MOBILENET_V3_SMALL -> preprocessImageForMobileNetV3BuildIn(image)
+                        ModelType.MOBILENET_V3_LARGE -> preprocessImageForMobileNetV3BuildIn(image)
+                        ModelType.RESNET50_V2 -> preprocessImageForResNetV2(image)
+                        ModelType.RESNET101_V2 -> preprocessImageForResNetV2(image)
+                        ModelType.EFFICIENTNET_V1_B0 -> preprocessImageForEfficientNetBuildIn(image)
+                        ModelType.EFFICIENTNET_V2_B0 -> preprocessImageForEfficientNetBuildIn(image)
+                        ModelType.CONVNEXT_TINY -> preprocessImageForConvNext(image)
+                        ModelType.DENSENET121 -> preprocessImageForDenseNet(image)
+                        ModelType.INCEPTION_V3 -> preprocessImageForInception(image)
+                        ModelType.MAJORITY_VOTING -> throw IllegalStateException("Majority voting should be handled separately")
                     }
+                    inputFeature0.loadBuffer(byteBuffer)
 
-                    ModelType.MOBILENET_V3_LARGE -> {
-                        try {
-                            val model = com.example.planktondetectionapps.ml.MobileNetV3LargeWith300Data.newInstance(applicationContext)
-                            val outputs = model.process(inputFeature0)
-                            val result = outputs.outputFeature0AsTensorBuffer.floatArray
-                            model.close()
-                            result
-                        } catch (e: Exception) {
-                            android.util.Log.e("PlanktonDebug", "MobileNetV3Small model not found", e)
-                            showError("Model MobileNetV3Large tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
-                            return
-                        }
-                    }
-
-                    ModelType.RESNET50_V2 -> {
-                        try {
-                            val modelClass = try {
-                                Class.forName("com.example.planktondetectionapps.ml.ResNet50V2")
-                            } catch (_: ClassNotFoundException) {
+                    // Run inference with selected model
+                    val confidences = try {
+                        when (selectedModel) {
+                            ModelType.MOBILENET_V3_SMALL -> {
                                 try {
-                                    Class.forName("com.example.planktondetectionapps.ml.ResNet50V2with300Data")
-                                } catch (_: ClassNotFoundException) {
-                                    Class.forName("com.example.planktondetectionapps.ml.Resnet50v2")
+                                    val model =
+                                        com.example.planktondetectionapps.ml.MobileNetV3Small.newInstance(
+                                            applicationContext
+                                        )
+                                    val outputs = model.process(inputFeature0)
+                                    val result = outputs.outputFeature0AsTensorBuffer.floatArray
+                                    model.close()
+                                    result
+                                } catch (e: Exception) {
+                                    android.util.Log.e(
+                                        "PlanktonDebug",
+                                        "MobileNetV3Small model not found",
+                                        e
+                                    )
+                                    runOnUiThread {
+                                        loadingDialog.dismiss()
+                                        showError("Model MobileNetV3Small tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                                    }
+                                    return@Thread
                                 }
                             }
 
-                            val modelInstance = modelClass.getMethod("newInstance", Context::class.java)
-                                .invoke(null, applicationContext)
-                            val processMethod = modelClass.getMethod("process", TensorBuffer::class.java)
-                            val outputs = processMethod.invoke(modelInstance, inputFeature0)
-                            val outputMethod = outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
-                            val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
-                            val result = tensorBuffer.floatArray
-
-                            val closeMethod = modelClass.getMethod("close")
-                            closeMethod.invoke(modelInstance)
-
-                            result
-                        } catch (e: Exception) {
-                            android.util.Log.e("PlanktonDebug", "ResNet50V2 model not found", e)
-                            showError("Model ResNet50V2 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
-                            return
-                        }
-                    }
-
-                    ModelType.RESNET101_V2 -> {
-                        try {
-                            val modelClass = try {
-                                Class.forName("com.example.planktondetectionapps.ml.ResNet101V2")
-                            } catch (_: ClassNotFoundException) {
+                            ModelType.MOBILENET_V3_LARGE -> {
                                 try {
-                                    Class.forName("com.example.planktondetectionapps.ml.ResNet101V2with300Data")
-                                } catch (_: ClassNotFoundException) {
-                                    Class.forName("com.example.planktondetectionapps.ml.Resnet101v2")
+                                    val model =
+                                        com.example.planktondetectionapps.ml.MobileNetV3LargeWith300Data.newInstance(
+                                            applicationContext
+                                        )
+                                    val outputs = model.process(inputFeature0)
+                                    val result = outputs.outputFeature0AsTensorBuffer.floatArray
+                                    model.close()
+                                    result
+                                } catch (e: Exception) {
+                                    android.util.Log.e(
+                                        "PlanktonDebug",
+                                        "MobileNetV3Small model not found",
+                                        e
+                                    )
+                                    runOnUiThread {
+                                        loadingDialog.dismiss()
+                                        showError("Model MobileNetV3Large tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                                    }
+                                    return@Thread
                                 }
                             }
 
-                            val modelInstance = modelClass.getMethod("newInstance", Context::class.java)
-                                .invoke(null, applicationContext)
-                            val processMethod = modelClass.getMethod("process", TensorBuffer::class.java)
-                            val outputs = processMethod.invoke(modelInstance, inputFeature0)
-                            val outputMethod = outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
-                            val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
-                            val result = tensorBuffer.floatArray
-
-                            val closeMethod = modelClass.getMethod("close")
-                            closeMethod.invoke(modelInstance)
-
-                            result
-                        } catch (e: Exception) {
-                            android.util.Log.e("PlanktonDebug", "ResNet101V2 model not found", e)
-                            showError("Model ResNet101V2 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
-                            return
-                        }
-                    }
-
-                    ModelType.EFFICIENTNET_V1_B0 -> {
-                        try {
-                            val modelClass = try {
-                                Class.forName("com.example.planktondetectionapps.ml.EfficientNetV1")
-                            } catch (_: ClassNotFoundException) {
+                            ModelType.RESNET50_V2 -> {
                                 try {
-                                    Class.forName("com.example.planktondetectionapps.ml.EfficientNetV1with300Data")
-                                } catch (_: ClassNotFoundException) {
-                                    Class.forName("com.example.planktondetectionapps.ml.Efficientnetv1")
+                                    val modelClass = try {
+                                        Class.forName("com.example.planktondetectionapps.ml.ResNet50V2")
+                                    } catch (_: ClassNotFoundException) {
+                                        try {
+                                            Class.forName("com.example.planktondetectionapps.ml.ResNet50V2with300Data")
+                                        } catch (_: ClassNotFoundException) {
+                                            Class.forName("com.example.planktondetectionapps.ml.Resnet50v2")
+                                        }
+                                    }
+
+                                    val modelInstance =
+                                        modelClass.getMethod("newInstance", Context::class.java)
+                                            .invoke(null, applicationContext)
+                                    val processMethod =
+                                        modelClass.getMethod("process", TensorBuffer::class.java)
+                                    val outputs = processMethod.invoke(modelInstance, inputFeature0)
+                                    val outputMethod =
+                                        outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
+                                    val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
+                                    val result = tensorBuffer.floatArray
+
+                                    val closeMethod = modelClass.getMethod("close")
+                                    closeMethod.invoke(modelInstance)
+
+                                    result
+                                } catch (e: Exception) {
+                                    android.util.Log.e(
+                                        "PlanktonDebug",
+                                        "ResNet50V2 model not found",
+                                        e
+                                    )
+                                    runOnUiThread {
+                                        loadingDialog.dismiss()
+                                        showError("Model ResNet50V2 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                                    }
+                                    return@Thread
                                 }
                             }
 
-                            val modelInstance = modelClass.getMethod("newInstance", Context::class.java)
-                                .invoke(null, applicationContext)
-                            val processMethod = modelClass.getMethod("process", TensorBuffer::class.java)
-                            val outputs = processMethod.invoke(modelInstance, inputFeature0)
-                            val outputMethod = outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
-                            val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
-                            val result = tensorBuffer.floatArray
-
-                            val closeMethod = modelClass.getMethod("close")
-                            closeMethod.invoke(modelInstance)
-
-                            result
-                        } catch (e: Exception) {
-                            android.util.Log.e("PlanktonDebug", "EfficientNetV1B0 model not found", e)
-                            showError("Model EfficientNetV1B0 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
-                            return
-                        }
-                    }
-
-                    ModelType.EFFICIENTNET_V2_B0 -> {
-                        try {
-                            val modelClass = try {
-                                Class.forName("com.example.planktondetectionapps.ml.EfficientNetV2B0")
-                            } catch (_: ClassNotFoundException) {
+                            ModelType.RESNET101_V2 -> {
                                 try {
-                                    Class.forName("com.example.planktondetectionapps.ml.EfficientNetV2B0with300Data")
-                                } catch (_: ClassNotFoundException) {
-                                    Class.forName("com.example.planktondetectionapps.ml.Efficientnetv2b0")
+                                    val modelClass = try {
+                                        Class.forName("com.example.planktondetectionapps.ml.ResNet101V2")
+                                    } catch (_: ClassNotFoundException) {
+                                        try {
+                                            Class.forName("com.example.planktondetectionapps.ml.ResNet101V2with300Data")
+                                        } catch (_: ClassNotFoundException) {
+                                            Class.forName("com.example.planktondetectionapps.ml.Resnet101v2")
+                                        }
+                                    }
+
+                                    val modelInstance =
+                                        modelClass.getMethod("newInstance", Context::class.java)
+                                            .invoke(null, applicationContext)
+                                    val processMethod =
+                                        modelClass.getMethod("process", TensorBuffer::class.java)
+                                    val outputs = processMethod.invoke(modelInstance, inputFeature0)
+                                    val outputMethod =
+                                        outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
+                                    val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
+                                    val result = tensorBuffer.floatArray
+
+                                    val closeMethod = modelClass.getMethod("close")
+                                    closeMethod.invoke(modelInstance)
+
+                                    result
+                                } catch (e: Exception) {
+                                    android.util.Log.e(
+                                        "PlanktonDebug",
+                                        "ResNet101V2 model not found",
+                                        e
+                                    )
+                                    runOnUiThread {
+                                        loadingDialog.dismiss()
+                                        showError("Model ResNet101V2 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                                    }
+                                    return@Thread
                                 }
                             }
 
-                            val modelInstance = modelClass.getMethod("newInstance", Context::class.java)
-                                .invoke(null, applicationContext)
-                            val processMethod = modelClass.getMethod("process", TensorBuffer::class.java)
-                            val outputs = processMethod.invoke(modelInstance, inputFeature0)
-                            val outputMethod = outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
-                            val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
-                            val result = tensorBuffer.floatArray
+                            ModelType.EFFICIENTNET_V1_B0 -> {
+                                try {
+                                    val modelClass = try {
+                                        Class.forName("com.example.planktondetectionapps.ml.EfficientNetV1")
+                                    } catch (_: ClassNotFoundException) {
+                                        try {
+                                            Class.forName("com.example.planktondetectionapps.ml.EfficientNetV1with300Data")
+                                        } catch (_: ClassNotFoundException) {
+                                            Class.forName("com.example.planktondetectionapps.ml.Efficientnetv1")
+                                        }
+                                    }
 
-                            val closeMethod = modelClass.getMethod("close")
-                            closeMethod.invoke(modelInstance)
+                                    val modelInstance =
+                                        modelClass.getMethod("newInstance", Context::class.java)
+                                            .invoke(null, applicationContext)
+                                    val processMethod =
+                                        modelClass.getMethod("process", TensorBuffer::class.java)
+                                    val outputs = processMethod.invoke(modelInstance, inputFeature0)
+                                    val outputMethod =
+                                        outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
+                                    val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
+                                    val result = tensorBuffer.floatArray
 
-                            result
-                        } catch (e: Exception) {
-                            android.util.Log.e("PlanktonDebug", "EfficientNetV2B0 model not found", e)
-                            showError("Model EfficientNetV2B0 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
-                            return
+                                    val closeMethod = modelClass.getMethod("close")
+                                    closeMethod.invoke(modelInstance)
+
+                                    result
+                                } catch (e: Exception) {
+                                    android.util.Log.e(
+                                        "PlanktonDebug",
+                                        "EfficientNetV1B0 model not found",
+                                        e
+                                    )
+                                    runOnUiThread {
+                                        loadingDialog.dismiss()
+                                        showError("Model EfficientNetV1B0 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                                    }
+                                    return@Thread
+                                }
+                            }
+
+                            ModelType.EFFICIENTNET_V2_B0 -> {
+                                try {
+                                    val modelClass = try {
+                                        Class.forName("com.example.planktondetectionapps.ml.EfficientNetV2B0")
+                                    } catch (_: ClassNotFoundException) {
+                                        try {
+                                            Class.forName("com.example.planktondetectionapps.ml.EfficientNetV2B0with300Data")
+                                        } catch (_: ClassNotFoundException) {
+                                            Class.forName("com.example.planktondetectionapps.ml.Efficientnetv2b0")
+                                        }
+                                    }
+
+                                    val modelInstance =
+                                        modelClass.getMethod("newInstance", Context::class.java)
+                                            .invoke(null, applicationContext)
+                                    val processMethod =
+                                        modelClass.getMethod("process", TensorBuffer::class.java)
+                                    val outputs = processMethod.invoke(modelInstance, inputFeature0)
+                                    val outputMethod =
+                                        outputs::class.java.getMethod("getOutputFeature0AsTensorBuffer")
+                                    val tensorBuffer = outputMethod.invoke(outputs) as TensorBuffer
+                                    val result = tensorBuffer.floatArray
+
+                                    val closeMethod = modelClass.getMethod("close")
+                                    closeMethod.invoke(modelInstance)
+
+                                    result
+                                } catch (e: Exception) {
+                                    android.util.Log.e(
+                                        "PlanktonDebug",
+                                        "EfficientNetV2B0 model not found",
+                                        e
+                                    )
+                                    runOnUiThread {
+                                        loadingDialog.dismiss()
+                                        showError("Model EfficientNetV2B0 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                                    }
+                                    return@Thread
+                                }
+                            }
+
+                            ModelType.CONVNEXT_TINY -> {
+                                try {
+                                    val model =
+                                        com.example.planktondetectionapps.ml.ConvNeXtTinywith300Data.newInstance(
+                                            applicationContext
+                                        )
+                                    val outputs = model.process(inputFeature0)
+                                    val result = outputs.outputFeature0AsTensorBuffer.floatArray
+                                    model.close()
+                                    result
+                                } catch (e: Exception) {
+                                    android.util.Log.e(
+                                        "PlanktonDebug",
+                                        "ConvNextTiny model not found",
+                                        e
+                                    )
+                                    runOnUiThread {
+                                        loadingDialog.dismiss()
+                                        showError("Model ConvNextTiny tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                                    }
+                                    return@Thread
+                                }
+                            }
+
+                            ModelType.DENSENET121 -> {
+                                try {
+                                    val model =
+                                        com.example.planktondetectionapps.ml.DenseNet121with300Data.newInstance(
+                                            applicationContext
+                                        )
+                                    val outputs = model.process(inputFeature0)
+                                    val result = outputs.outputFeature0AsTensorBuffer.floatArray
+                                    model.close()
+                                    result
+                                } catch (e: Exception) {
+                                    android.util.Log.e(
+                                        "PlanktonDebug",
+                                        "DenseNet121 model not found",
+                                        e
+                                    )
+                                    runOnUiThread {
+                                        loadingDialog.dismiss()
+                                        showError("Model DenseNet121 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                                    }
+                                    return@Thread
+                                }
+                            }
+
+                            ModelType.INCEPTION_V3 -> {
+                                try {
+                                    val model =
+                                        com.example.planktondetectionapps.ml.InceptionV3with300Data.newInstance(
+                                            applicationContext
+                                        )
+                                    val outputs = model.process(inputFeature0)
+                                    val result = outputs.outputFeature0AsTensorBuffer.floatArray
+                                    model.close()
+                                    result
+                                } catch (e: Exception) {
+                                    android.util.Log.e(
+                                        "PlanktonDebug",
+                                        "InceptionV3 model not found",
+                                        e
+                                    )
+                                    runOnUiThread {
+                                        loadingDialog.dismiss()
+                                        showError("Model InceptionV3 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
+                                    }
+                                    return@Thread
+                                }
+                            }
+
+                            ModelType.MAJORITY_VOTING -> {
+                                // This should never be reached as majority voting is handled separately
+                                throw IllegalStateException("Majority voting should be handled separately")
+                            }
                         }
+                    } catch (e: Exception) {
+                        android.util.Log.e("PlanktonDebug", "Error running model inference", e)
+                        runOnUiThread {
+                            loadingDialog.dismiss()
+                            showError("Error menjalankan inferensi model: ${e.message}")
+                        }
+                        return@Thread
                     }
 
-                    ModelType.CONVNEXT_TINY -> {
-                        try {
-                            val model = com.example.planktondetectionapps.ml.ConvNeXtTinywith300Data.newInstance(applicationContext)
-                            val outputs = model.process(inputFeature0)
-                            val result = outputs.outputFeature0AsTensorBuffer.floatArray
-                            model.close()
-                            result
-                        } catch (e: Exception) {
-                            android.util.Log.e("PlanktonDebug", "ConvNextTiny model not found", e)
-                            showError("Model ConvNextTiny tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
-                            return
-                        }
+                    // Process results on UI thread
+                    runOnUiThread {
+                        loadingDialog.dismiss()
+                        processClassificationResults(confidences)
                     }
 
-                    ModelType.DENSENET121 -> {
-                        try {
-                            val model = com.example.planktondetectionapps.ml.DenseNet121with300Data.newInstance(applicationContext)
-                            val outputs = model.process(inputFeature0)
-                            val result = outputs.outputFeature0AsTensorBuffer.floatArray
-                            model.close()
-                            result
-                        } catch (e: Exception) {
-                            android.util.Log.e("PlanktonDebug", "DenseNet121 model not found", e)
-                            showError("Model DenseNet121 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
-                            return
-                        }
-                    }
-
-                    ModelType.INCEPTION_V3 -> {
-                        try {
-                            val model = com.example.planktondetectionapps.ml.InceptionV3with300Data.newInstance(applicationContext)
-                            val outputs = model.process(inputFeature0)
-                            val result = outputs.outputFeature0AsTensorBuffer.floatArray
-                            model.close()
-                            result
-                        } catch (e: Exception) {
-                            android.util.Log.e("PlanktonDebug", "InceptionV3 model not found", e)
-                            showError("Model InceptionV3 tidak ditemukan. Pastikan file model sudah ditambahkan ke folder ml/")
-                            return
-                        }
-                    }
-
-                    ModelType.MAJORITY_VOTING -> {
-                        // This should never be reached as majority voting is handled separately
-                        throw IllegalStateException("Majority voting should be handled separately")
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonDebug", "Error in background classification", e)
+                    runOnUiThread {
+                        showError("Error classifying image with ${selectedModel.name}: ${e.message}")
                     }
                 }
-            } catch (e: Exception) {
-                android.util.Log.e("PlanktonDebug", "Error running model inference", e)
-                showError("Error menjalankan inferensi model: ${e.message}")
-                return
-            }
-
-            // Process results
-            processClassificationResults(confidences)
+            }.start()
 
         } catch (e: Exception) {
             android.util.Log.e("PlanktonDebug", "Error in classifyImage", e)
@@ -915,7 +1090,10 @@ class MainActivity : AppCompatActivity() {
         val intValues = IntArray(imageSize * imageSize)
         scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
 
-        android.util.Log.d("PlanktonDebug", "Processing image for MobileNetV3 with built-in preprocessing")
+        android.util.Log.d(
+            "PlanktonDebug",
+            "Processing image for MobileNetV3 with built-in preprocessing"
+        )
 
         var pixel = 0
         for (y in 0 until imageSize) {
@@ -979,7 +1157,10 @@ class MainActivity : AppCompatActivity() {
         val intValues = IntArray(imageSize * imageSize)
         scaledBitmap.getPixels(intValues, 0, imageSize, 0, 0, imageSize, imageSize)
 
-        android.util.Log.d("PlanktonDebug", "Processing image for EfficientNetV2 with built-in preprocessing")
+        android.util.Log.d(
+            "PlanktonDebug",
+            "Processing image for EfficientNetV2 with built-in preprocessing"
+        )
 
         var pixel = 0
         for (y in 0 until imageSize) {
@@ -1075,7 +1256,10 @@ class MainActivity : AppCompatActivity() {
         val intValues = IntArray(299 * 299)
         scaledBitmap.getPixels(intValues, 0, 299, 0, 0, 299, 299)
 
-        android.util.Log.d("PlanktonDebug", "Processing image for Inception with fixed size 299x299")
+        android.util.Log.d(
+            "PlanktonDebug",
+            "Processing image for Inception with fixed size 299x299"
+        )
 
         var pixel = 0
         for (y in 0 until 299) {
@@ -1181,7 +1365,8 @@ class MainActivity : AppCompatActivity() {
             val cameraIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
             cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, currentPhotoUri)
             cameraLauncher.launch(cameraIntent)
-            Toast.makeText(this, "Membuka kamera untuk foto resolusi penuh...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Membuka kamera untuk foto resolusi penuh...", Toast.LENGTH_SHORT)
+                .show()
         } catch (e: Exception) {
             showError("Error launching camera: ${e.message}")
         }
@@ -1243,11 +1428,15 @@ class MainActivity : AppCompatActivity() {
         val contentValues = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, fileName)
             put(MediaStore.Images.Media.MIME_TYPE, "image/png")
-            put(MediaStore.Images.Media.RELATIVE_PATH, Environment.DIRECTORY_PICTURES + "/PlanktonDetection")
+            put(
+                MediaStore.Images.Media.RELATIVE_PATH,
+                Environment.DIRECTORY_PICTURES + "/PlanktonDetection"
+            )
             put(MediaStore.Images.Media.IS_PENDING, 1)
         }
 
-        val uri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+        val uri =
+            contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
 
         if (uri != null) {
             val outputStream: OutputStream? = contentResolver.openOutputStream(uri)
@@ -1260,7 +1449,13 @@ class MainActivity : AppCompatActivity() {
             contentResolver.update(uri, contentValues, null, null)
 
             showSuccessDialog(
-                "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format(Locale.getDefault(), "%.1f%%", currentConfidence * 100)}"
+                "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${
+                    String.format(
+                        Locale.getDefault(),
+                        "%.1f%%",
+                        currentConfidence * 100
+                    )
+                }"
             )
         } else {
             showError("Gagal menyimpan gambar ke galeri.")
@@ -1271,7 +1466,8 @@ class MainActivity : AppCompatActivity() {
      * Simpan gambar ke galeri untuk Android 9 dan bawah
      */
     private fun saveImageToGalleryLegacy(fileName: String) {
-        val picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        val picturesDir =
+            Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
         val planktonDir = File(picturesDir, "PlanktonDetection")
 
         if (!planktonDir.exists()) {
@@ -1291,7 +1487,13 @@ class MainActivity : AppCompatActivity() {
         sendBroadcast(mediaScanIntent)
 
         showSuccessDialog(
-            "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${String.format(Locale.getDefault(), "%.1f%%", currentConfidence * 100)}"
+            "Gambar berhasil disimpan ke galeri dengan nama:\n$fileName\n\nKlasifikasi: $currentClassificationResult\nTingkat kepercayaan: ${
+                String.format(
+                    Locale.getDefault(),
+                    "%.1f%%",
+                    currentConfidence * 100
+                )
+            }"
         )
     }
 
@@ -1423,20 +1625,23 @@ class MainActivity : AppCompatActivity() {
 
         // Setup click listeners for options
         val singleImageOption = dialogView.findViewById<LinearLayout>(R.id.singleImageOption)
-        val batchProcessingOption = dialogView.findViewById<LinearLayout>(R.id.batchProcessingOption)
+        val batchProcessingOption =
+            dialogView.findViewById<LinearLayout>(R.id.batchProcessingOption)
         val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
 
         singleImageOption.setOnClickListener {
             dialog.dismiss()
             // Single image selection
-            val galleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+            val galleryIntent =
+                Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
             galleryLauncher.launch(galleryIntent)
         }
 
         batchProcessingOption.setOnClickListener {
             dialog.dismiss()
             // Batch image selection
-            val batchGalleryIntent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+            val batchGalleryIntent =
+                Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
             batchGalleryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true)
             batchGalleryLauncher.launch(batchGalleryIntent)
         }
@@ -1452,165 +1657,237 @@ class MainActivity : AppCompatActivity() {
      * Perform majority voting for classification
      */
     private fun performMajorityVoting(image: Bitmap) {
-        // Prepare the image for all models in the ensemble
-        val inputFeature0 = TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
-        val byteBuffer = preprocessImageForMobileNetV3BuildIn(image)
-        inputFeature0.loadBuffer(byteBuffer)
+        // Show loading dialog
+        val loadingDialog = ClassificationLoadingDialog(this)
+        loadingDialog.show()
 
-        // Collect predictions from all models
-        val predictions = mutableListOf<FloatArray>()
+        // Process in background thread to avoid blocking UI
+        Thread {
+            try {
+                // Prepare the image for all models in the ensemble
+                val inputFeature0 =
+                    TensorBuffer.createFixedSize(intArrayOf(1, 224, 224, 3), DataType.FLOAT32)
+                val byteBuffer = preprocessImageForMobileNetV3BuildIn(image)
+                inputFeature0.loadBuffer(byteBuffer)
 
-        try {
-            // MobileNetV3 Small
-            val model1 = com.example.planktondetectionapps.ml.MobileNetV3Small.newInstance(applicationContext)
-            val output1 = model1.process(inputFeature0)
-            predictions.add(output1.outputFeature0AsTensorBuffer.floatArray)
-            model1.close()
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonDebug", "Error running MobileNetV3Small", e)
-        }
+                // Collect predictions from all models
+                val predictions = mutableListOf<FloatArray>()
 
-        try {
-            // MobileNetV3 Large
-            val model2 = com.example.planktondetectionapps.ml.MobileNetV3LargeWith300Data.newInstance(applicationContext)
-            val output2 = model2.process(inputFeature0)
-            predictions.add(output2.outputFeature0AsTensorBuffer.floatArray)
-            model2.close()
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonDebug", "Error running MobileNetV3Large", e)
-        }
+                try {
+                    // MobileNetV3 Small
+                    runOnUiThread { loadingDialog.updateProgress(0, "MobileNet V3 Small") }
+                    val model1 = com.example.planktondetectionapps.ml.MobileNetV3Small.newInstance(
+                        applicationContext
+                    )
+                    val output1 = model1.process(inputFeature0)
+                    predictions.add(output1.outputFeature0AsTensorBuffer.floatArray)
+                    model1.close()
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonDebug", "Error running MobileNetV3Small", e)
+                }
 
-        try {
-            // ResNet50 V2
-            val model3 = com.example.planktondetectionapps.ml.ResNet50V2with300Data.newInstance(applicationContext)
-            val output3 = model3.process(inputFeature0)
-            predictions.add(output3.outputFeature0AsTensorBuffer.floatArray)
-            model3.close()
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonDebug", "Error running ResNet50V2", e)
-        }
+                try {
+                    // MobileNetV3 Large
+                    runOnUiThread { loadingDialog.updateProgress(1, "MobileNet V3 Large") }
+                    val model2 =
+                        com.example.planktondetectionapps.ml.MobileNetV3LargeWith300Data.newInstance(
+                            applicationContext
+                        )
+                    val output2 = model2.process(inputFeature0)
+                    predictions.add(output2.outputFeature0AsTensorBuffer.floatArray)
+                    model2.close()
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonDebug", "Error running MobileNetV3Large", e)
+                }
 
-        try {
-            // ResNet101 V2
-            val model4 = com.example.planktondetectionapps.ml.ResNet101V2with300Data.newInstance(applicationContext)
-            val output4 = model4.process(inputFeature0)
-            predictions.add(output4.outputFeature0AsTensorBuffer.floatArray)
-            model4.close()
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonDebug", "Error running ResNet101V2", e)
-        }
+                try {
+                    // ResNet50 V2
+                    runOnUiThread { loadingDialog.updateProgress(2, "ResNet50 V2") }
+                    val model3 =
+                        com.example.planktondetectionapps.ml.ResNet50V2with300Data.newInstance(
+                            applicationContext
+                        )
+                    val output3 = model3.process(inputFeature0)
+                    predictions.add(output3.outputFeature0AsTensorBuffer.floatArray)
+                    model3.close()
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonDebug", "Error running ResNet50V2", e)
+                }
 
-        try {
-            // EfficientNet V1 B0
-            val model5 = com.example.planktondetectionapps.ml.EfficientNetV1with300Data.newInstance(applicationContext)
-            val output5 = model5.process(inputFeature0)
-            predictions.add(output5.outputFeature0AsTensorBuffer.floatArray)
-            model5.close()
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonDebug", "Error running EfficientNetV1B0", e)
-        }
+                try {
+                    // ResNet101 V2
+                    runOnUiThread { loadingDialog.updateProgress(3, "ResNet101 V2") }
+                    val model4 =
+                        com.example.planktondetectionapps.ml.ResNet101V2with300Data.newInstance(
+                            applicationContext
+                        )
+                    val output4 = model4.process(inputFeature0)
+                    predictions.add(output4.outputFeature0AsTensorBuffer.floatArray)
+                    model4.close()
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonDebug", "Error running ResNet101V2", e)
+                }
 
-        try {
-            // EfficientNet V2 B0
-            val model6 = com.example.planktondetectionapps.ml.EfficientNetV2B0with300Data.newInstance(applicationContext)
-            val output6 = model6.process(inputFeature0)
-            predictions.add(output6.outputFeature0AsTensorBuffer.floatArray)
-            model6.close()
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonDebug", "Error running EfficientNetV2B0", e)
-        }
+                try {
+                    // EfficientNet V1 B0
+                    runOnUiThread { loadingDialog.updateProgress(4, "EfficientNet V1 B0") }
+                    val model5 =
+                        com.example.planktondetectionapps.ml.EfficientNetV1with300Data.newInstance(
+                            applicationContext
+                        )
+                    val output5 = model5.process(inputFeature0)
+                    predictions.add(output5.outputFeature0AsTensorBuffer.floatArray)
+                    model5.close()
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonDebug", "Error running EfficientNetV1B0", e)
+                }
 
-        try {
-            // ConvNext Tiny
-            val model7 = com.example.planktondetectionapps.ml.ConvNeXtTinywith300Data.newInstance(applicationContext)
-            val output7 = model7.process(inputFeature0)
-            predictions.add(output7.outputFeature0AsTensorBuffer.floatArray)
-            model7.close()
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonDebug", "Error running ConvNextTiny", e)
-        }
+                try {
+                    // EfficientNet V2 B0
+                    runOnUiThread { loadingDialog.updateProgress(5, "EfficientNet V2 B0") }
+                    val model6 =
+                        com.example.planktondetectionapps.ml.EfficientNetV2B0with300Data.newInstance(
+                            applicationContext
+                        )
+                    val output6 = model6.process(inputFeature0)
+                    predictions.add(output6.outputFeature0AsTensorBuffer.floatArray)
+                    model6.close()
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonDebug", "Error running EfficientNetV2B0", e)
+                }
 
-        try {
-            // DenseNet 121
-            val model8 = com.example.planktondetectionapps.ml.DenseNet121with300Data.newInstance(applicationContext)
-            val output8 = model8.process(inputFeature0)
-            predictions.add(output8.outputFeature0AsTensorBuffer.floatArray)
-            model8.close()
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonDebug", "Error running DenseNet121", e)
-        }
+                try {
+                    // ConvNext Tiny
+                    runOnUiThread { loadingDialog.updateProgress(6, "ConvNeXt Tiny") }
+                    val model7 =
+                        com.example.planktondetectionapps.ml.ConvNeXtTinywith300Data.newInstance(
+                            applicationContext
+                        )
+                    val output7 = model7.process(inputFeature0)
+                    predictions.add(output7.outputFeature0AsTensorBuffer.floatArray)
+                    model7.close()
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonDebug", "Error running ConvNextTiny", e)
+                }
 
-        try {
-            // Inception V3
-            val model9 = com.example.planktondetectionapps.ml.InceptionV3with300Data.newInstance(applicationContext)
-            val output9 = model9.process(inputFeature0)
-            predictions.add(output9.outputFeature0AsTensorBuffer.floatArray)
-            model9.close()
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonDebug", "Error running InceptionV3", e)
-        }
+                try {
+                    // DenseNet 121
+                    runOnUiThread { loadingDialog.updateProgress(7, "DenseNet 121") }
+                    val model8 =
+                        com.example.planktondetectionapps.ml.DenseNet121with300Data.newInstance(
+                            applicationContext
+                        )
+                    val output8 = model8.process(inputFeature0)
+                    predictions.add(output8.outputFeature0AsTensorBuffer.floatArray)
+                    model8.close()
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonDebug", "Error running DenseNet121", e)
+                }
 
-        // Perform majority voting
-        val finalPrediction = FloatArray(predictions[0].size)
-        for (i in predictions.indices) {
-            for (j in predictions[i].indices) {
-                finalPrediction[j] += predictions[i][j]
+                try {
+                    // Inception V3
+                    runOnUiThread { loadingDialog.updateProgress(8, "Inception V3") }
+                    val model9 =
+                        com.example.planktondetectionapps.ml.InceptionV3with300Data.newInstance(
+                            applicationContext
+                        )
+                    val output9 = model9.process(inputFeature0)
+                    predictions.add(output9.outputFeature0AsTensorBuffer.floatArray)
+                    model9.close()
+                } catch (e: Exception) {
+                    android.util.Log.e("PlanktonDebug", "Error running InceptionV3", e)
+                }
+
+                // Update dialog for final processing
+                runOnUiThread { loadingDialog.updateFinalProcessing() }
+
+                // Perform majority voting
+                val finalPrediction = FloatArray(predictions[0].size)
+                for (i in predictions.indices) {
+                    for (j in predictions[i].indices) {
+                        finalPrediction[j] += predictions[i][j]
+                    }
+                }
+
+                // Get the class with the highest vote
+                var maxPos = 0
+                var maxVote = 0f
+                val classVotes = finalPrediction.mapIndexed { index, value -> Pair(index, value) }
+                    .sortedByDescending { it.second }
+                maxPos = classVotes[0].first
+                maxVote = classVotes[0].second
+
+                // If there's a tie, use the confidence to decide
+                if (classVotes.size > 1 && maxVote == classVotes[1].second) {
+                    // Tie-breaking logic: choose the class with the highest confidence among the tied classes
+                    maxPos = classVotes.filter { it.second == maxVote }.map { it.first }.maxOrNull()
+                        ?: maxPos
+                }
+
+                val classes = loadLabels(this)
+                if (maxPos < classes.size) {
+                    currentClassificationResult = classes[maxPos]
+                    currentConfidence = maxVote / predictions.size
+
+                    // Update UI on main thread
+                    runOnUiThread {
+                        result?.text = classes[maxPos]
+
+                        // Update UI for table results
+                        if (confidence?.visibility != View.VISIBLE) {
+                            confidence?.visibility = View.VISIBLE
+                        }
+
+                        defaultMessage?.visibility = View.GONE
+                        resultsTable?.visibility = View.VISIBLE
+
+                        // Update model info with formatted name and show it
+                        modelInfo?.text = "Model: ${formatModelName(selectedModel)}"
+                        modelInfo?.visibility = View.VISIBLE
+
+                        // Update predictions and probabilities
+                        val top3 = finalPrediction.mapIndexed { index, confidence ->
+                            Pair(index, confidence)
+                        }.sortedByDescending { it.second }.take(3)
+
+                        if (top3.size > 0) {
+                            pred1?.text = classes[top3[0].first]
+                            prob1?.text =
+                                String.format(Locale.getDefault(), "%.1f%%", top3[0].second * 100)
+                        }
+                        if (top3.size > 1) {
+                            pred2?.text = classes[top3[1].first]
+                            prob2?.text =
+                                String.format(Locale.getDefault(), "%.1f%%", top3[1].second * 100)
+                        }
+                        if (top3.size > 2) {
+                            pred3?.text = classes[top3[2].first]
+                            prob3?.text =
+                                String.format(Locale.getDefault(), "%.1f%%", top3[2].second * 100)
+                        }
+
+                        saveButton?.isEnabled = true
+                    }
+                }
+
+                // Dismiss loading dialog after a short delay to show completion
+                runOnUiThread {
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        loadingDialog.dismiss()
+                    }, 1000)
+                }
+
+            } catch (e: Exception) {
+                android.util.Log.e("PlanktonDebug", "Error in classification", e)
+                runOnUiThread {
+                    loadingDialog.dismiss()
+                    Toast.makeText(
+                        this,
+                        "Error during classification: ${e.message}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
-        }
-
-        // Get the class with the highest vote
-        var maxPos = 0
-        var maxVote = 0f
-        val classVotes = finalPrediction.mapIndexed { index, value -> Pair(index, value) }.sortedByDescending { it.second }
-        maxPos = classVotes[0].first
-        maxVote = classVotes[0].second
-
-        // If there's a tie, use the confidence to decide
-        if (classVotes.size > 1 && maxVote == classVotes[1].second) {
-            // Tie-breaking logic: choose the class with the highest confidence among the tied classes
-            maxPos = classVotes.filter { it.second == maxVote }.map { it.first }.maxOrNull() ?: maxPos
-        }
-
-        val classes = loadLabels(this)
-        if (maxPos < classes.size) {
-            currentClassificationResult = classes[maxPos]
-            currentConfidence = maxVote / predictions.size
-
-            result?.text = classes[maxPos]
-
-            // Update UI for table results
-            if (confidence?.visibility != View.VISIBLE) {
-                confidence?.visibility = View.VISIBLE
-            }
-
-            defaultMessage?.visibility = View.GONE
-            resultsTable?.visibility = View.VISIBLE
-
-            // Update model info with formatted name and show it
-            modelInfo?.text = "Model: ${formatModelName(selectedModel)}"
-            modelInfo?.visibility = View.VISIBLE
-
-            // Update predictions and probabilities
-            val top3 = finalPrediction.mapIndexed { index, confidence ->
-                Pair(index, confidence)
-            }.sortedByDescending { it.second }.take(3)
-
-            if (top3.size > 0) {
-                pred1?.text = classes[top3[0].first]
-                prob1?.text = String.format(Locale.getDefault(), "%.1f%%", top3[0].second * 100)
-            }
-            if (top3.size > 1) {
-                pred2?.text = classes[top3[1].first]
-                prob2?.text = String.format(Locale.getDefault(), "%.1f%%", top3[1].second * 100)
-            }
-            if (top3.size > 2) {
-                pred3?.text = classes[top3[2].first]
-                prob3?.text = String.format(Locale.getDefault(), "%.1f%%", top3[2].second * 100)
-            }
-
-            saveButton?.isEnabled = true
-        } else {
-            showError("Error: Invalid classification result")
-        }
+        }.start()
     }
 }
