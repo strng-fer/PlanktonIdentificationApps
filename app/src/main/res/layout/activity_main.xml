@@ -1018,7 +1018,7 @@
 
                         </LinearLayout>
 
-                        <!-- Option 9: Inception V3 -->
+                        <!-- Option 9: Majority Voting -->
                         <LinearLayout
                             android:id="@+id/option9"
                             android:layout_width="match_parent"
@@ -1036,7 +1036,7 @@
                                 android:layout_height="24dp"
                                 android:src="@drawable/ic_model_ai"
                                 android:layout_marginEnd="12dp"
-                                app:tint="#607D8B" />
+                                app:tint="#FF6B35" />
 
                             <LinearLayout
                                 android:layout_width="0dp"
@@ -1047,7 +1047,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Inception V3 (300 Data)"
+                                    android:text="Majority Voting"
                                     android:textSize="15sp"
                                     android:textColor="#424242"
                                     android:textStyle="bold" />
@@ -1055,7 +1055,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="Model dengan arsitektur Inception yang powerful"
+                                    android:text="Ensemble dari 9 model untuk akurasi maksimal"
                                     android:textSize="11sp"
                                     android:textColor="#666666"
                                     android:layout_marginTop="2dp" />

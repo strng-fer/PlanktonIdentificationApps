@@ -162,6 +162,10 @@ class BatchProcessingActivity : AppCompatActivity() {
                 MainActivity.ModelType.CONVNEXT_TINY -> preprocessImageForConvNext(bitmap)
                 MainActivity.ModelType.DENSENET121 -> preprocessImageForDenseNet(bitmap)
                 MainActivity.ModelType.INCEPTION_V3 -> preprocessImageForInception(bitmap)
+                MainActivity.ModelType.MAJORITY_VOTING -> {
+                    // Majority voting is not supported in batch processing
+                    throw IllegalArgumentException("Majority voting is not supported in batch processing mode")
+                }
             }
             inputFeature0.loadBuffer(byteBuffer)
 
