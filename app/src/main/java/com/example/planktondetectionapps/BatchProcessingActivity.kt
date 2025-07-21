@@ -19,6 +19,12 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.io.IOException
 import kotlin.math.exp
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.*
+import androidx.core.content.FileProvider
+import android.os.Environment
 
 /**
  * Activity untuk menangani batch processing multiple images
@@ -695,11 +701,100 @@ class BatchProcessingActivity : AppCompatActivity() {
             csvContent.append("\n")
         }
 
-        // Share or save CSV
-        val shareIntent = Intent(Intent.ACTION_SEND)
-        shareIntent.type = "text/plain"
-        shareIntent.putExtra(Intent.EXTRA_TEXT, csvContent.toString())
-        shareIntent.putExtra(Intent.EXTRA_SUBJECT, "Hasil Batch Processing Plankton")
-        startActivity(Intent.createChooser(shareIntent, "Export Hasil"))
+        // Membuat timestamp untuk nama file yang unik
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val fileName = "hasil_batch_$timestamp.csv"
+
+        // Membuat direktori Documents jika belum ada
+        val documentsDir = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS).toString())
+        if (!documentsDir.exists()) {
+            documentsDir.mkdirs()
+        }
+
+        // File CSV yang akan disimpan
+        val csvFile = File(documentsDir, fileName)
+
+        try {
+            // Menyimpan konten CSV ke file
+            FileOutputStream(csvFile).use { outputStream ->
+                outputStream.write(csvContent.toString().toByteArray())
+            }
+
+            // Menampilkan dialog konfirmasi berhasil
+            Toast.makeText(this,
+                "File CSV berhasil disimpan di: ${csvFile.absolutePath}",
+                Toast.LENGTH_LONG).show()
+
+            // Tampilkan dialog dengan opsi untuk membuka atau berbagi file
+            androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("File CSV Berhasil Disimpan")
+                .setMessage("File telah disimpan di: ${fileName}\nApakah Anda ingin membuka file atau berbagi ke aplikasi lain?")
+                .setPositiveButton("Buka") { _, _ ->
+                    // Buka file CSV dengan aplikasi yang sesuai
+                    openCsvFile(csvFile)
+                }
+                .setNegativeButton("Berbagi") { _, _ ->
+                    // Share file CSV
+                    shareCsvFile(csvFile)
+                }
+                .setNeutralButton("Tutup", null)
+                .show()
+
+        } catch (e: IOException) {
+            e.printStackTrace()
+            Toast.makeText(this, "Gagal menyimpan file CSV: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Membuka file CSV dengan aplikasi yang sesuai
+     */
+    private fun openCsvFile(file: File) {
+        try {
+            val fileUri = FileProvider.getUriForFile(
+                this,
+                "${packageName}.fileprovider",
+                file
+            )
+
+            val intent = Intent(Intent.ACTION_VIEW).apply {
+                setDataAndType(fileUri, "text/csv")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            if (intent.resolveActivity(packageManager) != null) {
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "Tidak ada aplikasi yang dapat membuka file CSV", Toast.LENGTH_SHORT).show()
+                shareCsvFile(file) // Sebagai fallback, coba share
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Gagal membuka file: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Berbagi file CSV ke aplikasi lain
+     */
+    private fun shareCsvFile(file: File) {
+        try {
+            val fileUri = FileProvider.getUriForFile(
+                this,
+                "${packageName}.fileprovider",
+                file
+            )
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/csv"
+                putExtra(Intent.EXTRA_STREAM, fileUri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+
+            startActivity(Intent.createChooser(shareIntent, "Bagikan CSV melalui"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+            Toast.makeText(this, "Gagal berbagi file: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
     }
 }
