@@ -79,6 +79,7 @@ class MainActivity : AppCompatActivity() {
     private var picture: Button? = null
     private var galleryButton: Button? = null
     private var saveButton: Button? = null
+    private var feedbackButton: Button? = null
 
     // Custom dropdown UI elements
     private var customDropdownContainer: LinearLayout? = null
@@ -172,6 +173,7 @@ class MainActivity : AppCompatActivity() {
         picture = findViewById(R.id.button)
         galleryButton = findViewById(R.id.galleryButton)
         saveButton = findViewById(R.id.saveButton)
+        feedbackButton = findViewById(R.id.feedbackButton)
 
         // Setup click listener untuk result TextView
         result?.setOnClickListener {
@@ -249,6 +251,10 @@ class MainActivity : AppCompatActivity() {
             } else {
                 showError("Tidak ada gambar atau hasil klasifikasi untuk disimpan.")
             }
+        }
+
+        feedbackButton?.setOnClickListener {
+            showFeedbackDialog()
         }
     }
 
@@ -1036,6 +1042,13 @@ class MainActivity : AppCompatActivity() {
             }
 
             saveButton?.isEnabled = true
+
+            // Show and enable feedback section
+            val feedbackSection = findViewById<LinearLayout>(R.id.feedbackSection)
+            feedbackSection?.visibility = View.VISIBLE
+
+            feedbackButton?.visibility = View.VISIBLE
+            feedbackButton?.isEnabled = true
         } else {
             showError("Error: Invalid classification result")
         }
@@ -1889,5 +1902,210 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }.start()
+    }
+
+    /**
+     * Tampilkan dialog feedback
+     */
+    private fun showFeedbackDialog() {
+        if (currentClassificationResult == null || currentBitmap == null) {
+            Toast.makeText(this, "Tidak ada hasil klasifikasi untuk diberikan feedback", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val dialogBuilder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_feedback, null)
+
+        dialogBuilder.setView(dialogView)
+        dialogBuilder.setCancelable(true)
+
+        val dialog = dialogBuilder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        // Get dialog elements
+        val currentPrediction = dialogView.findViewById<TextView>(R.id.currentPrediction)
+        val currentConfidenceText = dialogView.findViewById<TextView>(R.id.currentConfidence)
+        val correctLabelSpinner = dialogView.findViewById<android.widget.Spinner>(R.id.correctLabelSpinner)
+        val feedbackComment = dialogView.findViewById<android.widget.EditText>(R.id.feedbackComment)
+        val submitButton = dialogView.findViewById<Button>(R.id.submitButton)
+        val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
+
+        // Display current prediction
+        currentPrediction.text = currentClassificationResult
+        currentConfidenceText.text = "Tingkat Kepercayaan: ${String.format(Locale.getDefault(), "%.1f%%", currentConfidence * 100)}"
+
+        // Load and populate spinner with plankton labels
+        val labels = loadLabels(this)
+        val spinnerAdapter = android.widget.ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            labels
+        )
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        correctLabelSpinner.adapter = spinnerAdapter
+
+        // Pre-select the current prediction in spinner if it exists
+        val currentPredictionIndex = labels.indexOf(currentClassificationResult)
+        if (currentPredictionIndex >= 0) {
+            correctLabelSpinner.setSelection(currentPredictionIndex)
+        }
+
+        // Setup click listeners
+        submitButton.setOnClickListener {
+            val selectedCorrectLabel = correctLabelSpinner.selectedItem.toString()
+            val commentText = feedbackComment.text.toString().trim()
+
+            // Validate selection
+            if (selectedCorrectLabel.isEmpty()) {
+                Toast.makeText(this, "Silakan pilih label yang benar", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Save feedback data
+            saveFeedbackData(
+                predictedLabel = currentClassificationResult!!,
+                correctLabel = selectedCorrectLabel,
+                confidence = currentConfidence,
+                comment = commentText,
+                modelUsed = formatModelName(selectedModel)
+            )
+
+            Toast.makeText(this, "Feedback berhasil disimpan. Terima kasih!", Toast.LENGTH_SHORT).show()
+            dialog.dismiss()
+        }
+
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    /**
+     * Save feedback data to local storage
+     */
+    private fun saveFeedbackData(
+        predictedLabel: String,
+        correctLabel: String,
+        confidence: Float,
+        comment: String,
+        modelUsed: String
+    ) {
+        try {
+            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            val feedbackId = System.currentTimeMillis().toString()
+
+            // Create feedback entry
+            val feedbackEntry = """
+                ID: $feedbackId
+                Timestamp: $timestamp
+                Model Used: $modelUsed
+                Predicted Label: $predictedLabel
+                Correct Label: $correctLabel
+                Confidence: ${String.format(Locale.getDefault(), "%.3f", confidence)}
+                Match: ${if (predictedLabel == correctLabel) "YES" else "NO"}
+                Comment: ${if (comment.isNotEmpty()) comment else "No comment"}
+                ========================================
+                
+            """.trimIndent()
+
+            // Save to internal storage file
+            val feedbackFile = File(filesDir, "feedback_data.txt")
+            feedbackFile.appendText(feedbackEntry)
+
+            // Also save as JSON for structured data (optional)
+            saveFeedbackAsJson(feedbackId, timestamp, modelUsed, predictedLabel, correctLabel, confidence, comment)
+
+            android.util.Log.d("PlanktonFeedback", "Feedback saved: $feedbackId")
+
+        } catch (e: Exception) {
+            android.util.Log.e("PlanktonFeedback", "Error saving feedback", e)
+            Toast.makeText(this, "Gagal menyimpan feedback: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Save feedback data as JSON for structured access
+     */
+    private fun saveFeedbackAsJson(
+        feedbackId: String,
+        timestamp: String,
+        modelUsed: String,
+        predictedLabel: String,
+        correctLabel: String,
+        confidence: Float,
+        comment: String
+    ) {
+        try {
+            // Create JSON object for this feedback
+            val feedbackJson = """
+                {
+                    "id": "$feedbackId",
+                    "timestamp": "$timestamp",
+                    "model_used": "$modelUsed",
+                    "predicted_label": "$predictedLabel",
+                    "correct_label": "$correctLabel",
+                    "confidence": $confidence,
+                    "is_correct": ${predictedLabel == correctLabel},
+                    "comment": "$comment",
+                    "image_processed": true
+                }
+            """.trimIndent()
+
+            // Save individual feedback JSON file
+            val jsonFile = File(filesDir, "feedback_${feedbackId}.json")
+            jsonFile.writeText(feedbackJson)
+
+            // Update feedback summary statistics
+            updateFeedbackStatistics(predictedLabel, correctLabel, modelUsed)
+
+        } catch (e: Exception) {
+            android.util.Log.e("PlanktonFeedback", "Error saving JSON feedback", e)
+        }
+    }
+
+    /**
+     * Update feedback statistics for model performance tracking
+     */
+    private fun updateFeedbackStatistics(predictedLabel: String, correctLabel: String, modelUsed: String) {
+        try {
+            val statsFile = File(filesDir, "feedback_statistics.json")
+
+            // Load existing stats or create new
+            val existingStats = if (statsFile.exists()) {
+                statsFile.readText()
+            } else {
+                """{"total_feedback": 0, "correct_predictions": 0, "models": {}, "labels": {}}"""
+            }
+
+            // Parse and update statistics (simple string manipulation for basic stats)
+            val totalFeedbackRegex = """"total_feedback": (\d+)""".toRegex()
+            val correctPredictionsRegex = """"correct_predictions": (\d+)""".toRegex()
+
+            val currentTotal = totalFeedbackRegex.find(existingStats)?.groupValues?.get(1)?.toInt() ?: 0
+            val currentCorrect = correctPredictionsRegex.find(existingStats)?.groupValues?.get(1)?.toInt() ?: 0
+
+            val newTotal = currentTotal + 1
+            val newCorrect = if (predictedLabel == correctLabel) currentCorrect + 1 else currentCorrect
+
+            // Create updated statistics
+            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+            val updatedStats = """
+                {
+                    "total_feedback": $newTotal,
+                    "correct_predictions": $newCorrect,
+                    "accuracy": ${if (newTotal > 0) String.format(Locale.getDefault(), "%.3f", newCorrect.toFloat() / newTotal) else "0.000"},
+                    "last_updated": "$timestamp",
+                    "note": "Statistics based on user feedback for model improvement"
+                }
+            """.trimIndent()
+
+            statsFile.writeText(updatedStats)
+
+            android.util.Log.d("PlanktonFeedback", "Statistics updated: $newCorrect/$newTotal correct")
+
+        } catch (e: Exception) {
+            android.util.Log.e("PlanktonFeedback", "Error updating statistics", e)
+        }
     }
 }

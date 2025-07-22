@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@drawable/card_background"
+    android:layout_margin="16dp"
+    android:padding="24dp">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="16dp">
+
+        <ImageView
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_feedback"
+            android:layout_marginEnd="12dp"
+            android:contentDescription="Feedback Icon" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Berikan Feedback"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#424242" />
+
+    </LinearLayout>
+
+    <!-- Description -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Bantu kami meningkatkan akurasi model dengan memberikan label yang benar untuk gambar ini."
+        android:textSize="14sp"
+        android:textColor="#666666"
+        android:layout_marginBottom="20dp"
+        android:lineSpacingExtra="2dp" />
+
+    <!-- Current Prediction Display -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#F8F9FA"
+        android:padding="16dp"
+        android:layout_marginBottom="20dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Hasil Prediksi Model:"
+            android:textSize="12sp"
+            android:textColor="#666666"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp" />
+
+        <TextView
+            android:id="@+id/currentPrediction"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Copepod"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#1976D2"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:id="@+id/currentConfidence"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tingkat Kepercayaan: 85.2%"
+            android:textSize="12sp"
+            android:textColor="#666666" />
+
+    </LinearLayout>
+
+    <!-- Feedback Input Section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Label yang Benar:"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#424242"
+        android:layout_marginBottom="12dp" />
+
+    <!-- Dropdown for selecting correct label -->
+    <Spinner
+        android:id="@+id/correctLabelSpinner"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginBottom="16dp"
+        android:background="@drawable/dropdown_item_animated"
+        android:padding="12dp" />
+
+    <!-- Additional Comments Section -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Komentar Tambahan (Opsional):"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:textColor="#424242"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/feedbackComment"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:background="@drawable/dropdown_item_animated"
+        android:padding="12dp"
+        android:gravity="top|start"
+        android:hint="Tuliskan komentar atau saran Anda di sini..."
+        android:textSize="14sp"
+        android:textColor="#424242"
+        android:textColorHint="#999999"
+        android:layout_marginBottom="24dp"
+        android:inputType="textMultiLine|textCapSentences"
+        android:maxLines="3" />
+
+    <!-- Action Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="end">
+
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:text="Batal"
+            android:textColor="#666666"
+            android:textAllCaps="false"
+            android:background="@android:color/transparent"
+            android:layout_marginEnd="12dp"
+            android:paddingHorizontal="20dp" />
+
+        <Button
+            android:id="@+id/submitButton"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:text="Kirim Feedback"
+            android:textColor="#FFFFFF"
+            android:textAllCaps="false"
+            android:background="@drawable/button_save_enhanced"
+            android:paddingHorizontal="24dp"
+            android:drawablePadding="8dp" />
+
+    </LinearLayout>
+
+</LinearLayout>

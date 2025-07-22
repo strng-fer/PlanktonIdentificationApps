@@ -169,6 +169,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
+
             <!-- Preview and Results Section (Combined) -->
             <LinearLayout
                 android:layout_width="match_parent"
@@ -476,6 +477,66 @@
                         </TableRow>
 
                     </TableLayout>
+
+                    <!-- Feedback Message Section -->
+                    <LinearLayout
+                        android:id="@+id/feedbackSection"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:layout_marginTop="16dp"
+                        android:padding="12dp"
+                        android:background="#F8F9FA"
+                        android:visibility="gone">
+
+                        <!-- Feedback Message -->
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:layout_marginBottom="12dp">
+
+                            <ImageView
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:src="@drawable/ic_feedback"
+                                android:layout_marginEnd="8dp"
+                                android:contentDescription="Feedback Icon"
+                                app:tint="#FF9800" />
+
+                            <TextView
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="Hasil prediksi salah? Berikan feedback label sebenarnya untuk membantu meningkatkan akurasi model."
+                                android:textSize="13sp"
+                                android:textColor="#424242"
+                                android:lineSpacingExtra="2dp" />
+
+                            <!-- Feedback Button -->
+                            <Button
+                                android:id="@+id/feedbackButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="12dp"
+                                android:background="@drawable/button_save_enhanced"
+                                android:text="Feedback"
+                                android:drawablePadding="8dp"
+                                android:textColor="#FFFFFF"
+                                android:textAllCaps="false"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:elevation="2dp"
+                                android:gravity="center"
+                                android:paddingHorizontal="16dp"
+                                android:paddingVertical="8dp"
+                                android:enabled="false"
+                                android:visibility="gone" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
@@ -1067,7 +1128,6 @@
                     </LinearLayout>
 
                 </LinearLayout>
-
             </LinearLayout>
 
             <!-- Credit Section -->
