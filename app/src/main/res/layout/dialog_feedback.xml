@@ -3,156 +3,190 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:background="@drawable/card_background"
-    android:layout_margin="16dp"
-    android:padding="24dp">
-
-    <!-- Header -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:layout_marginBottom="16dp">
-
-        <ImageView
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:src="@drawable/ic_feedback"
-            android:layout_marginEnd="12dp"
-            android:contentDescription="Feedback Icon" />
-
-        <TextView
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Berikan Feedback"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:textColor="#424242" />
-
-    </LinearLayout>
-
-    <!-- Description -->
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Bantu kami meningkatkan akurasi model dengan memberikan label yang benar untuk gambar ini."
-        android:textSize="14sp"
-        android:textColor="#666666"
-        android:layout_marginBottom="20dp"
-        android:lineSpacingExtra="2dp" />
+    android:padding="16dp">
 
     <!-- Current Prediction Display -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="#F8F9FA"
-        android:padding="16dp"
-        android:layout_marginBottom="20dp">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Hasil Prediksi Model:"
-            android:textSize="12sp"
-            android:textColor="#666666"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
-
-        <TextView
-            android:id="@+id/currentPrediction"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Copepod"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="#1976D2"
-            android:layout_marginBottom="4dp" />
-
-        <TextView
-            android:id="@+id/currentConfidence"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tingkat Kepercayaan: 85.2%"
-            android:textSize="12sp"
-            android:textColor="#666666" />
-
-    </LinearLayout>
-
-    <!-- Feedback Input Section -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Label yang Benar:"
-        android:textSize="14sp"
+        android:text="Hasil Klasifikasi Saat Ini:"
+        android:textSize="16sp"
         android:textStyle="bold"
-        android:textColor="#424242"
-        android:layout_marginBottom="12dp" />
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="8dp" />
 
-    <!-- Dropdown for selecting correct label -->
+    <TextView
+        android:id="@+id/currentPrediction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Copepod"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:textColor="@color/primary"
+        android:layout_marginBottom="4dp" />
+
+    <TextView
+        android:id="@+id/currentConfidence"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Tingkat Kepercayaan: 85%"
+        android:textSize="14sp"
+        android:textColor="@color/text_secondary"
+        android:layout_marginBottom="16dp" />
+
+    <!-- Correct Label Selection (MainActivity) -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pilih Label yang Benar:"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="8dp" />
+
     <Spinner
         android:id="@+id/correctLabelSpinner"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
+        android:layout_height="wrap_content"
         android:layout_marginBottom="16dp"
-        android:background="@drawable/dropdown_item_animated"
-        android:padding="12dp" />
+        android:padding="12dp"
+        android:background="@drawable/spinner_background" />
 
-    <!-- Additional Comments Section -->
+    <!-- Feedback Radio Group (HistoryActivity) -->
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Komentar Tambahan (Opsional):"
-        android:textSize="14sp"
+        android:text="Apakah klasifikasi ini benar?"
+        android:textSize="16sp"
         android:textStyle="bold"
-        android:textColor="#424242"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="8dp" />
+
+    <RadioGroup
+        android:id="@+id/feedbackRadioGroup"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_marginBottom="16dp">
+
+        <RadioButton
+            android:id="@+id/correctRadio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✓ Benar - Klasifikasi sesuai"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:padding="8dp" />
+
+        <RadioButton
+            android:id="@+id/incorrectRadio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="✗ Salah - Klasifikasi tidak sesuai"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:padding="8dp" />
+
+        <RadioButton
+            android:id="@+id/neutralRadio"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Tidak yakin"
+            android:textColor="@color/text_primary"
+            android:textSize="14sp"
+            android:padding="8dp" />
+
+    </RadioGroup>
+
+    <!-- Correct Class Input (HistoryActivity) -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Jika salah, masukkan kelas yang benar:"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
+        android:layout_marginBottom="8dp" />
+
+    <EditText
+        android:id="@+id/correctClassEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Masukkan nama kelas yang benar..."
+        android:background="@drawable/edittext_background"
+        android:padding="12dp"
+        android:textSize="14sp"
+        android:layout_marginBottom="16dp"
+        android:visibility="gone"
+        android:inputType="text|textCapSentences" />
+
+    <!-- Feedback Text Input -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Berikan feedback Anda:"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:textColor="@color/text_primary"
         android:layout_marginBottom="8dp" />
 
     <EditText
         android:id="@+id/feedbackComment"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:background="@drawable/dropdown_item_animated"
-        android:padding="12dp"
+        android:layout_height="wrap_content"
+        android:hint="Masukkan komentar Anda tentang hasil klasifikasi ini..."
+        android:minLines="3"
+        android:maxLines="5"
         android:gravity="top|start"
-        android:hint="Tuliskan komentar atau saran Anda di sini..."
+        android:background="@drawable/edittext_background"
+        android:padding="12dp"
         android:textSize="14sp"
-        android:textColor="#424242"
-        android:textColorHint="#999999"
-        android:layout_marginBottom="24dp"
-        android:inputType="textMultiLine|textCapSentences"
-        android:maxLines="3" />
+        android:layout_marginBottom="16dp"
+        android:inputType="textMultiLine|textCapSentences" />
 
-    <!-- Action Buttons -->
+    <!-- Alternative ID for HistoryActivity -->
+    <EditText
+        android:id="@+id/feedbackEditText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Masukkan komentar Anda tentang hasil klasifikasi ini..."
+        android:minLines="3"
+        android:maxLines="5"
+        android:gravity="top|start"
+        android:background="@drawable/edittext_background"
+        android:padding="12dp"
+        android:textSize="14sp"
+        android:layout_marginBottom="16dp"
+        android:inputType="textMultiLine|textCapSentences"
+        android:visibility="gone" />
+
+    <!-- Buttons -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="end">
+        android:layout_marginTop="16dp">
 
         <Button
             android:id="@+id/cancelButton"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="Batal"
-            android:textColor="#666666"
-            android:textAllCaps="false"
-            android:background="@android:color/transparent"
-            android:layout_marginEnd="12dp"
-            android:paddingHorizontal="20dp" />
+            android:textColor="@color/text_primary"
+            android:background="@drawable/button_outline_primary"
+            android:layout_marginEnd="8dp"
+            style="?android:attr/buttonBarButtonStyle" />
 
         <Button
             android:id="@+id/submitButton"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:text="Kirim Feedback"
-            android:textColor="#FFFFFF"
-            android:textAllCaps="false"
-            android:background="@drawable/button_save_enhanced"
-            android:paddingHorizontal="24dp"
-            android:drawablePadding="8dp" />
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Kirim"
+            android:textColor="@android:color/white"
+            android:background="@drawable/button_primary"
+            android:layout_marginStart="8dp" />
 
     </LinearLayout>
 

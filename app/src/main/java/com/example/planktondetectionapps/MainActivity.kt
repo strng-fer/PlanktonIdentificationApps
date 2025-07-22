@@ -101,6 +101,7 @@ class MainActivity : AppCompatActivity() {
     private var menuButton: android.widget.ImageButton? = null
     private var navigationMenu: LinearLayout? = null
     private var settingsOption: LinearLayout? = null
+    private var historyOption: LinearLayout? = null
     private var aboutOption: LinearLayout? = null
     private var documentationOption: LinearLayout? = null
     private var isNavigationMenuOpen = false
@@ -115,6 +116,9 @@ class MainActivity : AppCompatActivity() {
     private var currentClassificationResult: String? = null
     private var currentConfidence: Float = 0f
     private var currentPhotoUri: Uri? = null
+
+    // History Manager
+    private lateinit var historyManager: HistoryManager
 
     // Activity result launchers
     private lateinit var cameraLauncher: ActivityResultLauncher<Intent>
@@ -139,6 +143,9 @@ class MainActivity : AppCompatActivity() {
         setupCustomDropdown()
         setupNavigationMenu()
         setupButtonListeners()
+
+        // Initialize history manager
+        historyManager = HistoryManager(this)
 
         // Delay welcome dialog until after layout is completely finished
         // This prevents any flicker by ensuring everything is ready
@@ -227,6 +234,7 @@ class MainActivity : AppCompatActivity() {
         settingsOption = findViewById(R.id.settingsOption)
         aboutOption = findViewById(R.id.aboutOption)
         documentationOption = findViewById(R.id.documentationOption)
+        historyOption = findViewById(R.id.historyOption)
     }
 
     /**
@@ -1049,6 +1057,9 @@ class MainActivity : AppCompatActivity() {
 
             feedbackButton?.visibility = View.VISIBLE
             feedbackButton?.isEnabled = true
+
+            // Save to history automatically
+            saveToHistory()
         } else {
             showError("Error: Invalid classification result")
         }
@@ -1621,6 +1632,13 @@ class MainActivity : AppCompatActivity() {
             val intent = Intent(this, DocumentationActivity::class.java)
             startActivity(intent)
         }
+
+        historyOption?.setOnClickListener {
+            navigationMenu?.visibility = View.GONE
+            isNavigationMenuOpen = false
+            val intent = Intent(this, HistoryActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     /**
@@ -2106,6 +2124,64 @@ class MainActivity : AppCompatActivity() {
 
         } catch (e: Exception) {
             android.util.Log.e("PlanktonFeedback", "Error updating statistics", e)
+        }
+    }
+
+    /**
+     * Save current classification result to history
+     */
+    private fun saveToHistory() {
+        if (currentClassificationResult != null && currentBitmap != null) {
+            try {
+                // Save image to internal storage first
+                val imageFile = saveImageToInternalStorage()
+
+                if (imageFile != null) {
+                    // Create history entry
+                    val historyEntry = HistoryEntry(
+                        id = System.currentTimeMillis().toString(),
+                        timestamp = Date(),
+                        imagePath = imageFile.absolutePath,
+                        classificationResult = currentClassificationResult!!,
+                        confidence = currentConfidence,
+                        modelUsed = formatModelName(selectedModel)
+                    )
+
+                    // Save to CSV
+                    historyManager.saveHistoryEntry(historyEntry)
+                    android.util.Log.d("PlanktonHistory", "History entry saved: ${historyEntry.id}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("PlanktonHistory", "Error saving to history", e)
+            }
+        }
+    }
+
+    /**
+     * Save current bitmap to internal storage for history
+     */
+    private fun saveImageToInternalStorage(): File? {
+        return try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val fileName = "${currentClassificationResult}_${timeStamp}.png"
+
+            // Create history images directory
+            val historyDir = File(filesDir, "history_images")
+            if (!historyDir.exists()) {
+                historyDir.mkdirs()
+            }
+
+            val imageFile = File(historyDir, fileName)
+            val outputStream = FileOutputStream(imageFile)
+
+            outputStream.use { stream ->
+                currentBitmap!!.compress(Bitmap.CompressFormat.PNG, 90, stream)
+            }
+
+            imageFile
+        } catch (e: Exception) {
+            android.util.Log.e("PlanktonHistory", "Error saving image to internal storage", e)
+            null
         }
     }
 }

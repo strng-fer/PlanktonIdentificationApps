@@ -48,6 +48,14 @@
             android:parentActivityName=".MainActivity"
             android:screenOrientation="portrait" />
 
+        <!-- History Activity -->
+        <activity
+            android:name=".HistoryActivity"
+            android:exported="false"
+            android:label="Riwayat Klasifikasi"
+            android:parentActivityName=".MainActivity"
+            android:screenOrientation="portrait" />
+
         <!-- Batch Processing Activity -->
         <activity
             android:name=".BatchProcessingActivity"
