@@ -3,6 +3,7 @@ package com.example.planktondetectionapps
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
@@ -81,6 +82,8 @@ class HistoryActivity : AppCompatActivity() {
     }
 
     private fun setupRecyclerView() {
+        Log.d("HistoryActivity", "=== setupRecyclerView() called ===")
+
         historyAdapter = HistoryAdapter(
             context = this,
             historyList = currentHistoryList,
@@ -88,10 +91,19 @@ class HistoryActivity : AppCompatActivity() {
             onDeleteClick = { entry -> showDeleteConfirmation(entry) }
         )
 
+        Log.d("HistoryActivity", "Created adapter with initial list size: ${currentHistoryList.size}")
+
         historyRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@HistoryActivity)
             adapter = historyAdapter
+            // Add these properties to ensure RecyclerView works properly
+            setHasFixedSize(false)
+            isNestedScrollingEnabled = true
         }
+
+        Log.d("HistoryActivity", "RecyclerView setup complete")
+        Log.d("HistoryActivity", "RecyclerView adapter set: ${historyRecyclerView.adapter != null}")
+        Log.d("HistoryActivity", "RecyclerView layoutManager set: ${historyRecyclerView.layoutManager != null}")
     }
 
     private fun setupListeners() {
@@ -103,6 +115,12 @@ class HistoryActivity : AppCompatActivity() {
 
         clearAllButton.setOnClickListener {
             showClearAllConfirmation()
+        }
+
+        // Add debug button (long press on export button)
+        exportButton.setOnLongClickListener {
+            showDebugInfo()
+            true
         }
     }
 
@@ -121,23 +139,57 @@ class HistoryActivity : AppCompatActivity() {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         filterSpinner.adapter = adapter
 
+        // Temporarily disable listener to prevent auto-filtering during setup
+        filterSpinner.onItemSelectedListener = null
+        filterSpinner.setSelection(0) // Set to "Semua Riwayat" without triggering filter
+
+        // Set listener after initial setup
         filterSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                applyFilter(position)
+                // Only apply filter if this is a user selection, not initial setup
+                if (parent != null) {
+                    applyFilter(position)
+                }
             }
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
     }
 
     private fun loadHistoryData() {
+        Log.d("HistoryActivity", "=== loadHistoryData() called ===")
         try {
+            Log.d("HistoryActivity", "Getting all history entries from HistoryManager...")
             val allEntries = historyManager.getAllHistoryEntries()
+            Log.d("HistoryActivity", "Retrieved ${allEntries.size} entries from HistoryManager")
+
+            // Debug: Log each entry received
+            allEntries.forEachIndexed { index, entry ->
+                Log.d("HistoryActivity", "Entry $index: ID=${entry.id}, Result=${entry.classificationResult}")
+            }
+
             currentHistoryList.clear()
+            Log.d("HistoryActivity", "Cleared currentHistoryList, size now: ${currentHistoryList.size}")
+
             currentHistoryList.addAll(allEntries)
+            Log.d("HistoryActivity", "Added ${allEntries.size} entries to currentHistoryList")
+            Log.d("HistoryActivity", "currentHistoryList final size: ${currentHistoryList.size}")
+
+            // Log first few entries for debugging
+            if (currentHistoryList.isNotEmpty()) {
+                Log.d("HistoryActivity", "Sample entries in currentHistoryList:")
+                currentHistoryList.take(3).forEachIndexed { index, entry ->
+                    Log.d("HistoryActivity", "  Entry $index: ID=${entry.id}, Result=${entry.classificationResult}, Confidence=${entry.confidence}")
+                }
+            } else {
+                Log.w("HistoryActivity", "currentHistoryList is empty after adding entries!")
+                Log.w("HistoryActivity", "Original allEntries size was: ${allEntries.size}")
+            }
 
             updateStatistics()
             updateUI()
+            Log.d("HistoryActivity", "=== loadHistoryData() finished ===")
         } catch (e: Exception) {
+            Log.e("HistoryActivity", "Error loading history: ${e.message}", e)
             Toast.makeText(this, "Error loading history: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
@@ -151,32 +203,103 @@ class HistoryActivity : AppCompatActivity() {
     }
 
     private fun updateUI() {
+        Log.d("HistoryActivity", "=== updateUI() called ===")
+        Log.d("HistoryActivity", "currentHistoryList.size: ${currentHistoryList.size}")
+
         if (currentHistoryList.isEmpty()) {
+            Log.d("HistoryActivity", "Showing empty state layout")
             historyRecyclerView.visibility = View.GONE
             emptyStateLayout.visibility = View.VISIBLE
         } else {
+            Log.d("HistoryActivity", "Showing history recycler view with ${currentHistoryList.size} items")
             historyRecyclerView.visibility = View.VISIBLE
             emptyStateLayout.visibility = View.GONE
-            historyAdapter.updateData(currentHistoryList)
+
+            // Check RecyclerView state
+            Log.d("HistoryActivity", "RecyclerView visibility: ${historyRecyclerView.visibility}")
+            Log.d("HistoryActivity", "RecyclerView width: ${historyRecyclerView.width}, height: ${historyRecyclerView.height}")
+            Log.d("HistoryActivity", "RecyclerView layoutManager: ${historyRecyclerView.layoutManager}")
+            Log.d("HistoryActivity", "RecyclerView adapter: ${historyRecyclerView.adapter}")
+
+            // Recreate adapter with fresh data to ensure it works
+            historyAdapter = HistoryAdapter(
+                context = this,
+                historyList = currentHistoryList.toMutableList(), // Create a new list
+                onFeedbackClick = { entry -> showFeedbackDialog(entry) },
+                onDeleteClick = { entry -> showDeleteConfirmation(entry) }
+            )
+
+            // Set the new adapter
+            historyRecyclerView.adapter = historyAdapter
+
+            Log.d("HistoryActivity", "New adapter created and set with ${historyAdapter.itemCount} items")
+
+            // Force layout refresh
+            historyRecyclerView.post {
+                Log.d("HistoryActivity", "RecyclerView post-layout: width=${historyRecyclerView.width}, height=${historyRecyclerView.height}")
+                Log.d("HistoryActivity", "RecyclerView child count: ${historyRecyclerView.childCount}")
+                historyRecyclerView.requestLayout()
+            }
         }
     }
 
     private fun applyFilter(filterType: Int) {
+        Log.d("HistoryActivity", "=== applyFilter() called with filterType: $filterType ===")
+
         val allEntries = historyManager.getAllHistoryEntries()
+        Log.d("HistoryActivity", "Got ${allEntries.size} entries from historyManager")
+
         val filteredEntries = when (filterType) {
-            0 -> allEntries // Semua Riwayat
-            1 -> allEntries.filter { it.userFeedback.isNotEmpty() } // Dengan Feedback
-            2 -> allEntries.filter { it.userFeedback.isEmpty() } // Tanpa Feedback
-            3 -> allEntries.filter { it.isCorrect == true } // Prediksi Benar
-            4 -> allEntries.filter { it.isCorrect == false } // Prediksi Salah
-            5 -> allEntries.sortedByDescending { it.timestamp } // Terbaru Dahulu
-            6 -> allEntries.sortedBy { it.timestamp } // Terlama Dahulu
-            else -> allEntries
+            0 -> {
+                Log.d("HistoryActivity", "Filter: Semua Riwayat")
+                allEntries
+            }
+            1 -> {
+                Log.d("HistoryActivity", "Filter: Dengan Feedback")
+                val filtered = allEntries.filter { it.userFeedback.isNotEmpty() }
+                Log.d("HistoryActivity", "Found ${filtered.size} entries with feedback")
+                filtered
+            }
+            2 -> {
+                Log.d("HistoryActivity", "Filter: Tanpa Feedback")
+                val filtered = allEntries.filter { it.userFeedback.isEmpty() }
+                Log.d("HistoryActivity", "Found ${filtered.size} entries without feedback")
+                filtered
+            }
+            3 -> {
+                Log.d("HistoryActivity", "Filter: Prediksi Benar")
+                val filtered = allEntries.filter { it.isCorrect == true }
+                Log.d("HistoryActivity", "Found ${filtered.size} entries with correct predictions")
+                filtered
+            }
+            4 -> {
+                Log.d("HistoryActivity", "Filter: Prediksi Salah")
+                val filtered = allEntries.filter { it.isCorrect == false }
+                Log.d("HistoryActivity", "Found ${filtered.size} entries with incorrect predictions")
+                filtered
+            }
+            5 -> {
+                Log.d("HistoryActivity", "Filter: Terbaru Dahulu")
+                allEntries.sortedByDescending { it.timestamp }
+            }
+            6 -> {
+                Log.d("HistoryActivity", "Filter: Terlama Dahulu")
+                allEntries.sortedBy { it.timestamp }
+            }
+            else -> {
+                Log.d("HistoryActivity", "Filter: Default (all entries)")
+                allEntries
+            }
         }
+
+        Log.d("HistoryActivity", "Filtered result: ${filteredEntries.size} entries")
 
         currentHistoryList.clear()
         currentHistoryList.addAll(filteredEntries)
+
+        Log.d("HistoryActivity", "Updated currentHistoryList size: ${currentHistoryList.size}")
         updateUI()
+        Log.d("HistoryActivity", "=== applyFilter() finished ===")
     }
 
     private fun showFeedbackDialog(entry: HistoryEntry) {
@@ -306,5 +429,59 @@ class HistoryActivity : AppCompatActivity() {
         } catch (e: Exception) {
             Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
         }
+    }
+
+    private fun showDebugInfo() {
+        val debugInfo = StringBuilder()
+        debugInfo.appendLine("=== DEBUG HISTORY INFO ===")
+        debugInfo.appendLine("CSV File Path: ${historyManager.getCsvFilePath()}")
+        debugInfo.appendLine("Total Entries: ${historyManager.getAllHistoryEntries().size}")
+        debugInfo.appendLine("Current List Size: ${currentHistoryList.size}")
+        debugInfo.appendLine("Selected Filter: ${filterSpinner.selectedItem}")
+
+        val stats = historyManager.getFeedbackStats()
+        debugInfo.appendLine("Entries with Feedback: ${stats.entriesWithFeedback}")
+        debugInfo.appendLine("Accuracy: ${stats.accuracyPercentage.toInt()}%")
+
+        // Add RecyclerView debug info
+        debugInfo.appendLine("\n=== RECYCLERVIEW DEBUG ===")
+        debugInfo.appendLine("RecyclerView visibility: ${historyRecyclerView.visibility}")
+        debugInfo.appendLine("RecyclerView width: ${historyRecyclerView.width}")
+        debugInfo.appendLine("RecyclerView height: ${historyRecyclerView.height}")
+        debugInfo.appendLine("RecyclerView child count: ${historyRecyclerView.childCount}")
+        debugInfo.appendLine("Adapter item count: ${historyRecyclerView.adapter?.itemCount ?: "null"}")
+        debugInfo.appendLine("Layout Manager: ${historyRecyclerView.layoutManager?.javaClass?.simpleName}")
+
+        // Add test result
+        debugInfo.appendLine("\n=== SAVE/LOAD TEST ===")
+        debugInfo.appendLine(historyManager.testSaveLoad())
+
+        debugInfo.appendLine("\n=== RECENT DEBUG LOGS ===")
+        val fullDebugInfo = historyManager.getDebugInfo()
+        val recentLogs = fullDebugInfo.lines().takeLast(15).joinToString("\n")
+        debugInfo.appendLine(recentLogs)
+
+        AlertDialog.Builder(this)
+            .setTitle("Debug Information")
+            .setMessage(debugInfo.toString())
+            .setPositiveButton("OK", null)
+            .setNeutralButton("Full Logs") { _, _ ->
+                showFullDebugLogs()
+            }
+            .setNegativeButton("Force Refresh") { _, _ ->
+                // Force recreate everything
+                loadHistoryData()
+                Toast.makeText(this, "Forced refresh completed", Toast.LENGTH_SHORT).show()
+            }
+            .show()
+    }
+
+    private fun showFullDebugLogs() {
+        val fullLogs = historyManager.getDebugInfo()
+        AlertDialog.Builder(this)
+            .setTitle("Full Debug Logs")
+            .setMessage(fullLogs)
+            .setPositiveButton("OK", null)
+            .show()
     }
 }

@@ -15,6 +15,7 @@ import android.os.Environment
 import android.os.Handler
 import android.os.Looper
 import android.provider.MediaStore
+import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
@@ -2131,12 +2132,20 @@ class MainActivity : AppCompatActivity() {
      * Save current classification result to history
      */
     private fun saveToHistory() {
+        Log.d("PlanktonHistory", "=== saveToHistory() called ===")
+        Log.d("PlanktonHistory", "currentClassificationResult: $currentClassificationResult")
+        Log.d("PlanktonHistory", "currentBitmap is null: ${currentBitmap == null}")
+        Log.d("PlanktonHistory", "currentConfidence: $currentConfidence")
+        Log.d("PlanktonHistory", "selectedModel: $selectedModel")
+
         if (currentClassificationResult != null && currentBitmap != null) {
             try {
+                Log.d("PlanktonHistory", "Attempting to save image to internal storage...")
                 // Save image to internal storage first
                 val imageFile = saveImageToInternalStorage()
+                Log.d("PlanktonHistory", "Image saved to: ${imageFile?.absolutePath}")
 
-                if (imageFile != null) {
+                if (imageFile != null && imageFile.exists()) {
                     // Create history entry
                     val historyEntry = HistoryEntry(
                         id = System.currentTimeMillis().toString(),
@@ -2147,14 +2156,52 @@ class MainActivity : AppCompatActivity() {
                         modelUsed = formatModelName(selectedModel)
                     )
 
+                    Log.d("PlanktonHistory", "Created HistoryEntry:")
+                    Log.d("PlanktonHistory", "  ID: ${historyEntry.id}")
+                    Log.d("PlanktonHistory", "  Result: ${historyEntry.classificationResult}")
+                    Log.d("PlanktonHistory", "  Confidence: ${historyEntry.confidence}")
+                    Log.d("PlanktonHistory", "  Model: ${historyEntry.modelUsed}")
+                    Log.d("PlanktonHistory", "  Image path: ${historyEntry.imagePath}")
+
                     // Save to CSV
-                    historyManager.saveHistoryEntry(historyEntry)
-                    android.util.Log.d("PlanktonHistory", "History entry saved: ${historyEntry.id}")
+                    Log.d("PlanktonHistory", "Attempting to save to HistoryManager...")
+                    val saveSuccess = historyManager.saveHistoryEntry(historyEntry)
+                    Log.d("PlanktonHistory", "Save result: $saveSuccess")
+
+                    if (saveSuccess) {
+                        Log.d("PlanktonHistory", "✅ History entry saved successfully!")
+
+                        // Verify by reading back all entries
+                        val allEntries = historyManager.getAllHistoryEntries()
+                        Log.d("PlanktonHistory", "📊 Total entries after save: ${allEntries.size}")
+
+                        // Show success message to user
+                        runOnUiThread {
+                            Toast.makeText(this, "Klasifikasi disimpan ke riwayat", Toast.LENGTH_SHORT).show()
+                        }
+                    } else {
+                        Log.e("PlanktonHistory", "❌ Failed to save history entry")
+                        runOnUiThread {
+                            Toast.makeText(this, "Gagal menyimpan ke riwayat", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                } else {
+                    Log.e("PlanktonHistory", "❌ Failed to save image file or file doesn't exist")
+                    Log.e("PlanktonHistory", "Image file path: ${imageFile?.absolutePath}")
+                    Log.e("PlanktonHistory", "File exists: ${imageFile?.exists()}")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("PlanktonHistory", "Error saving to history", e)
+                Log.e("PlanktonHistory", "❌ Exception in saveToHistory()", e)
+                runOnUiThread {
+                    Toast.makeText(this, "Error menyimpan riwayat: ${e.message}", Toast.LENGTH_LONG).show()
+                }
             }
+        } else {
+            Log.w("PlanktonHistory", "⚠️ Cannot save to history - missing required data:")
+            Log.w("PlanktonHistory", "  currentClassificationResult is null: ${currentClassificationResult == null}")
+            Log.w("PlanktonHistory", "  currentBitmap is null: ${currentBitmap == null}")
         }
+        Log.d("PlanktonHistory", "=== saveToHistory() finished ===")
     }
 
     /**

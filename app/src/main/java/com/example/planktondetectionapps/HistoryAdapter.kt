@@ -2,6 +2,7 @@ package com.example.planktondetectionapps
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -35,12 +36,22 @@ class HistoryAdapter(
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HistoryViewHolder {
+        Log.d("HistoryAdapter", "=== onCreateViewHolder() called ===")
         val view = LayoutInflater.from(context).inflate(R.layout.item_history, parent, false)
+        Log.d("HistoryAdapter", "ViewHolder created successfully")
         return HistoryViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: HistoryViewHolder, position: Int) {
+        Log.d("HistoryAdapter", "=== onBindViewHolder() called for position: $position ===")
+
+        if (position >= historyList.size) {
+            Log.e("HistoryAdapter", "Position $position is out of bounds for list size ${historyList.size}")
+            return
+        }
+
         val entry = historyList[position]
+        Log.d("HistoryAdapter", "Binding entry: ID=${entry.id}, Result=${entry.classificationResult}")
 
         // Load image
         try {
@@ -123,9 +134,19 @@ class HistoryAdapter(
      * Update data list
      */
     fun updateData(newList: List<HistoryEntry>) {
+        Log.d("HistoryAdapter", "=== updateData() called ===")
+        Log.d("HistoryAdapter", "Current list size: ${historyList.size}")
+        Log.d("HistoryAdapter", "New list size: ${newList.size}")
+
         historyList.clear()
         historyList.addAll(newList)
+
+        Log.d("HistoryAdapter", "Updated list size: ${historyList.size}")
+        Log.d("HistoryAdapter", "Calling notifyDataSetChanged()")
+
         notifyDataSetChanged()
+
+        Log.d("HistoryAdapter", "=== updateData() finished ===")
     }
 
     /**
