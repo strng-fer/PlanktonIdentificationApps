@@ -1949,6 +1949,7 @@ class MainActivity : AppCompatActivity() {
         dialogBuilder.setCancelable(true)
 
         val dialog = dialogBuilder.create()
+        // Set transparent background to show the rounded corners from the layout
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         // Get dialog elements
@@ -2197,8 +2198,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 } else {
                     Log.e("PlanktonHistory", "❌ Failed to save image file or file doesn't exist")
-                    Log.e("PlanktonHistory", "Image file path: ${imageFile?.absolutePath}")
-                    Log.e("PlanktonHistory", "File exists: ${imageFile?.exists()}")
+                    runOnUiThread {
+                        Toast.makeText(this, "Gagal menyimpan gambar riwayat", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } catch (e: Exception) {
                 Log.e("PlanktonHistory", "❌ Exception in saveToHistory()", e)
