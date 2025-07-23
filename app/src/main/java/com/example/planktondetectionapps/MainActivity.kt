@@ -965,8 +965,11 @@ class MainActivity : AppCompatActivity() {
 
                     // Process results on UI thread
                     runOnUiThread {
-                        loadingDialog.dismiss()
-                        processClassificationResults(confidences)
+                        // Process classification results first, then dismiss dialog
+                        processClassificationResults(confidences) {
+                            // Dismiss dialog only after UI updates are complete
+                            loadingDialog.dismiss()
+                        }
                     }
 
                 } catch (e: Exception) {
@@ -986,7 +989,7 @@ class MainActivity : AppCompatActivity() {
     /**
      * Proses hasil klasifikasi dan update UI
      */
-    private fun processClassificationResults(confidences: FloatArray) {
+    private fun processClassificationResults(confidences: FloatArray, onComplete: (() -> Unit)? = null) {
         android.util.Log.d("PlanktonDebug", "=== MODEL OUTPUT DEBUG ===")
         android.util.Log.d("PlanktonDebug", "Total classes: ${confidences.size}")
 
@@ -1061,8 +1064,15 @@ class MainActivity : AppCompatActivity() {
 
             // Save to history automatically
             saveToHistory()
+
+            // Add delay to ensure all UI updates are complete before calling onComplete
+            Handler(Looper.getMainLooper()).postDelayed({
+                onComplete?.invoke()
+            }, 400) // 400ms delay to ensure smooth transition and all UI updates are complete
+
         } else {
             showError("Error: Invalid classification result")
+            onComplete?.invoke()
         }
     }
 

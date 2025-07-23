@@ -159,7 +159,7 @@
                 android:textSize="12sp"
                 android:layout_marginTop="8dp"
                 android:background="@drawable/button_outline_primary"
-                android:textColor="@color/primary" />
+                android:textColor="@color/white" />
 
         </LinearLayout>
 
