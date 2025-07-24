@@ -148,6 +148,35 @@
                     android:textColor="@color/text_primary"
                     android:layout_marginTop="2dp" />
 
+                <!-- Feedback Result Display -->
+                <LinearLayout
+                    android:id="@+id/feedbackResultContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Hasil Feedback: "
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/feedbackResultText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Prediksi Benar"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@android:color/holo_green_dark" />
+
+                </LinearLayout>
+
             </LinearLayout>
 
             <!-- Feedback Button -->

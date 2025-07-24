@@ -19,7 +19,8 @@ class HistoryAdapter(
     private val context: Context,
     private var historyList: MutableList<HistoryEntry>,
     private val onFeedbackClick: (HistoryEntry) -> Unit,
-    private val onDeleteClick: (HistoryEntry) -> Unit
+    private val onDeleteClick: (HistoryEntry) -> Unit,
+    private val onItemClick: (HistoryEntry) -> Unit = {} // Add click handler for detailed view
 ) : RecyclerView.Adapter<HistoryAdapter.HistoryViewHolder>() {
 
     class HistoryViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -33,6 +34,8 @@ class HistoryAdapter(
         val deleteButton: ImageButton = view.findViewById(R.id.deleteButton)
         val feedbackContainer: LinearLayout = view.findViewById(R.id.feedbackContainer)
         val statusIcon: ImageView = view.findViewById(R.id.statusIcon)
+        val feedbackResultContainer: LinearLayout = view.findViewById(R.id.feedbackResultContainer)
+        val feedbackResultText: TextView = view.findViewById(R.id.feedbackResultText)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HistoryViewHolder {
@@ -93,20 +96,31 @@ class HistoryAdapter(
             holder.feedbackText.text = entry.userFeedback
             holder.feedbackButton.text = "Edit Feedback"
 
-            // Set status icon based on feedback
+            // Display feedback result
+            holder.feedbackResultContainer.visibility = View.VISIBLE
             when (entry.isCorrect) {
                 true -> {
+                    holder.feedbackResultText.text = "Prediksi Benar"
+                    holder.feedbackResultText.setTextColor(context.getColor(android.R.color.holo_green_dark))
                     holder.statusIcon.setImageResource(R.drawable.ic_check_circle)
                     holder.statusIcon.setColorFilter(context.getColor(android.R.color.holo_green_dark))
                 }
                 false -> {
+                    holder.feedbackResultText.text = if (entry.correctClass.isNotEmpty()) {
+                        "Prediksi Salah → ${entry.correctClass}"
+                    } else {
+                        "Prediksi Salah"
+                    }
+                    holder.feedbackResultText.setTextColor(context.getColor(android.R.color.holo_red_dark))
                     holder.statusIcon.setImageResource(R.drawable.ic_error_circle)
                     holder.statusIcon.setColorFilter(context.getColor(android.R.color.holo_red_dark))
                     if (entry.correctClass.isNotEmpty()) {
-                        holder.feedbackText.text = "${entry.userFeedback}\nCorrect class: ${entry.correctClass}"
+                        holder.feedbackText.text = "${entry.userFeedback}\nKelas yang benar: ${entry.correctClass}"
                     }
                 }
                 null -> {
+                    holder.feedbackResultText.text = "Menunggu Verifikasi"
+                    holder.feedbackResultText.setTextColor(context.getColor(android.R.color.darker_gray))
                     holder.statusIcon.setImageResource(R.drawable.ic_help_circle)
                     holder.statusIcon.setColorFilter(context.getColor(android.R.color.darker_gray))
                 }
@@ -114,6 +128,7 @@ class HistoryAdapter(
             holder.statusIcon.visibility = View.VISIBLE
         } else {
             holder.feedbackContainer.visibility = View.GONE
+            holder.feedbackResultContainer.visibility = View.GONE
             holder.feedbackButton.text = "Add Feedback"
             holder.statusIcon.visibility = View.GONE
         }
@@ -125,6 +140,11 @@ class HistoryAdapter(
 
         holder.deleteButton.setOnClickListener {
             onDeleteClick(entry)
+        }
+
+        // Item click listener for detailed view
+        holder.itemView.setOnClickListener {
+            onItemClick(entry)
         }
     }
 

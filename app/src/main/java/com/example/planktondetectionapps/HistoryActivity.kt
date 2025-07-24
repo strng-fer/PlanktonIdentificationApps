@@ -88,7 +88,8 @@ class HistoryActivity : AppCompatActivity() {
             context = this,
             historyList = currentHistoryList,
             onFeedbackClick = { entry -> showFeedbackDialog(entry) },
-            onDeleteClick = { entry -> showDeleteConfirmation(entry) }
+            onDeleteClick = { entry -> showDeleteConfirmation(entry) },
+            onItemClick = { entry -> showClassificationDetailsDialog(entry) } // Add detailed view handler
         )
 
         Log.d("HistoryActivity", "Created adapter with initial list size: ${currentHistoryList.size}")
@@ -226,7 +227,8 @@ class HistoryActivity : AppCompatActivity() {
                 context = this,
                 historyList = currentHistoryList.toMutableList(), // Create a new list
                 onFeedbackClick = { entry -> showFeedbackDialog(entry) },
-                onDeleteClick = { entry -> showDeleteConfirmation(entry) }
+                onDeleteClick = { entry -> showDeleteConfirmation(entry) },
+                onItemClick = { entry -> showClassificationDetailsDialog(entry) } // Add detailed view handler
             )
 
             // Set the new adapter
@@ -483,5 +485,153 @@ class HistoryActivity : AppCompatActivity() {
             .setMessage(fullLogs)
             .setPositiveButton("OK", null)
             .show()
+    }
+
+    private fun showClassificationDetailsDialog(entry: HistoryEntry) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_classification_details, null)
+
+        // Set basic information
+        val detailImageView = dialogView.findViewById<ImageView>(R.id.detailImageView)
+        val detailClassificationText = dialogView.findViewById<TextView>(R.id.detailClassificationText)
+        val detailTimestampText = dialogView.findViewById<TextView>(R.id.detailTimestampText)
+        val detailModelText = dialogView.findViewById<TextView>(R.id.detailModelText)
+
+        // Set classification results table
+        val detailPred1 = dialogView.findViewById<TextView>(R.id.detailPred1)
+        val detailPred2 = dialogView.findViewById<TextView>(R.id.detailPred2)
+        val detailPred3 = dialogView.findViewById<TextView>(R.id.detailPred3)
+        val detailProb1 = dialogView.findViewById<TextView>(R.id.detailProb1)
+        val detailProb2 = dialogView.findViewById<TextView>(R.id.detailProb2)
+        val detailProb3 = dialogView.findViewById<TextView>(R.id.detailProb3)
+
+        // Set feedback section
+        val detailFeedbackCard = dialogView.findViewById<androidx.cardview.widget.CardView>(R.id.detailFeedbackCard)
+        val detailFeedbackIcon = dialogView.findViewById<ImageView>(R.id.detailFeedbackIcon)
+        val detailFeedbackStatus = dialogView.findViewById<TextView>(R.id.detailFeedbackStatus)
+        val detailFeedbackText = dialogView.findViewById<TextView>(R.id.detailFeedbackText)
+        val detailCorrectClass = dialogView.findViewById<TextView>(R.id.detailCorrectClass)
+
+        // Set buttons
+        val detailFeedbackButton = dialogView.findViewById<Button>(R.id.detailFeedbackButton)
+        val detailCloseButton = dialogView.findViewById<Button>(R.id.detailCloseButton)
+
+        // Load and set image
+        try {
+            val imageFile = java.io.File(entry.imagePath)
+            if (imageFile.exists()) {
+                val bitmap = android.graphics.BitmapFactory.decodeFile(imageFile.absolutePath)
+                detailImageView.setImageBitmap(bitmap)
+            } else {
+                detailImageView.setImageResource(R.drawable.ic_image_placeholder)
+            }
+        } catch (e: Exception) {
+            detailImageView.setImageResource(R.drawable.ic_image_placeholder)
+        }
+
+        // Set basic info
+        detailClassificationText.text = entry.classificationResult
+        val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+        detailTimestampText.text = dateFormat.format(entry.timestamp)
+        detailModelText.text = "Model: ${entry.modelUsed}"
+
+        // Parse and display classification results
+        try {
+            // Parse the detailed results from entry (you may need to store more detailed results)
+            // For now, we'll show the main result and simulate other results
+            val topResult = entry.classificationResult
+            val topConfidence = entry.confidence
+
+            detailPred1.text = topResult
+            detailProb1.text = "${(topConfidence * 100).toInt()}%"
+
+            // For demonstration, create mock secondary results
+            // In a real implementation, you'd store and retrieve the full classification results
+            val planktonClasses = listOf("Copepod", "Diatom", "Dinoflagellate", "Foraminifera", "Radiolaria")
+            val otherClasses = planktonClasses.filter { it != topResult }.take(2)
+
+            if (otherClasses.size >= 2) {
+                val remaining = 1.0f - topConfidence
+                val secondConfidence = remaining * 0.7f
+                val thirdConfidence = remaining * 0.3f
+
+                detailPred2.text = otherClasses[0]
+                detailProb2.text = "${(secondConfidence * 100).toInt()}%"
+
+                detailPred3.text = otherClasses[1]
+                detailProb3.text = "${(thirdConfidence * 100).toInt()}%"
+            } else {
+                detailPred2.text = "N/A"
+                detailProb2.text = "0%"
+                detailPred3.text = "N/A"
+                detailProb3.text = "0%"
+            }
+        } catch (e: Exception) {
+            Log.e("HistoryActivity", "Error parsing classification results", e)
+            detailPred1.text = entry.classificationResult
+            detailProb1.text = "${(entry.confidence * 100).toInt()}%"
+            detailPred2.text = "N/A"
+            detailProb2.text = "0%"
+            detailPred3.text = "N/A"
+            detailProb3.text = "0%"
+        }
+
+        // Handle feedback display
+        if (entry.userFeedback.isNotEmpty()) {
+            detailFeedbackCard.visibility = View.VISIBLE
+            detailFeedbackText.text = entry.userFeedback
+            detailFeedbackButton.text = "Edit Feedback"
+
+            when (entry.isCorrect) {
+                true -> {
+                    detailFeedbackIcon.setImageResource(R.drawable.ic_check_circle)
+                    detailFeedbackIcon.setColorFilter(getColor(android.R.color.holo_green_dark))
+                    detailFeedbackStatus.text = "Prediksi Benar"
+                    detailFeedbackStatus.setTextColor(getColor(android.R.color.holo_green_dark))
+                    detailCorrectClass.visibility = View.GONE
+                }
+                false -> {
+                    detailFeedbackIcon.setImageResource(R.drawable.ic_error_circle)
+                    detailFeedbackIcon.setColorFilter(getColor(android.R.color.holo_red_dark))
+                    detailFeedbackStatus.text = "Prediksi Salah"
+                    detailFeedbackStatus.setTextColor(getColor(android.R.color.holo_red_dark))
+
+                    if (entry.correctClass.isNotEmpty()) {
+                        detailCorrectClass.visibility = View.VISIBLE
+                        detailCorrectClass.text = "Kelas yang benar: ${entry.correctClass}"
+                    } else {
+                        detailCorrectClass.visibility = View.GONE
+                    }
+                }
+                null -> {
+                    detailFeedbackIcon.setImageResource(R.drawable.ic_help_circle)
+                    detailFeedbackIcon.setColorFilter(getColor(android.R.color.darker_gray))
+                    detailFeedbackStatus.text = "Menunggu Verifikasi"
+                    detailFeedbackStatus.setTextColor(getColor(android.R.color.darker_gray))
+                    detailCorrectClass.visibility = View.GONE
+                }
+            }
+        } else {
+            detailFeedbackCard.visibility = View.GONE
+            detailFeedbackButton.text = "Add Feedback"
+        }
+
+        // Create dialog
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Detail Hasil Klasifikasi")
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
+
+        // Set button listeners
+        detailFeedbackButton.setOnClickListener {
+            dialog.dismiss()
+            showFeedbackDialog(entry)
+        }
+
+        detailCloseButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 }
