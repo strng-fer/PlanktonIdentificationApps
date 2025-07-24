@@ -619,7 +619,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginBottom="24dp"
-                android:background="@drawable/button_save_enhanced"
+                android:background="@drawable/button_secondary"
                 android:text="Simpan ke Galeri"
                 android:drawableLeft="@drawable/ic_save"
                 android:drawablePadding="8dp"

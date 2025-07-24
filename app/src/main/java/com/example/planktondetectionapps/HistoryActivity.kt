@@ -315,7 +315,8 @@ class HistoryActivity : AppCompatActivity() {
         val correctRadio = dialogView.findViewById<RadioButton>(R.id.correctRadio)
         val incorrectRadio = dialogView.findViewById<RadioButton>(R.id.incorrectRadio)
         val neutralRadio = dialogView.findViewById<RadioButton>(R.id.neutralRadio)
-        val correctClassEditText = dialogView.findViewById<EditText>(R.id.correctClassEditText)
+        val correctClassSpinner = dialogView.findViewById<Spinner>(R.id.correctClassSpinner)
+        val correctClassLabel = dialogView.findViewById<TextView>(R.id.correctClassLabel)
 
         // Set current prediction info
         val currentPrediction = dialogView.findViewById<TextView>(R.id.currentPrediction)
@@ -323,6 +324,19 @@ class HistoryActivity : AppCompatActivity() {
 
         currentPrediction?.text = entry.classificationResult
         currentConfidence?.text = "Tingkat Kepercayaan: ${(entry.confidence * 100).toInt()}%"
+
+        // Load plankton labels and add "Unrecognize" option
+        val planktonLabels = loadLabels(this).toMutableList()
+        planktonLabels.add("Unrecognize")
+
+        // Setup spinner with plankton labels
+        val spinnerAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            planktonLabels
+        )
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        correctClassSpinner?.adapter = spinnerAdapter
 
         // Pre-fill existing feedback if any
         feedbackComment?.setText(entry.userFeedback)
@@ -332,30 +346,38 @@ class HistoryActivity : AppCompatActivity() {
             true -> correctRadio?.isChecked = true
             false -> {
                 incorrectRadio?.isChecked = true
-                correctClassEditText?.visibility = View.VISIBLE
-                correctClassEditText?.setText(entry.correctClass)
+                correctClassLabel?.visibility = View.VISIBLE
+                correctClassSpinner?.visibility = View.VISIBLE
+                // Pre-select the correct class if it exists in the spinner
+                val correctClassIndex = planktonLabels.indexOf(entry.correctClass)
+                if (correctClassIndex >= 0) {
+                    correctClassSpinner?.setSelection(correctClassIndex)
+                }
             }
             null -> neutralRadio?.isChecked = true
         }
 
-        // Show/hide correct class input based on radio selection
+        // Show/hide correct class label and spinner based on radio selection
         feedbackRadioGroup?.setOnCheckedChangeListener { _, checkedId ->
             when (checkedId) {
                 R.id.incorrectRadio -> {
-                    correctClassEditText?.visibility = View.VISIBLE
+                    correctClassLabel?.visibility = View.VISIBLE
+                    correctClassSpinner?.visibility = View.VISIBLE
                 }
                 else -> {
-                    correctClassEditText?.visibility = View.GONE
-                    correctClassEditText?.setText("")
+                    correctClassLabel?.visibility = View.GONE
+                    correctClassSpinner?.visibility = View.GONE
                 }
             }
         }
 
         val dialog = AlertDialog.Builder(this)
-            .setTitle("Feedback untuk Klasifikasi")
             .setView(dialogView)
             .setCancelable(true)
             .create()
+
+        // Make dialog background transparent to prevent overlap with custom rounded background
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         // Set button listeners
         submitButton?.setOnClickListener {
@@ -370,7 +392,9 @@ class HistoryActivity : AppCompatActivity() {
 
             // Get correct class if prediction is marked as incorrect
             val correctClass = if (isCorrect == false) {
-                correctClassEditText?.text?.toString()?.trim() ?: ""
+                // Get selected item from spinner
+                val selectedItem = correctClassSpinner?.selectedItem?.toString()?.trim()
+                selectedItem ?: ""
             } else {
                 ""
             }
@@ -401,6 +425,22 @@ class HistoryActivity : AppCompatActivity() {
             Toast.makeText(this, "Gagal menyimpan feedback", Toast.LENGTH_SHORT).show()
             Log.e("HistoryActivity", "Failed to save feedback")
         }
+    }
+
+    /**
+     * Load labels from assets file
+     */
+    private fun loadLabels(context: android.content.Context): List<String> {
+        val labels = mutableListOf<String>()
+        try {
+            context.assets.open("labels.txt").bufferedReader().useLines { lines ->
+                lines.forEach { labels.add(it) }
+            }
+        } catch (e: java.io.IOException) {
+            e.printStackTrace()
+            labels.add("Unknown")
+        }
+        return labels
     }
 
     private fun showDeleteConfirmation(entry: HistoryEntry) {
@@ -791,10 +831,12 @@ class HistoryActivity : AppCompatActivity() {
 
         // Create dialog
         val dialog = AlertDialog.Builder(this)
-            .setTitle("Detail Hasil Klasifikasi")
             .setView(dialogView)
             .setCancelable(true)
             .create()
+
+        // Make dialog background transparent to prevent overlap with custom rounded background
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         // Set button listeners
         detailFeedbackButton.setOnClickListener {

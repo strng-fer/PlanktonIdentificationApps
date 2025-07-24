@@ -1943,66 +1943,88 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        val dialogBuilder = AlertDialog.Builder(this)
         val dialogView = layoutInflater.inflate(R.layout.dialog_feedback, null)
 
-        dialogBuilder.setView(dialogView)
-        dialogBuilder.setCancelable(true)
-
-        val dialog = dialogBuilder.create()
-        // Set transparent background to show the rounded corners from the layout
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        // Get dialog elements
-        val currentPrediction = dialogView.findViewById<TextView>(R.id.currentPrediction)
-        val currentConfidenceText = dialogView.findViewById<TextView>(R.id.currentConfidence)
-        val correctLabelSpinner = dialogView.findViewById<android.widget.Spinner>(R.id.correctLabelSpinner)
+        // Get UI elements from dialog
         val feedbackComment = dialogView.findViewById<android.widget.EditText>(R.id.feedbackComment)
         val submitButton = dialogView.findViewById<Button>(R.id.submitButton)
         val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
+        val feedbackRadioGroup = dialogView.findViewById<android.widget.RadioGroup>(R.id.feedbackRadioGroup)
+        val correctClassSpinner = dialogView.findViewById<android.widget.Spinner>(R.id.correctClassSpinner)
+        val correctClassLabel = dialogView.findViewById<TextView>(R.id.correctClassLabel)
 
-        // Display current prediction
-        currentPrediction.text = currentClassificationResult
-        currentConfidenceText.text = "Tingkat Kepercayaan: ${String.format(Locale.getDefault(), "%.1f%%", currentConfidence * 100)}"
+        // Set current prediction info
+        val currentPrediction = dialogView.findViewById<TextView>(R.id.currentPrediction)
+        val currentConfidenceText = dialogView.findViewById<TextView>(R.id.currentConfidence)
 
-        // Load and populate spinner with plankton labels
-        val labels = loadLabels(this)
+        currentPrediction?.text = currentClassificationResult
+        currentConfidenceText?.text = "Tingkat Kepercayaan: ${String.format(Locale.getDefault(), "%.1f%%", currentConfidence * 100)}"
+
+        // Load plankton labels and add "Unrecognize" option
+        val planktonLabels = loadLabels(this).toMutableList()
+        planktonLabels.add("Unrecognize")
+
+        // Setup spinner with plankton labels
         val spinnerAdapter = android.widget.ArrayAdapter(
             this,
             android.R.layout.simple_spinner_item,
-            labels
+            planktonLabels
         )
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        correctLabelSpinner.adapter = spinnerAdapter
+        correctClassSpinner?.adapter = spinnerAdapter
 
-        // Pre-select the current prediction in spinner if it exists
-        val currentPredictionIndex = labels.indexOf(currentClassificationResult)
-        if (currentPredictionIndex >= 0) {
-            correctLabelSpinner.setSelection(currentPredictionIndex)
+        // Show/hide correct class label and spinner based on radio selection
+        feedbackRadioGroup?.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                R.id.incorrectRadio -> {
+                    correctClassLabel?.visibility = View.VISIBLE
+                    correctClassSpinner?.visibility = View.VISIBLE
+                }
+                else -> {
+                    correctClassLabel?.visibility = View.GONE
+                    correctClassSpinner?.visibility = View.GONE
+                }
+            }
         }
 
-        // Setup click listeners
-        submitButton.setOnClickListener {
-            val selectedCorrectLabel = correctLabelSpinner.selectedItem.toString()
-            val commentText = feedbackComment.text.toString().trim()
+        val dialog = AlertDialog.Builder(this)
+            .setTitle("Feedback untuk Klasifikasi")
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
 
-            // Validate selection
-            if (selectedCorrectLabel.isEmpty()) {
-                Toast.makeText(this, "Silakan pilih label yang benar", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
+        // Set transparent background to show the rounded corners from the layout
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        // Set button listeners
+        submitButton?.setOnClickListener {
+            val feedback = feedbackComment?.text?.toString()?.trim() ?: ""
+
+            // Determine correctness based on radio selection
+            val isCorrect = when (feedbackRadioGroup?.checkedRadioButtonId) {
+                R.id.correctRadio -> true
+                R.id.incorrectRadio -> false
+                else -> null // neutral or no selection
             }
 
-            // Update feedback in history entry instead of separate file
+            // Get correct class if prediction is marked as incorrect
+            val correctClass = if (isCorrect == false) {
+                correctClassSpinner?.selectedItem?.toString() ?: ""
+            } else {
+                ""
+            }
+
+            // Update feedback in history entry
             updateHistoryFeedback(
-                correctLabel = selectedCorrectLabel,
-                comment = commentText
+                feedback = feedback,
+                isCorrect = isCorrect,
+                correctClass = correctClass
             )
 
-            Toast.makeText(this, "Feedback berhasil disimpan. Terima kasih!", Toast.LENGTH_SHORT).show()
             dialog.dismiss()
         }
 
-        cancelButton.setOnClickListener {
+        cancelButton?.setOnClickListener {
             dialog.dismiss()
         }
 
@@ -2012,33 +2034,32 @@ class MainActivity : AppCompatActivity() {
     /**
      * Update feedback in the current history entry
      */
-    private fun updateHistoryFeedback(correctLabel: String, comment: String) {
+    private fun updateHistoryFeedback(feedback: String, isCorrect: Boolean?, correctClass: String) {
         if (currentHistoryEntryId.isNullOrEmpty()) {
             Toast.makeText(this, "Tidak dapat menyimpan feedback. Silakan lakukan klasifikasi terlebih dahulu.", Toast.LENGTH_SHORT).show()
             return
         }
 
         try {
-            Log.d("MainActivity", "Updating feedback for entry ID: $currentHistoryEntryId")
-            Log.d("MainActivity", "Correct label: $correctLabel")
-            Log.d("MainActivity", "Comment: $comment")
-
-            // Determine if the prediction is correct
-            val isCorrect = currentClassificationResult == correctLabel
+            Log.d("MainActivity", "=== updateHistoryFeedback() called ===")
+            Log.d("MainActivity", "Entry ID: $currentHistoryEntryId")
+            Log.d("MainActivity", "Feedback: '$feedback'")
+            Log.d("MainActivity", "IsCorrect: $isCorrect")
+            Log.d("MainActivity", "CorrectClass: '$correctClass'")
 
             // Update the history entry using HistoryManager
             val updateSuccess = historyManager.updateEntryFeedback(
                 entryId = currentHistoryEntryId!!,
-                feedback = comment,
+                feedback = feedback,
                 isCorrect = isCorrect,
-                correctClass = correctLabel
+                correctClass = correctClass
             )
 
             if (updateSuccess) {
-                Log.d("MainActivity", "✅ Feedback updated successfully!")
-                Toast.makeText(this, "Feedback berhasil disimpan. Terima kasih!", Toast.LENGTH_SHORT).show()
+                Log.d("MainActivity", "Feedback saved successfully")
+                Toast.makeText(this, "Feedback berhasil disimpan", Toast.LENGTH_SHORT).show()
             } else {
-                Log.e("MainActivity", "❌ Failed to update feedback")
+                Log.e("MainActivity", "Failed to save feedback")
                 Toast.makeText(this, "Gagal menyimpan feedback", Toast.LENGTH_SHORT).show()
             }
 
