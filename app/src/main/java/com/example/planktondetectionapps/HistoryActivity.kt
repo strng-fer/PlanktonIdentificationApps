@@ -317,6 +317,7 @@ class HistoryActivity : AppCompatActivity() {
         val neutralRadio = dialogView.findViewById<RadioButton>(R.id.neutralRadio)
         val correctClassSpinner = dialogView.findViewById<Spinner>(R.id.correctClassSpinner)
         val correctClassLabel = dialogView.findViewById<TextView>(R.id.correctClassLabel)
+        val warningText = dialogView.findViewById<TextView>(R.id.warningText)
 
         // Set current prediction info
         val currentPrediction = dialogView.findViewById<TextView>(R.id.currentPrediction)
@@ -369,6 +370,8 @@ class HistoryActivity : AppCompatActivity() {
                     correctClassSpinner?.visibility = View.GONE
                 }
             }
+            // Clear warning when selection changes
+            warningText?.visibility = View.GONE
         }
 
         val dialog = AlertDialog.Builder(this)
@@ -390,17 +393,26 @@ class HistoryActivity : AppCompatActivity() {
                 else -> null // neutral or no selection
             }
 
-            // Get correct class if prediction is marked as incorrect
-            val correctClass = if (isCorrect == false) {
-                // Get selected item from spinner
-                val selectedItem = correctClassSpinner?.selectedItem?.toString()?.trim()
-                selectedItem ?: ""
-            } else {
-                ""
-            }
+            // Validate input based on rules
+            val validationResult = validateFeedbackInput(isCorrect, feedback, correctClassSpinner)
 
-            saveFeedback(entry, feedback, isCorrect, correctClass)
-            dialog.dismiss()
+            if (validationResult.isValid) {
+                // Get correct class if prediction is marked as incorrect
+                val correctClass = if (isCorrect == false) {
+                    // Get selected item from spinner
+                    val selectedItem = correctClassSpinner?.selectedItem?.toString()?.trim()
+                    selectedItem ?: ""
+                } else {
+                    ""
+                }
+
+                saveFeedback(entry, feedback, isCorrect, correctClass)
+                dialog.dismiss()
+            } else {
+                // Show warning message
+                warningText?.text = validationResult.errorMessage
+                warningText?.visibility = View.VISIBLE
+            }
         }
 
         cancelButton?.setOnClickListener {
@@ -409,6 +421,43 @@ class HistoryActivity : AppCompatActivity() {
 
         dialog.show()
     }
+
+    /**
+     * Validate feedback input based on the specified rules
+     */
+    private fun validateFeedbackInput(isCorrect: Boolean?, feedback: String, correctClassSpinner: Spinner?): ValidationResult {
+        return when (isCorrect) {
+            true -> {
+                // Classification is correct - feedback can be sent (comment is optional)
+                ValidationResult(true, "")
+            }
+            false -> {
+                // Classification is incorrect - user must select correct classification (comment is optional)
+                val selectedClass = correctClassSpinner?.selectedItem?.toString()?.trim()
+                if (selectedClass.isNullOrEmpty()) {
+                    ValidationResult(false, "Harap pilih klasifikasi yang benar")
+                } else {
+                    ValidationResult(true, "")
+                }
+            }
+            null -> {
+                // Not sure - user must provide comment
+                if (feedback.isEmpty()) {
+                    ValidationResult(false, "Komentar wajib diisi jika memilih 'Tidak Yakin'")
+                } else {
+                    ValidationResult(true, "")
+                }
+            }
+        }
+    }
+
+    /**
+     * Data class for validation result
+     */
+    private data class ValidationResult(
+        val isValid: Boolean,
+        val errorMessage: String
+    )
 
     private fun saveFeedback(entry: HistoryEntry, feedback: String, isCorrect: Boolean?, correctClass: String) {
         Log.d("HistoryActivity", "=== saveFeedback() called ===")

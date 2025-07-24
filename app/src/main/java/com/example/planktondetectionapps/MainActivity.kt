@@ -1952,6 +1952,7 @@ class MainActivity : AppCompatActivity() {
         val feedbackRadioGroup = dialogView.findViewById<android.widget.RadioGroup>(R.id.feedbackRadioGroup)
         val correctClassSpinner = dialogView.findViewById<android.widget.Spinner>(R.id.correctClassSpinner)
         val correctClassLabel = dialogView.findViewById<TextView>(R.id.correctClassLabel)
+        val warningText = dialogView.findViewById<TextView>(R.id.warningText)
 
         // Set current prediction info
         val currentPrediction = dialogView.findViewById<TextView>(R.id.currentPrediction)
@@ -1985,10 +1986,11 @@ class MainActivity : AppCompatActivity() {
                     correctClassSpinner?.visibility = View.GONE
                 }
             }
+            // Clear warning when selection changes
+            warningText?.visibility = View.GONE
         }
 
         val dialog = AlertDialog.Builder(this)
-            .setTitle("Feedback untuk Klasifikasi")
             .setView(dialogView)
             .setCancelable(true)
             .create()
@@ -2004,24 +2006,34 @@ class MainActivity : AppCompatActivity() {
             val isCorrect = when (feedbackRadioGroup?.checkedRadioButtonId) {
                 R.id.correctRadio -> true
                 R.id.incorrectRadio -> false
-                else -> null // neutral or no selection
+                R.id.neutralRadio -> null
+                else -> null // no selection
             }
 
-            // Get correct class if prediction is marked as incorrect
-            val correctClass = if (isCorrect == false) {
-                correctClassSpinner?.selectedItem?.toString() ?: ""
+            // Validate input based on rules
+            val validationResult = validateFeedbackInput(isCorrect, feedback, correctClassSpinner)
+
+            if (validationResult.isValid) {
+                // Get correct class if prediction is marked as incorrect
+                val correctClass = if (isCorrect == false) {
+                    correctClassSpinner?.selectedItem?.toString() ?: ""
+                } else {
+                    ""
+                }
+
+                // Update feedback in history entry
+                updateHistoryFeedback(
+                    feedback = feedback,
+                    isCorrect = isCorrect,
+                    correctClass = correctClass
+                )
+
+                dialog.dismiss()
             } else {
-                ""
+                // Show warning message
+                warningText?.text = validationResult.errorMessage
+                warningText?.visibility = View.VISIBLE
             }
-
-            // Update feedback in history entry
-            updateHistoryFeedback(
-                feedback = feedback,
-                isCorrect = isCorrect,
-                correctClass = correctClass
-            )
-
-            dialog.dismiss()
         }
 
         cancelButton?.setOnClickListener {
@@ -2030,6 +2042,43 @@ class MainActivity : AppCompatActivity() {
 
         dialog.show()
     }
+
+    /**
+     * Validate feedback input based on the specified rules
+     */
+    private fun validateFeedbackInput(isCorrect: Boolean?, feedback: String, correctClassSpinner: android.widget.Spinner?): ValidationResult {
+        return when (isCorrect) {
+            true -> {
+                // Classification is correct - feedback can be sent (comment is optional)
+                ValidationResult(true, "")
+            }
+            false -> {
+                // Classification is incorrect - user must select correct classification (comment is optional)
+                val selectedClass = correctClassSpinner?.selectedItem?.toString()?.trim()
+                if (selectedClass.isNullOrEmpty()) {
+                    ValidationResult(false, "Harap pilih klasifikasi yang benar")
+                } else {
+                    ValidationResult(true, "")
+                }
+            }
+            null -> {
+                // Not sure - user must provide comment
+                if (feedback.isEmpty()) {
+                    ValidationResult(false, "Komentar wajib diisi jika memilih 'Tidak Yakin'")
+                } else {
+                    ValidationResult(true, "")
+                }
+            }
+        }
+    }
+
+    /**
+     * Data class for validation result
+     */
+    private data class ValidationResult(
+        val isValid: Boolean,
+        val errorMessage: String
+    )
 
     /**
      * Update feedback in the current history entry
@@ -2099,79 +2148,51 @@ class MainActivity : AppCompatActivity() {
 
                     Log.d("PlanktonHistory", "Created HistoryEntry:")
                     Log.d("PlanktonHistory", "  ID: ${historyEntry.id}")
+                    Log.d("PlanktonHistory", "  Timestamp: ${historyEntry.timestamp}")
+                    Log.d("PlanktonHistory", "  ImagePath: ${historyEntry.imagePath}")
                     Log.d("PlanktonHistory", "  Result: ${historyEntry.classificationResult}")
                     Log.d("PlanktonHistory", "  Confidence: ${historyEntry.confidence}")
                     Log.d("PlanktonHistory", "  Model: ${historyEntry.modelUsed}")
-                    Log.d("PlanktonHistory", "  Image path: ${historyEntry.imagePath}")
 
-                    // Save to CSV
-                    Log.d("PlanktonHistory", "Attempting to save to HistoryManager...")
-                    val saveSuccess = historyManager.saveHistoryEntry(historyEntry)
-                    Log.d("PlanktonHistory", "Save result: $saveSuccess")
-
-                    if (saveSuccess) {
-                        // Store the entry ID for feedback updates
+                    // Save to history using HistoryManager
+                    if (historyManager.saveHistoryEntry(historyEntry)) {
                         currentHistoryEntryId = historyEntry.id
-                        Log.d("PlanktonHistory", "✅ History entry saved successfully! ID: ${historyEntry.id}")
-
-                        // Verify by reading back all entries
-                        val allEntries = historyManager.getAllHistoryEntries()
-                        Log.d("PlanktonHistory", "📊 Total entries after save: ${allEntries.size}")
-
-                        // Show success message to user
-                        runOnUiThread {
-                            Toast.makeText(this, "Klasifikasi disimpan ke riwayat", Toast.LENGTH_SHORT).show()
-                        }
+                        Log.d("PlanktonHistory", "History entry saved successfully with ID: $currentHistoryEntryId")
                     } else {
-                        Log.e("PlanktonHistory", "❌ Failed to save history entry")
-                        runOnUiThread {
-                            Toast.makeText(this, "Gagal menyimpan ke riwayat", Toast.LENGTH_SHORT).show()
-                        }
+                        Log.e("PlanktonHistory", "Failed to save history entry")
                     }
                 } else {
-                    Log.e("PlanktonHistory", "❌ Failed to save image file or file doesn't exist")
-                    runOnUiThread {
-                        Toast.makeText(this, "Gagal menyimpan gambar riwayat", Toast.LENGTH_SHORT).show()
-                    }
+                    Log.e("PlanktonHistory", "Failed to save image to internal storage")
                 }
             } catch (e: Exception) {
-                Log.e("PlanktonHistory", "❌ Exception in saveToHistory()", e)
-                runOnUiThread {
-                    Toast.makeText(this, "Error menyimpan riwayat: ${e.message}", Toast.LENGTH_LONG).show()
-                }
+                Log.e("PlanktonHistory", "Error saving to history", e)
             }
         } else {
-            Log.w("PlanktonHistory", "⚠️ Cannot save to history - missing required data:")
-            Log.w("PlanktonHistory", "  currentClassificationResult is null: ${currentClassificationResult == null}")
-            Log.w("PlanktonHistory", "  currentBitmap is null: ${currentBitmap == null}")
+            Log.w("PlanktonHistory", "Cannot save to history - missing classification result or bitmap")
         }
-        Log.d("PlanktonHistory", "=== saveToHistory() finished ===")
     }
 
     /**
-     * Save current bitmap to internal storage for history
+     * Save current image to internal storage
      */
     private fun saveImageToInternalStorage(): File? {
         return try {
             val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val fileName = "${currentClassificationResult}_${timeStamp}.png"
+            val imageFileName = "IMG_${timeStamp}.jpg"
+            val imageFile = File(filesDir, "images/$imageFileName")
 
-            // Create history images directory
-            val historyDir = File(filesDir, "history_images")
-            if (!historyDir.exists()) {
-                historyDir.mkdirs()
+            // Create directory if it doesn't exist
+            imageFile.parentFile?.mkdirs()
+
+            // Save bitmap to file
+            FileOutputStream(imageFile).use { outputStream ->
+                currentBitmap?.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
             }
 
-            val imageFile = File(historyDir, fileName)
-            val outputStream = FileOutputStream(imageFile)
-
-            outputStream.use { stream ->
-                currentBitmap!!.compress(Bitmap.CompressFormat.PNG, 90, stream)
-            }
-
+            Log.d("PlanktonHistory", "Image saved to internal storage: ${imageFile.absolutePath}")
             imageFile
         } catch (e: Exception) {
-            android.util.Log.e("PlanktonHistory", "Error saving image to internal storage", e)
+            Log.e("PlanktonHistory", "Error saving image to internal storage", e)
             null
         }
     }
