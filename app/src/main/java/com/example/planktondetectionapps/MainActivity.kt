@@ -2107,6 +2107,13 @@ class MainActivity : AppCompatActivity() {
             if (updateSuccess) {
                 Log.d("MainActivity", "Feedback saved successfully")
                 Toast.makeText(this, "Feedback berhasil disimpan", Toast.LENGTH_SHORT).show()
+
+                // Show success message with details for incorrect classification
+                if (isCorrect == false && correctClass.isNotEmpty()) {
+                    val message = "Feedback disimpan! Klasifikasi yang benar: $correctClass"
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                    Log.d("MainActivity", "Incorrect classification feedback saved with correct class: $correctClass")
+                }
             } else {
                 Log.e("MainActivity", "Failed to save feedback")
                 Toast.makeText(this, "Gagal menyimpan feedback", Toast.LENGTH_SHORT).show()
@@ -2118,7 +2125,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
+   /**
      * Save current classification result to history
      */
     private fun saveToHistory() {

@@ -145,11 +145,20 @@ class HistoryAdapter(
             holder.statusIcon.visibility = View.VISIBLE
             Log.d("HistoryAdapter", "Feedback UI setup completed for entry ${entry.id}")
         } else {
+            // No feedback given - assume classification is correct and show green checkmark
+            Log.d("HistoryAdapter", "No feedback - assuming correct classification")
             holder.feedbackContainer.visibility = View.GONE
-            holder.feedbackResultContainer.visibility = View.GONE
+            holder.feedbackResultContainer.visibility = View.VISIBLE
             holder.actualClassificationContainer.visibility = View.GONE
-            holder.statusIcon.visibility = View.GONE
-            Log.d("HistoryAdapter", "No feedback - hiding all feedback UI")
+
+            // Show "Prediksi Benar" status for entries without feedback
+            holder.feedbackResultText.text = "Prediksi Benar"
+            holder.feedbackResultText.setTextColor(context.getColor(android.R.color.holo_green_dark))
+            holder.statusIcon.setImageResource(R.drawable.ic_check_circle)
+            holder.statusIcon.setColorFilter(context.getColor(android.R.color.holo_green_dark))
+            holder.statusIcon.visibility = View.VISIBLE
+
+            Log.d("HistoryAdapter", "Default correct status applied for entry ${entry.id}")
         }
 
         // Set click listeners

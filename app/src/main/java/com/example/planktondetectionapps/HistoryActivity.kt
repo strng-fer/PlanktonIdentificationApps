@@ -469,7 +469,22 @@ class HistoryActivity : AppCompatActivity() {
         if (historyManager.updateEntryFeedback(entry.id, feedback, isCorrect, correctClass)) {
             Toast.makeText(this, "Feedback berhasil disimpan", Toast.LENGTH_SHORT).show()
             Log.d("HistoryActivity", "Feedback saved successfully")
+
+            // Update local entry immediately for better UX
+            val updatedEntry = entry.copy(
+                userFeedback = feedback,
+                isCorrect = isCorrect,
+                correctClass = correctClass
+            )
+
+            // Update the specific item in adapter first for immediate response
+            historyAdapter.updateItem(updatedEntry)
+
+            // Then reload all data to ensure consistency
             loadHistoryData()
+
+            // Update statistics to reflect changes
+            updateStatistics()
         } else {
             Toast.makeText(this, "Gagal menyimpan feedback", Toast.LENGTH_SHORT).show()
             Log.e("HistoryActivity", "Failed to save feedback")
