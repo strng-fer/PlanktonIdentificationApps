@@ -137,7 +137,7 @@
                     android:text="User Feedback:"
                     android:textSize="11sp"
                     android:textStyle="bold"
-                    android:textColor="@color/text_secondary" />
+                    android:textColor="@color/primary_blue" />
 
                 <TextView
                     android:id="@+id/feedbackText"
@@ -177,18 +177,37 @@
 
                 </LinearLayout>
 
-            </LinearLayout>
+                <!-- Actual Classification Display -->
+                <LinearLayout
+                    android:id="@+id/actualClassificationContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="4dp"
+                    android:gravity="center_vertical"
+                    android:visibility="gone">
 
-            <!-- Feedback Button -->
-            <Button
-                android:id="@+id/feedbackButton"
-                android:layout_width="match_parent"
-                android:layout_height="36dp"
-                android:text="Add Feedback"
-                android:textSize="12sp"
-                android:layout_marginTop="8dp"
-                android:background="@drawable/button_outline_primary"
-                android:textColor="@color/white" />
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Klasifikasi Aktual: "
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/actualClassificationText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Diatom"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary_blue" />
+
+                </LinearLayout>
+
+            </LinearLayout>
 
         </LinearLayout>
 

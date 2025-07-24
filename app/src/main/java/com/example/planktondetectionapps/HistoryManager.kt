@@ -140,25 +140,66 @@ class HistoryManager(private val context: Context) {
      * Update feedback untuk entry tertentu
      */
     fun updateEntryFeedback(entryId: String, feedback: String, isCorrect: Boolean?, correctClass: String = ""): Boolean {
+        Log.d("HistoryManager", "=== updateEntryFeedback() called ===")
+        Log.d("HistoryManager", "Entry ID: '$entryId'")
+        Log.d("HistoryManager", "Feedback: '$feedback'")
+        Log.d("HistoryManager", "IsCorrect: $isCorrect")
+        Log.d("HistoryManager", "CorrectClass: '$correctClass'")
+
         return try {
             val entries = getAllHistoryEntries().toMutableList()
+            Log.d("HistoryManager", "Loaded ${entries.size} entries from CSV")
+
             val entryIndex = entries.indexOfFirst { it.id == entryId }
+            Log.d("HistoryManager", "Entry index found: $entryIndex")
 
             if (entryIndex != -1) {
-                entries[entryIndex] = entries[entryIndex].copy(
+                val oldEntry = entries[entryIndex]
+                Log.d("HistoryManager", "Old entry: feedback='${oldEntry.userFeedback}', isCorrect=${oldEntry.isCorrect}, correctClass='${oldEntry.correctClass}'")
+
+                val updatedEntry = oldEntry.copy(
                     userFeedback = feedback,
                     isCorrect = isCorrect,
                     correctClass = correctClass
                 )
 
+                Log.d("HistoryManager", "New entry: feedback='${updatedEntry.userFeedback}', isCorrect=${updatedEntry.isCorrect}, correctClass='${updatedEntry.correctClass}'")
+
+                entries[entryIndex] = updatedEntry
+
                 // Rewrite entire file
+                Log.d("HistoryManager", "Rewriting CSV file with updated entry...")
                 rewriteCsvFile(entries)
+
+                // Verify the update by reading back
+                val verifyEntries = getAllHistoryEntries()
+                val verifyEntry = verifyEntries.find { it.id == entryId }
+                if (verifyEntry != null) {
+                    Log.d("HistoryManager", "Verification - saved entry: feedback='${verifyEntry.userFeedback}', isCorrect=${verifyEntry.isCorrect}, correctClass='${verifyEntry.correctClass}'")
+
+                    val isSuccessful = verifyEntry.userFeedback == feedback &&
+                            verifyEntry.isCorrect == isCorrect &&
+                            verifyEntry.correctClass == correctClass
+                    Log.d("HistoryManager", "Update verification: $isSuccessful")
+
+                    if (!isSuccessful) {
+                        Log.e("HistoryManager", "UPDATE FAILED - Data mismatch after save!")
+                        Log.e("HistoryManager", "Expected: feedback='$feedback', isCorrect=$isCorrect, correctClass='$correctClass'")
+                        Log.e("HistoryManager", "Actual: feedback='${verifyEntry.userFeedback}', isCorrect=${verifyEntry.isCorrect}, correctClass='${verifyEntry.correctClass}'")
+                    }
+                } else {
+                    Log.e("HistoryManager", "Verification failed - entry not found after update!")
+                }
+
+                Log.d("HistoryManager", "updateEntryFeedback completed successfully")
                 true
             } else {
+                Log.e("HistoryManager", "Entry with ID '$entryId' not found!")
                 false
             }
         } catch (e: Exception) {
             Log.e("HistoryManager", "Error updating entry feedback", e)
+            writeDebugLog("ERROR updating feedback: ${e.message}")
             false
         }
     }

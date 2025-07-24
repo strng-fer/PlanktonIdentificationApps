@@ -30,12 +30,13 @@ class HistoryAdapter(
         val confidenceText: TextView = view.findViewById(R.id.confidenceText)
         val modelText: TextView = view.findViewById(R.id.modelText)
         val feedbackText: TextView = view.findViewById(R.id.feedbackText)
-        val feedbackButton: Button = view.findViewById(R.id.feedbackButton)
         val deleteButton: ImageButton = view.findViewById(R.id.deleteButton)
         val feedbackContainer: LinearLayout = view.findViewById(R.id.feedbackContainer)
         val statusIcon: ImageView = view.findViewById(R.id.statusIcon)
         val feedbackResultContainer: LinearLayout = view.findViewById(R.id.feedbackResultContainer)
         val feedbackResultText: TextView = view.findViewById(R.id.feedbackResultText)
+        val actualClassificationContainer: LinearLayout = view.findViewById(R.id.actualClassificationContainer)
+        val actualClassificationText: TextView = view.findViewById(R.id.actualClassificationText)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HistoryViewHolder {
@@ -92,52 +93,66 @@ class HistoryAdapter(
 
         // Handle feedback display
         if (entry.userFeedback.isNotEmpty()) {
+            Log.d("HistoryAdapter", "Entry has feedback - showing feedback UI")
             holder.feedbackContainer.visibility = View.VISIBLE
             holder.feedbackText.text = entry.userFeedback
-            holder.feedbackButton.text = "Edit Feedback"
 
             // Display feedback result
             holder.feedbackResultContainer.visibility = View.VISIBLE
+
+            // Debug logging
+            Log.d("HistoryAdapter", "Entry ${entry.id}: isCorrect=${entry.isCorrect}, correctClass='${entry.correctClass}'")
+
             when (entry.isCorrect) {
                 true -> {
+                    Log.d("HistoryAdapter", "Showing correct prediction feedback")
                     holder.feedbackResultText.text = "Prediksi Benar"
                     holder.feedbackResultText.setTextColor(context.getColor(android.R.color.holo_green_dark))
                     holder.statusIcon.setImageResource(R.drawable.ic_check_circle)
                     holder.statusIcon.setColorFilter(context.getColor(android.R.color.holo_green_dark))
+                    holder.actualClassificationContainer.visibility = View.GONE
+                    Log.d("HistoryAdapter", "Hiding actual classification container for correct prediction")
                 }
                 false -> {
-                    holder.feedbackResultText.text = if (entry.correctClass.isNotEmpty()) {
-                        "Prediksi Salah → ${entry.correctClass}"
-                    } else {
-                        "Prediksi Salah"
-                    }
+                    Log.d("HistoryAdapter", "Showing incorrect prediction feedback")
+                    holder.feedbackResultText.text = "Prediksi Salah"
                     holder.feedbackResultText.setTextColor(context.getColor(android.R.color.holo_red_dark))
                     holder.statusIcon.setImageResource(R.drawable.ic_error_circle)
                     holder.statusIcon.setColorFilter(context.getColor(android.R.color.holo_red_dark))
+
+                    // Show actual classification if available
                     if (entry.correctClass.isNotEmpty()) {
-                        holder.feedbackText.text = "${entry.userFeedback}\nKelas yang benar: ${entry.correctClass}"
+                        Log.d("HistoryAdapter", "Showing actual classification: '${entry.correctClass}'")
+                        Log.d("HistoryAdapter", "Setting actualClassificationContainer visibility to VISIBLE")
+                        holder.actualClassificationContainer.visibility = View.VISIBLE
+                        holder.actualClassificationText.text = entry.correctClass
+                        Log.d("HistoryAdapter", "Set actualClassificationText to: '${entry.correctClass}'")
+                    } else {
+                        Log.d("HistoryAdapter", "No correct class provided - hiding actual classification")
+                        holder.actualClassificationContainer.visibility = View.GONE
                     }
                 }
                 null -> {
+                    Log.d("HistoryAdapter", "Showing neutral feedback")
                     holder.feedbackResultText.text = "Menunggu Verifikasi"
                     holder.feedbackResultText.setTextColor(context.getColor(android.R.color.darker_gray))
                     holder.statusIcon.setImageResource(R.drawable.ic_help_circle)
                     holder.statusIcon.setColorFilter(context.getColor(android.R.color.darker_gray))
+                    holder.actualClassificationContainer.visibility = View.GONE
+                    Log.d("HistoryAdapter", "Neutral feedback - hiding actual classification")
                 }
             }
             holder.statusIcon.visibility = View.VISIBLE
+            Log.d("HistoryAdapter", "Feedback UI setup completed for entry ${entry.id}")
         } else {
             holder.feedbackContainer.visibility = View.GONE
             holder.feedbackResultContainer.visibility = View.GONE
-            holder.feedbackButton.text = "Add Feedback"
+            holder.actualClassificationContainer.visibility = View.GONE
             holder.statusIcon.visibility = View.GONE
+            Log.d("HistoryAdapter", "No feedback - hiding all feedback UI")
         }
 
         // Set click listeners
-        holder.feedbackButton.setOnClickListener {
-            onFeedbackClick(entry)
-        }
-
         holder.deleteButton.setOnClickListener {
             onDeleteClick(entry)
         }

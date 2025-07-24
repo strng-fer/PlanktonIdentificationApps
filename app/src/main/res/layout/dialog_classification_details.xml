@@ -262,6 +262,36 @@
                     android:textSize="14sp"
                     android:textColor="@color/text_primary" />
 
+                <!-- Actual Classification Information -->
+                <LinearLayout
+                    android:id="@+id/detailActualClassificationContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center_vertical"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Klasifikasi Aktual: "
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/text_secondary" />
+
+                    <TextView
+                        android:id="@+id/detailActualClassText"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Diatom"
+                        android:textSize="14sp"
+                        android:textStyle="bold"
+                        android:textColor="@color/primary_blue" />
+
+                </LinearLayout>
+
                 <TextView
                     android:id="@+id/detailCorrectClass"
                     android:layout_width="match_parent"

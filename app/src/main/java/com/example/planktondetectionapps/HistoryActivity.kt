@@ -307,10 +307,15 @@ class HistoryActivity : AppCompatActivity() {
     private fun showFeedbackDialog(entry: HistoryEntry) {
         val dialogView = layoutInflater.inflate(R.layout.dialog_feedback, null)
 
-        // Use existing UI elements that we know exist
+        // Get UI elements from dialog
         val feedbackComment = dialogView.findViewById<EditText>(R.id.feedbackComment)
         val submitButton = dialogView.findViewById<Button>(R.id.submitButton)
         val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
+        val feedbackRadioGroup = dialogView.findViewById<RadioGroup>(R.id.feedbackRadioGroup)
+        val correctRadio = dialogView.findViewById<RadioButton>(R.id.correctRadio)
+        val incorrectRadio = dialogView.findViewById<RadioButton>(R.id.incorrectRadio)
+        val neutralRadio = dialogView.findViewById<RadioButton>(R.id.neutralRadio)
+        val correctClassEditText = dialogView.findViewById<EditText>(R.id.correctClassEditText)
 
         // Set current prediction info
         val currentPrediction = dialogView.findViewById<TextView>(R.id.currentPrediction)
@@ -322,6 +327,30 @@ class HistoryActivity : AppCompatActivity() {
         // Pre-fill existing feedback if any
         feedbackComment?.setText(entry.userFeedback)
 
+        // Pre-select radio button based on existing feedback
+        when (entry.isCorrect) {
+            true -> correctRadio?.isChecked = true
+            false -> {
+                incorrectRadio?.isChecked = true
+                correctClassEditText?.visibility = View.VISIBLE
+                correctClassEditText?.setText(entry.correctClass)
+            }
+            null -> neutralRadio?.isChecked = true
+        }
+
+        // Show/hide correct class input based on radio selection
+        feedbackRadioGroup?.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                R.id.incorrectRadio -> {
+                    correctClassEditText?.visibility = View.VISIBLE
+                }
+                else -> {
+                    correctClassEditText?.visibility = View.GONE
+                    correctClassEditText?.setText("")
+                }
+            }
+        }
+
         val dialog = AlertDialog.Builder(this)
             .setTitle("Feedback untuk Klasifikasi")
             .setView(dialogView)
@@ -331,7 +360,22 @@ class HistoryActivity : AppCompatActivity() {
         // Set button listeners
         submitButton?.setOnClickListener {
             val feedback = feedbackComment?.text?.toString()?.trim() ?: ""
-            saveFeedback(entry, feedback, null, "")
+
+            // Determine correctness based on radio selection
+            val isCorrect = when (feedbackRadioGroup?.checkedRadioButtonId) {
+                R.id.correctRadio -> true
+                R.id.incorrectRadio -> false
+                else -> null // neutral or no selection
+            }
+
+            // Get correct class if prediction is marked as incorrect
+            val correctClass = if (isCorrect == false) {
+                correctClassEditText?.text?.toString()?.trim() ?: ""
+            } else {
+                ""
+            }
+
+            saveFeedback(entry, feedback, isCorrect, correctClass)
             dialog.dismiss()
         }
 
@@ -343,11 +387,19 @@ class HistoryActivity : AppCompatActivity() {
     }
 
     private fun saveFeedback(entry: HistoryEntry, feedback: String, isCorrect: Boolean?, correctClass: String) {
+        Log.d("HistoryActivity", "=== saveFeedback() called ===")
+        Log.d("HistoryActivity", "Entry ID: ${entry.id}")
+        Log.d("HistoryActivity", "Feedback: '$feedback'")
+        Log.d("HistoryActivity", "IsCorrect: $isCorrect")
+        Log.d("HistoryActivity", "CorrectClass: '$correctClass'")
+
         if (historyManager.updateEntryFeedback(entry.id, feedback, isCorrect, correctClass)) {
             Toast.makeText(this, "Feedback berhasil disimpan", Toast.LENGTH_SHORT).show()
+            Log.d("HistoryActivity", "Feedback saved successfully")
             loadHistoryData()
         } else {
             Toast.makeText(this, "Gagal menyimpan feedback", Toast.LENGTH_SHORT).show()
+            Log.e("HistoryActivity", "Failed to save feedback")
         }
     }
 
@@ -445,6 +497,23 @@ class HistoryActivity : AppCompatActivity() {
         debugInfo.appendLine("Entries with Feedback: ${stats.entriesWithFeedback}")
         debugInfo.appendLine("Accuracy: ${stats.accuracyPercentage.toInt()}%")
 
+        // Add feedback debug info
+        debugInfo.appendLine("\n=== FEEDBACK DEBUG ===")
+        val entriesWithIncorrectPrediction = historyManager.getAllHistoryEntries().filter {
+            it.isCorrect == false && it.correctClass.isNotEmpty()
+        }
+        debugInfo.appendLine("Entries with incorrect predictions and correct class: ${entriesWithIncorrectPrediction.size}")
+        entriesWithIncorrectPrediction.take(3).forEach { entry ->
+            debugInfo.appendLine("  Entry ${entry.id}: predicted='${entry.classificationResult}', actual='${entry.correctClass}'")
+        }
+
+        // Add sample of all entries to see their feedback status
+        debugInfo.appendLine("\n=== ALL ENTRIES SAMPLE ===")
+        val allEntries = historyManager.getAllHistoryEntries().take(5)
+        allEntries.forEach { entry ->
+            debugInfo.appendLine("Entry ${entry.id}: feedback='${entry.userFeedback}', isCorrect=${entry.isCorrect}, correctClass='${entry.correctClass}'")
+        }
+
         // Add RecyclerView debug info
         debugInfo.appendLine("\n=== RECYCLERVIEW DEBUG ===")
         debugInfo.appendLine("RecyclerView visibility: ${historyRecyclerView.visibility}")
@@ -454,37 +523,133 @@ class HistoryActivity : AppCompatActivity() {
         debugInfo.appendLine("Adapter item count: ${historyRecyclerView.adapter?.itemCount ?: "null"}")
         debugInfo.appendLine("Layout Manager: ${historyRecyclerView.layoutManager?.javaClass?.simpleName}")
 
-        // Add test result
-        debugInfo.appendLine("\n=== SAVE/LOAD TEST ===")
-        debugInfo.appendLine(historyManager.testSaveLoad())
-
-        debugInfo.appendLine("\n=== RECENT DEBUG LOGS ===")
-        val fullDebugInfo = historyManager.getDebugInfo()
-        val recentLogs = fullDebugInfo.lines().takeLast(15).joinToString("\n")
-        debugInfo.appendLine(recentLogs)
-
         AlertDialog.Builder(this)
             .setTitle("Debug Information")
             .setMessage(debugInfo.toString())
             .setPositiveButton("OK", null)
-            .setNeutralButton("Full Logs") { _, _ ->
-                showFullDebugLogs()
+            .setNeutralButton("Test Feedback") { _, _ ->
+                testFeedbackDataIntegrity()
             }
-            .setNegativeButton("Force Refresh") { _, _ ->
-                // Force recreate everything
-                loadHistoryData()
-                Toast.makeText(this, "Forced refresh completed", Toast.LENGTH_SHORT).show()
+            .setNegativeButton("Create Sample Data") { _, _ ->
+                createSampleIncorrectFeedback()
             }
             .show()
     }
 
-    private fun showFullDebugLogs() {
-        val fullLogs = historyManager.getDebugInfo()
+    private fun createTestFeedbackData() {
+        // Find the first entry without feedback to add test data
+        val entries = historyManager.getAllHistoryEntries()
+        val entryToUpdate = entries.firstOrNull { it.userFeedback.isEmpty() }
+
+        if (entryToUpdate != null) {
+            val testFeedback = "Test feedback: Prediksi tidak sesuai dengan gambar yang diberikan."
+            val testCorrectClass = "Diatom" // Test correct class
+
+            Log.d("HistoryActivity", "Creating test feedback data for entry ${entryToUpdate.id}")
+            Log.d("HistoryActivity", "Test data: isCorrect=false, correctClass='$testCorrectClass'")
+
+            if (historyManager.updateEntryFeedback(entryToUpdate.id, testFeedback, false, testCorrectClass)) {
+                Toast.makeText(this, "Test feedback data created successfully", Toast.LENGTH_SHORT).show()
+                loadHistoryData()
+            } else {
+                Toast.makeText(this, "Failed to create test data", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(this, "No entries available for test data", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun testFeedbackDataIntegrity() {
+        Log.d("HistoryActivity", "=== Testing Feedback Data Integrity ===")
+
+        val entries = historyManager.getAllHistoryEntries()
+        Log.d("HistoryActivity", "Total entries: ${entries.size}")
+
+        // Count entries with different feedback states
+        val withFeedback = entries.filter { it.userFeedback.isNotEmpty() }
+        val correctPredictions = entries.filter { it.isCorrect == true }
+        val incorrectPredictions = entries.filter { it.isCorrect == false }
+        val incorrectWithCorrectClass = entries.filter { it.isCorrect == false && it.correctClass.isNotEmpty() }
+
+        Log.d("HistoryActivity", "Entries with feedback: ${withFeedback.size}")
+        Log.d("HistoryActivity", "Correct predictions: ${correctPredictions.size}")
+        Log.d("HistoryActivity", "Incorrect predictions: ${incorrectPredictions.size}")
+        Log.d("HistoryActivity", "Incorrect with correct class: ${incorrectWithCorrectClass.size}")
+
+        // Log details of incorrect predictions with correct class
+        incorrectWithCorrectClass.forEach { entry ->
+            Log.d("HistoryActivity", "Entry ${entry.id}: predicted='${entry.classificationResult}', actual='${entry.correctClass}', feedback='${entry.userFeedback}'")
+        }
+
+        val testInfo = StringBuilder()
+        testInfo.appendLine("=== FEEDBACK DATA INTEGRITY TEST ===")
+        testInfo.appendLine("Total entries: ${entries.size}")
+        testInfo.appendLine("With feedback: ${withFeedback.size}")
+        testInfo.appendLine("Correct predictions: ${correctPredictions.size}")
+        testInfo.appendLine("Incorrect predictions: ${incorrectPredictions.size}")
+        testInfo.appendLine("Incorrect with correct class: ${incorrectWithCorrectClass.size}")
+        testInfo.appendLine("")
+
+        if (incorrectWithCorrectClass.isNotEmpty()) {
+            testInfo.appendLine("Entries that should show actual classification:")
+            incorrectWithCorrectClass.take(5).forEach { entry ->
+                testInfo.appendLine("• ${entry.id}: ${entry.classificationResult} → ${entry.correctClass}")
+            }
+        } else {
+            testInfo.appendLine("❌ NO ENTRIES with incorrect predictions and correct class found!")
+            testInfo.appendLine("This is why actual classification is not showing.")
+        }
+
         AlertDialog.Builder(this)
-            .setTitle("Full Debug Logs")
-            .setMessage(fullLogs)
+            .setTitle("Feedback Data Integrity Test")
+            .setMessage(testInfo.toString())
             .setPositiveButton("OK", null)
+            .setNeutralButton("Create Sample") { _, _ ->
+                createSampleIncorrectFeedback()
+            }
             .show()
+    }
+
+    private fun createSampleIncorrectFeedback() {
+        val entries = historyManager.getAllHistoryEntries()
+        if (entries.isNotEmpty()) {
+            val entryToUpdate = entries.first()
+
+            Log.d("HistoryActivity", "Creating sample incorrect feedback for entry: ${entryToUpdate.id}")
+            Log.d("HistoryActivity", "Original prediction: ${entryToUpdate.classificationResult}")
+
+            val sampleFeedback = "Sample: Gambar ini sebenarnya adalah Diatom, bukan ${entryToUpdate.classificationResult}"
+            val sampleCorrectClass = "Diatom"
+
+            // Force save the feedback
+            val success = historyManager.updateEntryFeedback(
+                entryId = entryToUpdate.id,
+                feedback = sampleFeedback,
+                isCorrect = false,
+                correctClass = sampleCorrectClass
+            )
+
+            Log.d("HistoryActivity", "Sample feedback save result: $success")
+
+            if (success) {
+                Toast.makeText(this, "Sample incorrect feedback created", Toast.LENGTH_SHORT).show()
+                // Apply filter to show only incorrect predictions
+                filterSpinner.setSelection(4) // "Prediksi Salah"
+                loadHistoryData()
+            } else {
+                Toast.makeText(this, "Failed to create sample feedback", Toast.LENGTH_SHORT).show()
+
+                // Show debug info from HistoryManager
+                val debugInfo = historyManager.getDebugInfo()
+                AlertDialog.Builder(this)
+                    .setTitle("Debug Info - Why Save Failed")
+                    .setMessage(debugInfo.takeLast(2000)) // Show last 2000 chars
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+        } else {
+            Toast.makeText(this, "No entries found to update", Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun showClassificationDetailsDialog(entry: HistoryEntry) {
@@ -510,6 +675,8 @@ class HistoryActivity : AppCompatActivity() {
         val detailFeedbackStatus = dialogView.findViewById<TextView>(R.id.detailFeedbackStatus)
         val detailFeedbackText = dialogView.findViewById<TextView>(R.id.detailFeedbackText)
         val detailCorrectClass = dialogView.findViewById<TextView>(R.id.detailCorrectClass)
+        val detailActualClassificationContainer = dialogView.findViewById<LinearLayout>(R.id.detailActualClassificationContainer)
+        val detailActualClassText = dialogView.findViewById<TextView>(R.id.detailActualClassText)
 
         // Set buttons
         val detailFeedbackButton = dialogView.findViewById<Button>(R.id.detailFeedbackButton)
@@ -588,6 +755,7 @@ class HistoryActivity : AppCompatActivity() {
                     detailFeedbackStatus.text = "Prediksi Benar"
                     detailFeedbackStatus.setTextColor(getColor(android.R.color.holo_green_dark))
                     detailCorrectClass.visibility = View.GONE
+                    detailActualClassificationContainer.visibility = View.GONE
                 }
                 false -> {
                     detailFeedbackIcon.setImageResource(R.drawable.ic_error_circle)
@@ -598,8 +766,13 @@ class HistoryActivity : AppCompatActivity() {
                     if (entry.correctClass.isNotEmpty()) {
                         detailCorrectClass.visibility = View.VISIBLE
                         detailCorrectClass.text = "Kelas yang benar: ${entry.correctClass}"
+
+                        // Show actual classification
+                        detailActualClassificationContainer.visibility = View.VISIBLE
+                        detailActualClassText.text = entry.correctClass
                     } else {
                         detailCorrectClass.visibility = View.GONE
+                        detailActualClassificationContainer.visibility = View.GONE
                     }
                 }
                 null -> {
@@ -608,6 +781,7 @@ class HistoryActivity : AppCompatActivity() {
                     detailFeedbackStatus.text = "Menunggu Verifikasi"
                     detailFeedbackStatus.setTextColor(getColor(android.R.color.darker_gray))
                     detailCorrectClass.visibility = View.GONE
+                    detailActualClassificationContainer.visibility = View.GONE
                 }
             }
         } else {

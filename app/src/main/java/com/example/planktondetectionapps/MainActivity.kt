@@ -117,6 +117,7 @@ class MainActivity : AppCompatActivity() {
     private var currentClassificationResult: String? = null
     private var currentConfidence: Float = 0f
     private var currentPhotoUri: Uri? = null
+    private var currentHistoryEntryId: String? = null // Track current history entry for feedback
 
     // History Manager
     private lateinit var historyManager: HistoryManager
@@ -1991,13 +1992,10 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            // Save feedback data
-            saveFeedbackData(
-                predictedLabel = currentClassificationResult!!,
+            // Update feedback in history entry instead of separate file
+            updateHistoryFeedback(
                 correctLabel = selectedCorrectLabel,
-                confidence = currentConfidence,
-                comment = commentText,
-                modelUsed = formatModelName(selectedModel)
+                comment = commentText
             )
 
             Toast.makeText(this, "Feedback berhasil disimpan. Terima kasih!", Toast.LENGTH_SHORT).show()
@@ -2012,130 +2010,41 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Save feedback data to local storage
+     * Update feedback in the current history entry
      */
-    private fun saveFeedbackData(
-        predictedLabel: String,
-        correctLabel: String,
-        confidence: Float,
-        comment: String,
-        modelUsed: String
-    ) {
-        try {
-            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-            val feedbackId = System.currentTimeMillis().toString()
-
-            // Create feedback entry
-            val feedbackEntry = """
-                ID: $feedbackId
-                Timestamp: $timestamp
-                Model Used: $modelUsed
-                Predicted Label: $predictedLabel
-                Correct Label: $correctLabel
-                Confidence: ${String.format(Locale.getDefault(), "%.3f", confidence)}
-                Match: ${if (predictedLabel == correctLabel) "YES" else "NO"}
-                Comment: ${if (comment.isNotEmpty()) comment else "No comment"}
-                ========================================
-                
-            """.trimIndent()
-
-            // Save to internal storage file
-            val feedbackFile = File(filesDir, "feedback_data.txt")
-            feedbackFile.appendText(feedbackEntry)
-
-            // Also save as JSON for structured data (optional)
-            saveFeedbackAsJson(feedbackId, timestamp, modelUsed, predictedLabel, correctLabel, confidence, comment)
-
-            android.util.Log.d("PlanktonFeedback", "Feedback saved: $feedbackId")
-
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonFeedback", "Error saving feedback", e)
-            Toast.makeText(this, "Gagal menyimpan feedback: ${e.message}", Toast.LENGTH_SHORT).show()
+    private fun updateHistoryFeedback(correctLabel: String, comment: String) {
+        if (currentHistoryEntryId.isNullOrEmpty()) {
+            Toast.makeText(this, "Tidak dapat menyimpan feedback. Silakan lakukan klasifikasi terlebih dahulu.", Toast.LENGTH_SHORT).show()
+            return
         }
-    }
 
-    /**
-     * Save feedback data as JSON for structured access
-     */
-    private fun saveFeedbackAsJson(
-        feedbackId: String,
-        timestamp: String,
-        modelUsed: String,
-        predictedLabel: String,
-        correctLabel: String,
-        confidence: Float,
-        comment: String
-    ) {
         try {
-            // Create JSON object for this feedback
-            val feedbackJson = """
-                {
-                    "id": "$feedbackId",
-                    "timestamp": "$timestamp",
-                    "model_used": "$modelUsed",
-                    "predicted_label": "$predictedLabel",
-                    "correct_label": "$correctLabel",
-                    "confidence": $confidence,
-                    "is_correct": ${predictedLabel == correctLabel},
-                    "comment": "$comment",
-                    "image_processed": true
-                }
-            """.trimIndent()
+            Log.d("MainActivity", "Updating feedback for entry ID: $currentHistoryEntryId")
+            Log.d("MainActivity", "Correct label: $correctLabel")
+            Log.d("MainActivity", "Comment: $comment")
 
-            // Save individual feedback JSON file
-            val jsonFile = File(filesDir, "feedback_${feedbackId}.json")
-            jsonFile.writeText(feedbackJson)
+            // Determine if the prediction is correct
+            val isCorrect = currentClassificationResult == correctLabel
 
-            // Update feedback summary statistics
-            updateFeedbackStatistics(predictedLabel, correctLabel, modelUsed)
+            // Update the history entry using HistoryManager
+            val updateSuccess = historyManager.updateEntryFeedback(
+                entryId = currentHistoryEntryId!!,
+                feedback = comment,
+                isCorrect = isCorrect,
+                correctClass = correctLabel
+            )
 
-        } catch (e: Exception) {
-            android.util.Log.e("PlanktonFeedback", "Error saving JSON feedback", e)
-        }
-    }
-
-    /**
-     * Update feedback statistics for model performance tracking
-     */
-    private fun updateFeedbackStatistics(predictedLabel: String, correctLabel: String, modelUsed: String) {
-        try {
-            val statsFile = File(filesDir, "feedback_statistics.json")
-
-            // Load existing stats or create new
-            val existingStats = if (statsFile.exists()) {
-                statsFile.readText()
+            if (updateSuccess) {
+                Log.d("MainActivity", "✅ Feedback updated successfully!")
+                Toast.makeText(this, "Feedback berhasil disimpan. Terima kasih!", Toast.LENGTH_SHORT).show()
             } else {
-                """{"total_feedback": 0, "correct_predictions": 0, "models": {}, "labels": {}}"""
+                Log.e("MainActivity", "❌ Failed to update feedback")
+                Toast.makeText(this, "Gagal menyimpan feedback", Toast.LENGTH_SHORT).show()
             }
 
-            // Parse and update statistics (simple string manipulation for basic stats)
-            val totalFeedbackRegex = """"total_feedback": (\d+)""".toRegex()
-            val correctPredictionsRegex = """"correct_predictions": (\d+)""".toRegex()
-
-            val currentTotal = totalFeedbackRegex.find(existingStats)?.groupValues?.get(1)?.toInt() ?: 0
-            val currentCorrect = correctPredictionsRegex.find(existingStats)?.groupValues?.get(1)?.toInt() ?: 0
-
-            val newTotal = currentTotal + 1
-            val newCorrect = if (predictedLabel == correctLabel) currentCorrect + 1 else currentCorrect
-
-            // Create updated statistics
-            val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-            val updatedStats = """
-                {
-                    "total_feedback": $newTotal,
-                    "correct_predictions": $newCorrect,
-                    "accuracy": ${if (newTotal > 0) String.format(Locale.getDefault(), "%.3f", newCorrect.toFloat() / newTotal) else "0.000"},
-                    "last_updated": "$timestamp",
-                    "note": "Statistics based on user feedback for model improvement"
-                }
-            """.trimIndent()
-
-            statsFile.writeText(updatedStats)
-
-            android.util.Log.d("PlanktonFeedback", "Statistics updated: $newCorrect/$newTotal correct")
-
         } catch (e: Exception) {
-            android.util.Log.e("PlanktonFeedback", "Error updating statistics", e)
+            Log.e("MainActivity", "Error updating feedback", e)
+            Toast.makeText(this, "Error menyimpan feedback: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -2180,7 +2089,9 @@ class MainActivity : AppCompatActivity() {
                     Log.d("PlanktonHistory", "Save result: $saveSuccess")
 
                     if (saveSuccess) {
-                        Log.d("PlanktonHistory", "✅ History entry saved successfully!")
+                        // Store the entry ID for feedback updates
+                        currentHistoryEntryId = historyEntry.id
+                        Log.d("PlanktonHistory", "✅ History entry saved successfully! ID: ${historyEntry.id}")
 
                         // Verify by reading back all entries
                         val allEntries = historyManager.getAllHistoryEntries()
