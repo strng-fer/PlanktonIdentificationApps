@@ -107,15 +107,25 @@
         android:text="Klasifikasi yang benar:"
         android:textSize="14sp"
         android:textStyle="bold"
-        android:textColor="@color/black"
+        android:textColor="@color/text_primary"
         android:layout_marginBottom="8dp"
         android:visibility="gone" />
 
     <Spinner
         android:id="@+id/correctClassSpinner"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:layout_marginBottom="16dp"
+        android:background="@drawable/spinner_rounded_background"
+        android:paddingStart="16dp"
+        android:paddingEnd="48dp"
+        android:paddingTop="12dp"
+        android:paddingBottom="12dp"
+        android:textSize="16sp"
+        android:textColor="@color/text_primary"
+        android:dropDownWidth="match_parent"
+        android:popupBackground="@drawable/dialog_rounded_background"
+        android:spinnerMode="dropdown"
         android:visibility="gone" />
 
     <TextView
