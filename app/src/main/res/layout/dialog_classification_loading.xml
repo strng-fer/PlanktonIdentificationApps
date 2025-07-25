@@ -91,7 +91,7 @@
         android:id="@+id/currentModelText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Memproses dengan AI Model..."
+        android:text="Memproses dengan Model Deep Learning..."
         android:textSize="14sp"
         android:textColor="#666666"
         android:layout_marginBottom="16dp"
@@ -129,7 +129,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Status Model AI:"
+            android:text="Status Model:"
             android:textSize="12sp"
             android:textStyle="bold"
             android:textColor="#093266"

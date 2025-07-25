@@ -221,8 +221,23 @@ class ClassificationLoadingDialog(private val context: Context) {
         progressBar?.max = 1
         progressText?.text = "Memproses model tunggal..."
 
-        // Hide model status list for single model processing
-        modelStatusContainer?.visibility = View.GONE
+        // Show single model status instead of hiding the container
+        modelStatusContainer?.removeAllViews()
+
+        // Add single model status
+        val statusView = LayoutInflater.from(context).inflate(
+            android.R.layout.simple_list_item_1,
+            modelStatusContainer,
+            false
+        )
+
+        val textView = statusView.findViewById<TextView>(android.R.id.text1)
+        textView.text = "🔄 $modelName"
+        textView.textSize = 10f
+        textView.setTextColor(context.getColor(android.R.color.holo_blue_dark))
+
+        modelStatusContainer?.addView(statusView)
+        modelStatusContainer?.visibility = View.VISIBLE
 
         // Show a different message for single model
         funFactText?.text = "⚡ Memproses dengan model $modelName untuk hasil yang cepat dan akurat!"
