@@ -101,30 +101,42 @@ class ClassificationLoadingDialog(private val context: Context) {
     }
 
     private fun setupAnimations() {
-        // Start rotating animations
+        // Use post to ensure views are ready before starting animations
+        handler.post {
+            startAllAnimations()
+        }
+    }
+
+    private fun startAllAnimations() {
+        // Start rotating animations immediately
         outerCircle?.let {
             val rotateAnimation = AnimationUtils.loadAnimation(context, R.anim.rotate_clockwise)
+            it.clearAnimation() // Clear any existing animation first
             it.startAnimation(rotateAnimation)
         }
 
         innerCircle?.let {
             val rotateAnimation = AnimationUtils.loadAnimation(context, R.anim.rotate_counter_clockwise)
+            it.clearAnimation() // Clear any existing animation first
             it.startAnimation(rotateAnimation)
         }
 
         // Start particle animations with delays
         particle1?.let {
             val particleAnimation = AnimationUtils.loadAnimation(context, R.anim.particle_float)
+            it.clearAnimation()
             it.startAnimation(particleAnimation)
         }
 
         particle2?.let {
             val particleAnimation = AnimationUtils.loadAnimation(context, R.anim.particle_float)
+            it.clearAnimation()
             handler.postDelayed({ it.startAnimation(particleAnimation) }, 500)
         }
 
         particle3?.let {
             val particleAnimation = AnimationUtils.loadAnimation(context, R.anim.particle_float)
+            it.clearAnimation()
             handler.postDelayed({ it.startAnimation(particleAnimation) }, 1000)
         }
     }
@@ -241,6 +253,9 @@ class ClassificationLoadingDialog(private val context: Context) {
 
         // Show a different message for single model
         funFactText?.text = "⚡ Memproses dengan model $modelName untuk hasil yang cepat dan akurat!"
+
+        // Restart animations for single model processing
+        startAllAnimations()
     }
 
     fun dismiss() {
