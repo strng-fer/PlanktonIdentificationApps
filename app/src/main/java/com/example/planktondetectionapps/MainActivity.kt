@@ -1953,6 +1953,10 @@ class MainActivity : AppCompatActivity() {
         val correctClassSpinner = dialogView.findViewById<android.widget.Spinner>(R.id.correctClassSpinner)
         val correctClassLabel = dialogView.findViewById<TextView>(R.id.correctClassLabel)
         val warningText = dialogView.findViewById<TextView>(R.id.warningText)
+        val planktonPreviewImage = dialogView.findViewById<ImageView>(R.id.planktonPreviewImage)
+
+        // Set plankton image preview
+        planktonPreviewImage?.setImageBitmap(currentBitmap)
 
         // Set current prediction info
         val currentPrediction = dialogView.findViewById<TextView>(R.id.currentPrediction)

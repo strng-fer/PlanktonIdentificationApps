@@ -16,6 +16,17 @@
         android:gravity="center"
         android:layout_marginBottom="16dp" />
 
+    <!-- Preview gambar plankton -->
+    <ImageView
+        android:id="@+id/planktonPreviewImage"
+        android:layout_width="200dp"
+        android:layout_height="200dp"
+        android:layout_gravity="center"
+        android:layout_marginBottom="16dp"
+        android:scaleType="centerCrop"
+        android:background="@drawable/image_border"
+        android:contentDescription="Preview gambar plankton" />
+
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -57,28 +68,32 @@
         android:id="@+id/feedbackRadioGroup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:orientation="horizontal"
         android:layout_marginBottom="16dp">
 
         <RadioButton
             android:id="@+id/correctRadio"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="Benar"
             android:textSize="14sp"
             android:textColor="@color/black" />
 
         <RadioButton
             android:id="@+id/incorrectRadio"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="Salah"
             android:textSize="14sp"
             android:textColor="@color/black" />
 
         <RadioButton
             android:id="@+id/neutralRadio"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
+            android:layout_weight="1"
             android:text="Tidak Yakin"
             android:textSize="14sp"
             android:textColor="@color/black" />

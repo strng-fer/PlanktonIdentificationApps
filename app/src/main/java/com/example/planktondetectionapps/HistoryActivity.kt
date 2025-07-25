@@ -2,6 +2,7 @@ package com.example.planktondetectionapps
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -318,6 +319,21 @@ class HistoryActivity : AppCompatActivity() {
         val correctClassSpinner = dialogView.findViewById<Spinner>(R.id.correctClassSpinner)
         val correctClassLabel = dialogView.findViewById<TextView>(R.id.correctClassLabel)
         val warningText = dialogView.findViewById<TextView>(R.id.warningText)
+        val planktonPreviewImage = dialogView.findViewById<ImageView>(R.id.planktonPreviewImage)
+
+        // Load and set plankton image preview
+        try {
+            val bitmap = BitmapFactory.decodeFile(entry.imagePath)
+            if (bitmap != null) {
+                planktonPreviewImage?.setImageBitmap(bitmap)
+            } else {
+                // Set placeholder if image cannot be loaded
+                planktonPreviewImage?.setImageResource(R.drawable.ic_image_placeholder)
+            }
+        } catch (e: Exception) {
+            Log.e("HistoryActivity", "Error loading image for preview: ${e.message}")
+            planktonPreviewImage?.setImageResource(R.drawable.ic_image_placeholder)
+        }
 
         // Set current prediction info
         val currentPrediction = dialogView.findViewById<TextView>(R.id.currentPrediction)
