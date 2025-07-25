@@ -42,12 +42,18 @@ class BatchProcessingActivity : AppCompatActivity() {
     private var selectedModel: MainActivity.ModelType = MainActivity.ModelType.MOBILENET_V3_SMALL
     private var imageSize: Int = 224
 
+    // History Management
+    private lateinit var historyManager: HistoryManager
+    private var batchHistoryEntries = mutableListOf<String>() // Track individual entry IDs for this batch
+    private var batchSessionId: String? = null // Unique ID for this batch session
+
     data class BatchResult(
         val imageUri: Uri,
         val bitmap: Bitmap,
         val prediction: String,
         val confidence: Float,
-        val top3Results: List<Pair<String, Float>>
+        val top3Results: List<Pair<String, Float>>,
+        val historyEntryId: String? = null // Add history entry ID tracking
     )
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,6 +64,12 @@ class BatchProcessingActivity : AppCompatActivity() {
         @Suppress("DEPRECATION")
         selectedModel = intent.getSerializableExtra("selectedModel") as? MainActivity.ModelType
             ?: MainActivity.ModelType.MOBILENET_V3_SMALL
+
+        // Initialize history manager
+        historyManager = HistoryManager(this)
+
+        // Create unique batch session ID
+        batchSessionId = "BATCH_${System.currentTimeMillis()}"
 
         initializeViews()
         setupRecyclerView()
@@ -123,6 +135,14 @@ class BatchProcessingActivity : AppCompatActivity() {
                                 progressBar.visibility = View.GONE
                                 progressText.text = getString(R.string.processing_complete, batchResults.size)
                                 exportButton.visibility = View.VISIBLE
+
+                                // Create batch summary entry in history after all processing is complete
+                                createBatchSummaryEntry()
+
+                                // Log batch processing completion
+                                android.util.Log.d("BatchProcessing", "Batch processing completed. Session: $batchSessionId")
+                                android.util.Log.d("BatchProcessing", "Total images processed: ${batchResults.size}")
+                                android.util.Log.d("BatchProcessing", "History entries created: ${batchHistoryEntries.size}")
                             }
                         }
                     }
@@ -410,12 +430,16 @@ class BatchProcessingActivity : AppCompatActivity() {
                 }
             }
 
+            // Save to history
+            val historyEntryId = saveResultToHistory(prediction, maxConfidence, top3Results, bitmap, uri)
+
             return BatchResult(
                 imageUri = uri,
                 bitmap = bitmap,
                 prediction = prediction,
                 confidence = maxConfidence,
-                top3Results = top3Results
+                top3Results = top3Results,
+                historyEntryId = historyEntryId // Track history entry ID
             )
         } else {
             return createDummyResult(bitmap, uri)
@@ -795,6 +819,121 @@ class BatchProcessingActivity : AppCompatActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
             Toast.makeText(this, "Gagal berbagi file: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Simpan hasil klasifikasi ke dalam history
+     */
+    private fun saveResultToHistory(prediction: String, confidence: Float, top3Results: List<Pair<String, Float>>, bitmap: Bitmap, uri: Uri): String {
+        return try {
+            // Save image to internal storage first
+            val imageFile = saveImageToInternalStorage(bitmap, uri)
+
+            if (imageFile != null && imageFile.exists()) {
+                // Create unique ID for this batch entry
+                val entryId = "${batchSessionId}_${System.currentTimeMillis()}_${batchHistoryEntries.size + 1}"
+
+                // Create history entry with proper constructor
+                val historyEntry = HistoryEntry(
+                    id = entryId,
+                    timestamp = Date(),
+                    imagePath = imageFile.absolutePath,
+                    classificationResult = prediction,
+                    confidence = confidence,
+                    modelUsed = "BATCH_${selectedModel.name}",
+                    userFeedback = "",
+                    isCorrect = null,
+                    correctClass = ""
+                )
+
+                // Save to history using HistoryManager
+                if (historyManager.saveHistoryEntry(historyEntry)) {
+                    // Track this entry ID for batch session
+                    batchHistoryEntries.add(entryId)
+
+                    android.util.Log.d("BatchProcessing", "History entry saved successfully: $entryId")
+                    android.util.Log.d("BatchProcessing", "Batch session: $batchSessionId, Total entries: ${batchHistoryEntries.size}")
+
+                    return entryId
+                } else {
+                    android.util.Log.e("BatchProcessing", "Failed to save history entry for: $prediction")
+                    return ""
+                }
+            } else {
+                android.util.Log.e("BatchProcessing", "Failed to save image to internal storage")
+                return ""
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("BatchProcessing", "Error saving to history", e)
+            ""
+        }
+    }
+
+    /**
+     * Save image to internal storage for batch processing
+     */
+    private fun saveImageToInternalStorage(bitmap: Bitmap, uri: Uri): File? {
+        return try {
+            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss_SSS", Locale.getDefault()).format(Date())
+            val fileName = getFileNameFromUri(uri)
+            val cleanFileName = fileName.replace(Regex("[^a-zA-Z0-9.-]"), "_")
+            val imageFileName = "BATCH_${timeStamp}_${cleanFileName}.jpg"
+
+            // Create batch images directory
+            val batchImagesDir = File(filesDir, "batch_images/$batchSessionId")
+            if (!batchImagesDir.exists()) {
+                batchImagesDir.mkdirs()
+            }
+
+            val imageFile = File(batchImagesDir, imageFileName)
+
+            // Save bitmap to file with compression
+            FileOutputStream(imageFile).use { outputStream ->
+                bitmap.compress(Bitmap.CompressFormat.JPEG, 85, outputStream)
+            }
+
+            android.util.Log.d("BatchProcessing", "Image saved to internal storage: ${imageFile.absolutePath}")
+            imageFile
+        } catch (e: Exception) {
+            android.util.Log.e("BatchProcessing", "Error saving image to internal storage", e)
+            null
+        }
+    }
+
+    /**
+     * Create batch summary entry in history
+     */
+    private fun createBatchSummaryEntry() {
+        if (batchHistoryEntries.isNotEmpty()) {
+            try {
+                val summaryId = "${batchSessionId}_SUMMARY"
+                val totalImages = batchResults.size
+                val modelUsed = "BATCH_${selectedModel.name}"
+
+                // Calculate average confidence
+                val avgConfidence = if (batchResults.isNotEmpty()) {
+                    batchResults.map { it.confidence }.average().toFloat()
+                } else 0f
+
+                // Create summary entry
+                val summaryEntry = HistoryEntry(
+                    id = summaryId,
+                    timestamp = Date(),
+                    imagePath = "BATCH_SUMMARY", // Special marker for batch summary
+                    classificationResult = "Batch Processing Summary: $totalImages images processed",
+                    confidence = avgConfidence,
+                    modelUsed = modelUsed,
+                    userFeedback = "Batch Session ID: $batchSessionId, Individual entries: ${batchHistoryEntries.joinToString(",")}",
+                    isCorrect = null,
+                    correctClass = ""
+                )
+
+                historyManager.saveHistoryEntry(summaryEntry)
+                android.util.Log.d("BatchProcessing", "Batch summary entry created: $summaryId")
+            } catch (e: Exception) {
+                android.util.Log.e("BatchProcessing", "Error creating batch summary", e)
+            }
         }
     }
 }
