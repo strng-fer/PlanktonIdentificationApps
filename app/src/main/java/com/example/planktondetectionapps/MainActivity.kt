@@ -599,10 +599,47 @@ class MainActivity : AppCompatActivity() {
      * Tampilkan pesan error dan reset UI
      */
     private fun showError(message: String) {
-        showErrorDialog(message)
+        // Use the new image error dialog for image-related errors
+        if (message.contains("gambar", ignoreCase = true) ||
+            message.contains("kamera", ignoreCase = true) ||
+            message.contains("galeri", ignoreCase = true) ||
+            message.contains("image", ignoreCase = true) ||
+            message.contains("camera", ignoreCase = true)) {
+            showImageErrorDialog(message)
+        } else {
+            // Use regular error dialog for other errors
+            showErrorDialog(message)
+        }
         result?.text = "Terjadi kesalahan"
         confidence?.visibility = View.GONE
         saveButton?.isEnabled = false
+    }
+
+    /**
+     * Tampilkan dialog error untuk gagal mengambil/memilih gambar
+     */
+    fun showImageErrorDialog(errorMessage: String = "Terjadi kesalahan saat mengambil atau memilih gambar. Silakan coba lagi.") {
+        val dialogBuilder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_image_error, null)
+
+        dialogBuilder.setView(dialogView)
+        dialogBuilder.setCancelable(true)
+
+        val dialog = dialogBuilder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val errorMessageText = dialogView.findViewById<TextView>(R.id.errorMessage)
+        val closeButton = dialogView.findViewById<android.widget.ImageButton>(R.id.closeButton)
+
+        // Set custom error message
+        errorMessageText.text = errorMessage
+
+        // Handle close button click
+        closeButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     /**
@@ -1670,7 +1707,6 @@ class MainActivity : AppCompatActivity() {
         val singleImageOption = dialogView.findViewById<LinearLayout>(R.id.singleImageOption)
         val batchProcessingOption =
             dialogView.findViewById<LinearLayout>(R.id.batchProcessingOption)
-        val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
 
         singleImageOption.setOnClickListener {
             dialog.dismiss()
@@ -1689,9 +1725,6 @@ class MainActivity : AppCompatActivity() {
             batchGalleryLauncher.launch(batchGalleryIntent)
         }
 
-        cancelButton.setOnClickListener {
-            dialog.dismiss()
-        }
 
         dialog.show()
     }
@@ -2206,5 +2239,193 @@ class MainActivity : AppCompatActivity() {
             Log.e("PlanktonHistory", "Error saving image to internal storage", e)
             null
         }
+    }
+
+    /**
+     * Tampilkan dialog konfirmasi untuk menghapus semua riwayat
+     */
+    fun showClearAllHistoryDialog() {
+        val dialogBuilder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_clear_all, null)
+
+        dialogBuilder.setView(dialogView)
+        dialogBuilder.setCancelable(true)
+
+        val dialog = dialogBuilder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
+        val confirmButton = dialogView.findViewById<Button>(R.id.confirmButton)
+
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        confirmButton.setOnClickListener {
+            // Hapus semua riwayat
+            clearAllHistory()
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    /**
+     * Hapus semua riwayat klasifikasi
+     */
+    private fun clearAllHistory() {
+        try {
+            // Delete all history entries
+            val allEntries = historyManager.getAllHistoryEntries()
+            var deletedCount = 0
+
+            for (entry in allEntries) {
+                if (historyManager.deleteEntry(entry.id)) {
+                    deletedCount++
+                }
+
+                // Also delete associated image file
+                try {
+                    val imageFile = File(entry.imagePath)
+                    if (imageFile.exists()) {
+                        imageFile.delete()
+                    }
+                } catch (e: Exception) {
+                    Log.w("MainActivity", "Could not delete image file: ${entry.imagePath}", e)
+                }
+            }
+
+            if (deletedCount == allEntries.size) {
+                Toast.makeText(this, "Semua riwayat berhasil dihapus ($deletedCount item)", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(this, "Berhasil menghapus $deletedCount dari ${allEntries.size} item", Toast.LENGTH_LONG).show()
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error clearing history", e)
+            Toast.makeText(this, "Gagal menghapus riwayat: ${e.message}", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    /**
+     * Tampilkan dialog filter untuk riwayat klasifikasi
+     */
+    fun showHistoryFilterDialog() {
+        val dialogBuilder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_history_filter, null)
+
+        dialogBuilder.setView(dialogView)
+        dialogBuilder.setCancelable(true)
+
+        val dialog = dialogBuilder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val modelFilterSpinner = dialogView.findViewById<android.widget.Spinner>(R.id.modelFilterSpinner)
+        val classificationFilterSpinner = dialogView.findViewById<android.widget.Spinner>(R.id.classificationFilterSpinner)
+        val dateRangeSpinner = dialogView.findViewById<android.widget.Spinner>(R.id.dateRangeSpinner)
+        val resetFilterButton = dialogView.findViewById<Button>(R.id.resetFilterButton)
+        val applyFilterButton = dialogView.findViewById<Button>(R.id.applyFilterButton)
+
+        // Setup spinners with data
+        setupFilterSpinners(modelFilterSpinner, classificationFilterSpinner, dateRangeSpinner)
+
+        resetFilterButton.setOnClickListener {
+            // Reset all spinners to "Semua" option
+            modelFilterSpinner.setSelection(0)
+            classificationFilterSpinner.setSelection(0)
+            dateRangeSpinner.setSelection(0)
+        }
+
+        applyFilterButton.setOnClickListener {
+            val selectedModel = modelFilterSpinner.selectedItem.toString()
+            val selectedClassification = classificationFilterSpinner.selectedItem.toString()
+            val selectedDateRange = dateRangeSpinner.selectedItem.toString()
+
+            // Apply filters and close dialog
+            applyHistoryFilters(selectedModel, selectedClassification, selectedDateRange)
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    /**
+     * Setup spinner data untuk filter dialog
+     */
+    private fun setupFilterSpinners(
+        modelSpinner: android.widget.Spinner,
+        classificationSpinner: android.widget.Spinner,
+        dateRangeSpinner: android.widget.Spinner
+    ) {
+        try {
+            // Get unique data from history
+            val allEntries = historyManager.getAllHistoryEntries()
+
+            // Model filter options
+            val modelOptions = mutableListOf("Semua Model")
+            modelOptions.addAll(allEntries.map { it.modelUsed }.distinct().sorted())
+
+            val modelAdapter = android.widget.ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item,
+                modelOptions
+            )
+            modelAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            modelSpinner.adapter = modelAdapter
+
+            // Classification filter options
+            val classificationOptions = mutableListOf("Semua Klasifikasi")
+            classificationOptions.addAll(allEntries.map { it.classificationResult }.distinct().sorted())
+
+            val classificationAdapter = android.widget.ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item,
+                classificationOptions
+            )
+            classificationAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            classificationSpinner.adapter = classificationAdapter
+
+            // Date range filter options
+            val dateRangeOptions = listOf(
+                "Semua Waktu",
+                "Hari ini",
+                "Minggu ini",
+                "Bulan ini",
+                "3 Bulan terakhir",
+                "6 Bulan terakhir"
+            )
+
+            val dateRangeAdapter = android.widget.ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item,
+                dateRangeOptions
+            )
+            dateRangeAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            dateRangeSpinner.adapter = dateRangeAdapter
+
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error setting up filter spinners", e)
+            Toast.makeText(this, "Error loading filter options", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    /**
+     * Terapkan filter riwayat dan buka HistoryActivity dengan filter
+     */
+    private fun applyHistoryFilters(model: String, classification: String, dateRange: String) {
+        val intent = Intent(this, HistoryActivity::class.java)
+
+        // Pass filter parameters
+        if (model != "Semua Model") {
+            intent.putExtra("filter_model", model)
+        }
+        if (classification != "Semua Klasifikasi") {
+            intent.putExtra("filter_classification", classification)
+        }
+        if (dateRange != "Semua Waktu") {
+            intent.putExtra("filter_date_range", dateRange)
+        }
+
+        startActivity(intent)
+        Toast.makeText(this, "Filter diterapkan: $model, $classification, $dateRange", Toast.LENGTH_SHORT).show()
     }
 }
