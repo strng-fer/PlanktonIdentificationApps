@@ -767,7 +767,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="MobileNetV3 Small (300 Data)"
+                                    android:text="MobileNetV3 Small"
                                     android:textSize="15sp"
                                     android:textColor="#424242"
                                     android:textStyle="bold" />
@@ -813,7 +813,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="MobileNetV3 Large (300 Data)"
+                                    android:text="MobileNetV3 Large"
                                     android:textSize="15sp"
                                     android:textColor="#424242"
                                     android:textStyle="bold" />
