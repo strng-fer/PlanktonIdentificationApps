@@ -133,9 +133,6 @@ class BatchProcessingActivity : AppCompatActivity() {
                                 progressBar.visibility = View.GONE
                                 progressText.text = getString(R.string.processing_complete, batchResults.size)
 
-                                // Create batch summary entry in history after all processing is complete
-                                createBatchSummaryEntry()
-
                                 // Log batch processing completion
                                 android.util.Log.d("BatchProcessing", "Batch processing completed. Session: $batchSessionId")
                                 android.util.Log.d("BatchProcessing", "Total images processed: ${batchResults.size}")
@@ -963,42 +960,6 @@ class BatchProcessingActivity : AppCompatActivity() {
         } catch (e: Exception) {
             android.util.Log.e("BatchProcessing", "Error saving image to internal storage", e)
             null
-        }
-    }
-
-    /**
-     * Create batch summary entry in history
-     */
-    private fun createBatchSummaryEntry() {
-        if (batchHistoryEntries.isNotEmpty()) {
-            try {
-                val summaryId = "${batchSessionId}_SUMMARY"
-                val totalImages = batchResults.size
-                val modelUsed = "BATCH_${selectedModel.name}"
-
-                // Calculate average confidence
-                val avgConfidence = if (batchResults.isNotEmpty()) {
-                    batchResults.map { it.confidence }.average().toFloat()
-                } else 0f
-
-                // Create summary entry
-                val summaryEntry = HistoryEntry(
-                    id = summaryId,
-                    timestamp = Date(),
-                    imagePath = "BATCH_SUMMARY", // Special marker for batch summary
-                    classificationResult = "Batch Processing Summary: $totalImages images processed",
-                    confidence = avgConfidence,
-                    modelUsed = modelUsed,
-                    userFeedback = "Batch Session ID: $batchSessionId, Individual entries: ${batchHistoryEntries.joinToString(",")}",
-                    isCorrect = null,
-                    correctClass = ""
-                )
-
-                historyManager.saveHistoryEntry(summaryEntry)
-                android.util.Log.d("BatchProcessing", "Batch summary entry created: $summaryId")
-            } catch (e: Exception) {
-                android.util.Log.e("BatchProcessing", "Error creating batch summary", e)
-            }
         }
     }
 }
