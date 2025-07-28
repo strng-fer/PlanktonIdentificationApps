@@ -62,13 +62,36 @@
 
     </LinearLayout>
 
-    <!-- Status Icon -->
-    <ImageView
-        android:layout_width="24dp"
-        android:layout_height="24dp"
-        android:src="@drawable/ic_info"
+    <!-- Action Buttons -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
         android:layout_gravity="center_vertical"
-        android:layout_marginStart="8dp"
-        android:contentDescription="Success" />
+        android:layout_marginStart="8dp">
+
+        <!-- Status Icon -->
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/ic_info"
+            android:layout_gravity="center_horizontal"
+            android:contentDescription="Status" />
+
+        <!-- Feedback Button -->
+        <Button
+            android:id="@+id/batchItemFeedbackButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Feedback"
+            android:textSize="10sp"
+            android:padding="6dp"
+            android:layout_marginTop="4dp"
+            android:background="@drawable/button_primary"
+            android:textColor="@android:color/white"
+            android:minWidth="0dp"
+            android:minHeight="0dp" />
+
+    </LinearLayout>
 
 </LinearLayout>

@@ -34,7 +34,6 @@ class BatchProcessingActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var progressBar: ProgressBar
     private lateinit var progressText: TextView
-    private lateinit var exportButton: Button
     private lateinit var backButton: ImageButton
 
     private var batchResults = mutableListOf<BatchResult>()
@@ -80,25 +79,24 @@ class BatchProcessingActivity : AppCompatActivity() {
         recyclerView = findViewById(R.id.batchRecyclerView)
         progressBar = findViewById(R.id.batchProgressBar)
         progressText = findViewById(R.id.progressText)
-        exportButton = findViewById(R.id.exportButton)
         backButton = findViewById(R.id.backButton)
 
         backButton.setOnClickListener {
             finish()
         }
-
-        exportButton.setOnClickListener {
-            exportResults()
-        }
-
-        exportButton.visibility = View.GONE
     }
 
     private fun setupRecyclerView() {
-        batchAdapter = BatchResultAdapter(batchResults) { result: BatchResult ->
-            // Show detailed info when item clicked
-            PlanktonInfoManager.showPlanktonInfoPopup(this, result.prediction)
-        }
+        batchAdapter = BatchResultAdapter(batchResults,
+            onItemClick = { result: BatchProcessingActivity.BatchResult ->
+                // Show detailed info when item clicked
+                PlanktonInfoManager.showPlanktonInfoPopup(this, result.prediction)
+            },
+            onFeedbackClick = { result: BatchProcessingActivity.BatchResult ->
+                // Show feedback dialog for this specific result
+                showFeedbackDialog(result)
+            }
+        )
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = batchAdapter
     }
@@ -134,7 +132,6 @@ class BatchProcessingActivity : AppCompatActivity() {
                             if (i == imageUris.size - 1) {
                                 progressBar.visibility = View.GONE
                                 progressText.text = getString(R.string.processing_complete, batchResults.size)
-                                exportButton.visibility = View.VISIBLE
 
                                 // Create batch summary entry in history after all processing is complete
                                 createBatchSummaryEntry()
@@ -701,124 +698,192 @@ class BatchProcessingActivity : AppCompatActivity() {
         } ?: "unknown"
     }
 
-    private fun exportResults() {
-        // Create CSV content
-        val csvContent = StringBuilder()
-        csvContent.append("No,Nama File,Prediksi,Confidence,Top 2,Confidence 2,Top 3,Confidence 3\n")
+    /**
+     * Show feedback dialog for a specific batch result
+     */
+    private fun showFeedbackDialog(result: BatchResult) {
+        val dialogView = layoutInflater.inflate(R.layout.dialog_feedback, null)
 
-        batchResults.forEachIndexed { index, result ->
-            val fileName = getFileNameFromUri(result.imageUri)
-            csvContent.append("${index + 1},$fileName,${result.prediction},${String.format("%.2f", result.confidence)}")
+        // Get UI elements from dialog (using correct field IDs from layout)
+        val feedbackComment = dialogView.findViewById<EditText>(R.id.feedbackComment)
+        val submitButton = dialogView.findViewById<Button>(R.id.submitButton)
+        val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
+        val feedbackRadioGroup = dialogView.findViewById<RadioGroup>(R.id.feedbackRadioGroup)
+        val correctRadio = dialogView.findViewById<RadioButton>(R.id.correctRadio)
+        val incorrectRadio = dialogView.findViewById<RadioButton>(R.id.incorrectRadio)
+        val neutralRadio = dialogView.findViewById<RadioButton>(R.id.neutralRadio)
+        val correctClassSpinner = dialogView.findViewById<Spinner>(R.id.correctClassSpinner)
+        val correctClassLabel = dialogView.findViewById<TextView>(R.id.correctClassLabel)
+        val warningText = dialogView.findViewById<TextView>(R.id.warningText)
+        val planktonPreviewImage = dialogView.findViewById<ImageView>(R.id.planktonPreviewImage)
 
-            if (result.top3Results.size > 1) {
-                csvContent.append(",${result.top3Results[1].first},${String.format("%.2f", result.top3Results[1].second)}")
-            } else {
-                csvContent.append(",,")
+        // Set plankton image preview
+        planktonPreviewImage?.setImageBitmap(result.bitmap)
+
+        // Set current prediction info
+        val currentPrediction = dialogView.findViewById<TextView>(R.id.currentPrediction)
+        val currentConfidence = dialogView.findViewById<TextView>(R.id.currentConfidence)
+
+        currentPrediction?.text = result.prediction
+        currentConfidence?.text = "Tingkat Kepercayaan: ${(result.confidence * 100).toInt()}%"
+
+        // Load plankton labels and add "Unrecognize" option
+        val planktonLabels = loadLabels(this).toMutableList()
+        planktonLabels.add("Unrecognize")
+
+        // Setup spinner with plankton labels
+        val spinnerAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_spinner_item,
+            planktonLabels
+        )
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        correctClassSpinner?.adapter = spinnerAdapter
+
+        // Show/hide correct class label and spinner based on radio selection
+        feedbackRadioGroup?.setOnCheckedChangeListener { _, checkedId ->
+            when (checkedId) {
+                R.id.incorrectRadio -> {
+                    correctClassLabel?.visibility = View.VISIBLE
+                    correctClassSpinner?.visibility = View.VISIBLE
+                }
+                else -> {
+                    correctClassLabel?.visibility = View.GONE
+                    correctClassSpinner?.visibility = View.GONE
+                }
             }
-
-            if (result.top3Results.size > 2) {
-                csvContent.append(",${result.top3Results[2].first},${String.format("%.2f", result.top3Results[2].second)}")
-            } else {
-                csvContent.append(",,")
-            }
-
-            csvContent.append("\n")
+            // Clear warning when selection changes
+            warningText?.visibility = View.GONE
         }
 
-        // Membuat timestamp untuk nama file yang unik
-        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-        val fileName = "hasil_batch_$timestamp.csv"
+        val dialog = androidx.appcompat.app.AlertDialog.Builder(this)
+            .setView(dialogView)
+            .setCancelable(true)
+            .create()
 
-        // Membuat direktori Documents jika belum ada
-        val documentsDir = File(getExternalFilesDir(Environment.DIRECTORY_DOCUMENTS).toString())
-        if (!documentsDir.exists()) {
-            documentsDir.mkdirs()
-        }
+        // Make dialog background transparent to prevent overlap with custom rounded background
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
-        // File CSV yang akan disimpan
-        val csvFile = File(documentsDir, fileName)
+        // Set button listeners
+        submitButton?.setOnClickListener {
+            val feedback = feedbackComment?.text?.toString()?.trim() ?: ""
 
-        try {
-            // Menyimpan konten CSV ke file
-            FileOutputStream(csvFile).use { outputStream ->
-                outputStream.write(csvContent.toString().toByteArray())
+            // Determine correctness based on radio selection
+            val isCorrect = when (feedbackRadioGroup?.checkedRadioButtonId) {
+                R.id.correctRadio -> true
+                R.id.incorrectRadio -> false
+                R.id.neutralRadio -> null
+                else -> null // no selection
             }
 
-            // Menampilkan dialog konfirmasi berhasil
-            Toast.makeText(this,
-                "File CSV berhasil disimpan di: ${csvFile.absolutePath}",
-                Toast.LENGTH_LONG).show()
+            // Validate input based on rules
+            val validationResult = validateFeedbackInput(isCorrect, feedback, correctClassSpinner)
 
-            // Tampilkan dialog dengan opsi untuk membuka atau berbagi file
-            androidx.appcompat.app.AlertDialog.Builder(this)
-                .setTitle("File CSV Berhasil Disimpan")
-                .setMessage("File telah disimpan di: ${fileName}\nApakah Anda ingin membuka file atau berbagi ke aplikasi lain?")
-                .setPositiveButton("Buka") { _, _ ->
-                    // Buka file CSV dengan aplikasi yang sesuai
-                    openCsvFile(csvFile)
+            if (validationResult.isValid) {
+                // Get correct class if prediction is marked as incorrect
+                val correctClass = if (isCorrect == false) {
+                    correctClassSpinner?.selectedItem?.toString() ?: ""
+                } else {
+                    ""
                 }
-                .setNegativeButton("Berbagi") { _, _ ->
-                    // Share file CSV
-                    shareCsvFile(csvFile)
-                }
-                .setNeutralButton("Tutup", null)
-                .show()
 
-        } catch (e: IOException) {
-            e.printStackTrace()
-            Toast.makeText(this, "Gagal menyimpan file CSV: ${e.message}", Toast.LENGTH_SHORT).show()
+                // Update feedback in history entry
+                updateBatchHistoryFeedback(result, feedback, isCorrect, correctClass)
+
+                dialog.dismiss()
+            } else {
+                // Show warning message
+                warningText?.text = validationResult.errorMessage
+                warningText?.visibility = View.VISIBLE
+            }
+        }
+
+        cancelButton?.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
+    }
+
+    /**
+     * Validate feedback input based on the specified rules
+     */
+    private fun validateFeedbackInput(isCorrect: Boolean?, feedback: String, correctClassSpinner: Spinner?): ValidationResult {
+        return when (isCorrect) {
+            true -> {
+                // Classification is correct - feedback can be sent (comment is optional)
+                ValidationResult(true, "")
+            }
+            false -> {
+                // Classification is incorrect - user must select correct classification (comment is optional)
+                val selectedClass = correctClassSpinner?.selectedItem?.toString()?.trim()
+                if (selectedClass.isNullOrEmpty()) {
+                    ValidationResult(false, "Harap pilih klasifikasi yang benar")
+                } else {
+                    ValidationResult(true, "")
+                }
+            }
+            null -> {
+                // Not sure - user must provide comment
+                if (feedback.isEmpty()) {
+                    ValidationResult(false, "Komentar wajib diisi jika memilih 'Tidak Yakin'")
+                } else {
+                    ValidationResult(true, "")
+                }
+            }
         }
     }
 
     /**
-     * Membuka file CSV dengan aplikasi yang sesuai
+     * Data class for validation result
      */
-    private fun openCsvFile(file: File) {
-        try {
-            val fileUri = FileProvider.getUriForFile(
-                this,
-                "${packageName}.fileprovider",
-                file
-            )
-
-            val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(fileUri, "text/csv")
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            }
-
-            if (intent.resolveActivity(packageManager) != null) {
-                startActivity(intent)
-            } else {
-                Toast.makeText(this, "Tidak ada aplikasi yang dapat membuka file CSV", Toast.LENGTH_SHORT).show()
-                shareCsvFile(file) // Sebagai fallback, coba share
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Gagal membuka file: ${e.message}", Toast.LENGTH_SHORT).show()
-        }
-    }
+    private data class ValidationResult(
+        val isValid: Boolean,
+        val errorMessage: String
+    )
 
     /**
-     * Berbagi file CSV ke aplikasi lain
+     * Update feedback for a specific batch result in history
      */
-    private fun shareCsvFile(file: File) {
+    private fun updateBatchHistoryFeedback(result: BatchResult, feedback: String, isCorrect: Boolean?, correctClass: String) {
+        if (result.historyEntryId.isNullOrEmpty()) {
+            Toast.makeText(this, "Tidak dapat menyimpan feedback untuk hasil ini", Toast.LENGTH_SHORT).show()
+            return
+        }
+
         try {
-            val fileUri = FileProvider.getUriForFile(
-                this,
-                "${packageName}.fileprovider",
-                file
+            android.util.Log.d("BatchProcessing", "=== updateBatchHistoryFeedback() called ===")
+            android.util.Log.d("BatchProcessing", "Entry ID: ${result.historyEntryId}")
+            android.util.Log.d("BatchProcessing", "Feedback: '$feedback'")
+            android.util.Log.d("BatchProcessing", "IsCorrect: $isCorrect")
+            android.util.Log.d("BatchProcessing", "CorrectClass: '$correctClass'")
+
+            // Update the history entry using HistoryManager
+            val updateSuccess = historyManager.updateEntryFeedback(
+                entryId = result.historyEntryId,
+                feedback = feedback,
+                isCorrect = isCorrect,
+                correctClass = correctClass
             )
 
-            val shareIntent = Intent(Intent.ACTION_SEND).apply {
-                type = "text/csv"
-                putExtra(Intent.EXTRA_STREAM, fileUri)
-                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            if (updateSuccess) {
+                android.util.Log.d("BatchProcessing", "Batch feedback saved successfully")
+                Toast.makeText(this, "Feedback berhasil disimpan", Toast.LENGTH_SHORT).show()
+
+                // Show success message with details for incorrect classification
+                if (isCorrect == false && correctClass.isNotEmpty()) {
+                    val message = "Feedback disimpan! Klasifikasi yang benar: $correctClass"
+                    Toast.makeText(this, message, Toast.LENGTH_LONG).show()
+                    android.util.Log.d("BatchProcessing", "Incorrect classification feedback saved with correct class: $correctClass")
+                }
+            } else {
+                android.util.Log.e("BatchProcessing", "Failed to save batch feedback")
+                Toast.makeText(this, "Gagal menyimpan feedback", Toast.LENGTH_SHORT).show()
             }
 
-            startActivity(Intent.createChooser(shareIntent, "Bagikan CSV melalui"))
         } catch (e: Exception) {
-            e.printStackTrace()
-            Toast.makeText(this, "Gagal berbagi file: ${e.message}", Toast.LENGTH_SHORT).show()
+            android.util.Log.e("BatchProcessing", "Error updating batch feedback", e)
+            Toast.makeText(this, "Error menyimpan feedback: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 

@@ -3,6 +3,7 @@ package com.example.planktondetectionapps
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
@@ -12,7 +13,8 @@ import androidx.recyclerview.widget.RecyclerView
  */
 class BatchResultAdapter(
     private val results: List<BatchProcessingActivity.BatchResult>,
-    private val onItemClick: (BatchProcessingActivity.BatchResult) -> Unit
+    private val onItemClick: (BatchProcessingActivity.BatchResult) -> Unit,
+    private val onFeedbackClick: (BatchProcessingActivity.BatchResult) -> Unit
 ) : RecyclerView.Adapter<BatchResultAdapter.BatchResultViewHolder>() {
 
     class BatchResultViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -20,6 +22,7 @@ class BatchResultAdapter(
         val predictionText: TextView = itemView.findViewById(R.id.batchItemPrediction)
         val confidenceText: TextView = itemView.findViewById(R.id.batchItemConfidence)
         val fileNameText: TextView = itemView.findViewById(R.id.batchItemFileName)
+        val feedbackButton: Button = itemView.findViewById(R.id.batchItemFeedbackButton)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BatchResultViewHolder {
@@ -38,6 +41,10 @@ class BatchResultAdapter(
 
         holder.itemView.setOnClickListener {
             onItemClick(result)
+        }
+
+        holder.feedbackButton.setOnClickListener {
+            onFeedbackClick(result)
         }
     }
 
