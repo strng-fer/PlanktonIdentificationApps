@@ -1718,6 +1718,13 @@ class MainActivity : AppCompatActivity() {
 
         batchProcessingOption.setOnClickListener {
             dialog.dismiss()
+
+            // Check if Majority Voting is selected
+            if (selectedModel == ModelType.MAJORITY_VOTING) {
+                showMajorityVotingBatchDeclineDialog()
+                return@setOnClickListener
+            }
+
             // Batch image selection
             val batchGalleryIntent =
                 Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
@@ -1965,6 +1972,28 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }.start()
+    }
+
+    /**
+     * Show decline dialog for Majority Voting batch processing
+     */
+    private fun showMajorityVotingBatchDeclineDialog() {
+        val dialogBuilder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_majority_voting_decline, null)
+
+        dialogBuilder.setView(dialogView)
+        dialogBuilder.setCancelable(true)
+
+        val dialog = dialogBuilder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val okButton = dialogView.findViewById<Button>(R.id.okButton)
+
+        okButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     /**
