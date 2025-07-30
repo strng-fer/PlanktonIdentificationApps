@@ -2291,6 +2291,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         confirmButton.setOnClickListener {
+            // Disable button to prevent multiple clicks
+            confirmButton.isEnabled = false
+            confirmButton.text = "Menghapus..."
+
             // Hapus semua riwayat
             clearAllHistory()
             dialog.dismiss()

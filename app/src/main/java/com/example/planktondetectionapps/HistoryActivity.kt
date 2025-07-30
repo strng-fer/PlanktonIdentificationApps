@@ -550,14 +550,33 @@ class HistoryActivity : AppCompatActivity() {
     }
 
     private fun showClearAllConfirmation() {
-        AlertDialog.Builder(this)
-            .setTitle("Hapus Semua Riwayat")
-            .setMessage("Apakah Anda yakin ingin menghapus semua riwayat? Tindakan ini tidak dapat dibatalkan.")
-            .setPositiveButton("Hapus Semua") { _, _ ->
-                clearAllHistory()
-            }
-            .setNegativeButton("Batal", null)
-            .show()
+        val dialogBuilder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_clear_all, null)
+
+        dialogBuilder.setView(dialogView)
+        dialogBuilder.setCancelable(true)
+
+        val dialog = dialogBuilder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val cancelButton = dialogView.findViewById<Button>(R.id.cancelButton)
+        val confirmButton = dialogView.findViewById<Button>(R.id.confirmButton)
+
+        cancelButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        confirmButton.setOnClickListener {
+            // Disable button to prevent multiple clicks
+            confirmButton.isEnabled = false
+            confirmButton.text = "Menghapus..."
+
+            // Clear all history
+            clearAllHistory()
+            dialog.dismiss()
+        }
+
+        dialog.show()
     }
 
     private fun clearAllHistory() {
