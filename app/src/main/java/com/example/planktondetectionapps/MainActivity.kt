@@ -42,9 +42,17 @@ import java.util.Date
 import java.util.Locale
 import kotlin.math.min
 
+// Add Firebase Auth imports
+import com.example.planktondetectionapps.auth.AuthManager
+import com.example.planktondetectionapps.auth.AppUser
+import com.example.planktondetectionapps.auth.LoginActivity
+import com.example.planktondetectionapps.auth.ProfileActivity
+import com.example.planktondetectionapps.auth.UserRole
+
 /**
  * Main activity for the Plankton Detection Application
  * Handles camera capture, gallery selection, and AI model inference for plankton classification
+ * Now includes Firebase authentication and role-based access control
  */
 class MainActivity : AppCompatActivity() {
 
@@ -129,11 +137,20 @@ class MainActivity : AppCompatActivity() {
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
     private lateinit var storagePermissionLauncher: ActivityResultLauncher<String>
 
+    // Add authentication manager
+    private val authManager = AuthManager.getInstance()
+
+    // Add user profile button
+    private var userProfileButton: Button? = null
+
     /**
      * Inisialisasi activity dan setup UI components
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Check authentication first
+        checkAuthenticationState()
 
         // Force light mode for the entire application
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
@@ -145,9 +162,13 @@ class MainActivity : AppCompatActivity() {
         setupCustomDropdown()
         setupNavigationMenu()
         setupButtonListeners()
+        setupAuthenticationListener()
 
         // Initialize history manager
         historyManager = HistoryManager(this)
+
+        // Apply role-based UI restrictions
+        applyRoleBasedRestrictions()
 
         // Delay welcome dialog until after layout is completely finished
         // This prevents any flicker by ensuring everything is ready
@@ -161,6 +182,86 @@ class MainActivity : AppCompatActivity() {
                 showWelcomeDialog()
             }
         })
+    }
+
+    /**
+     * Check authentication state and redirect if needed
+     */
+    private fun checkAuthenticationState() {
+        if (!authManager.isAuthenticated()) {
+            // Redirect to login activity
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
+            return
+        }
+    }
+
+    /**
+     * Setup authentication state listener
+     */
+    private fun setupAuthenticationListener() {
+        authManager.addAuthStateListener { user: AppUser? ->
+            if (user == null) {
+                // User logged out, redirect to login
+                val intent = Intent(this, LoginActivity::class.java)
+                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                startActivity(intent)
+                finish()
+            } else {
+                // User logged in, update UI based on role
+                runOnUiThread {
+                    applyRoleBasedRestrictions()
+                }
+            }
+        }
+    }
+
+    /**
+     * Apply UI restrictions based on user role
+     */
+    private fun applyRoleBasedRestrictions() {
+        val currentUser = authManager.getCurrentUser()
+        if (currentUser == null) return
+
+        val userRole = currentUser.getUserRole()
+
+        // Enable/disable upload functionality based on role
+        val canUpload = userRole.canUpload()
+        picture?.isEnabled = canUpload
+        galleryButton?.isEnabled = canUpload
+
+        // Enable/disable feedback functionality based on role
+        val canAccessFeedback = userRole.canAccessFeedback()
+        feedbackButton?.isEnabled = canAccessFeedback
+        feedbackButton?.visibility = if (canAccessFeedback) View.VISIBLE else View.GONE
+
+        // Update user profile button text based on authentication state
+        userProfileButton?.text = if (authManager.isAuthenticated()) {
+            "Profile (${userRole.roleName})"
+        } else {
+            "Login"
+        }
+
+        // Show role-specific toast messages
+        when (userRole) {
+            UserRole.GUEST -> {
+                if (!canUpload) {
+                    Toast.makeText(this, "Guest access: Upload functionality only", Toast.LENGTH_LONG).show()
+                }
+            }
+            UserRole.USER -> {
+                // Regular user has standard permissions
+            }
+            UserRole.RESEARCHER -> {
+                // Researcher has feedback access
+            }
+            UserRole.ADMIN -> {
+                // Show admin capabilities
+                Toast.makeText(this, "Admin access: Full system control", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     /**
@@ -237,6 +338,9 @@ class MainActivity : AppCompatActivity() {
         aboutOption = findViewById(R.id.aboutOption)
         documentationOption = findViewById(R.id.documentationOption)
         historyOption = findViewById(R.id.historyOption)
+
+        // Initialize user profile button
+        userProfileButton = findViewById(R.id.userProfileButton)
     }
 
     /**
@@ -265,6 +369,20 @@ class MainActivity : AppCompatActivity() {
 
         feedbackButton?.setOnClickListener {
             showFeedbackDialog()
+        }
+
+        // Setup user profile button listener
+        userProfileButton?.setOnClickListener {
+            // Check if user is logged in
+            if (authManager.isAuthenticated()) {
+                // Open profile activity
+                val intent = Intent(this, ProfileActivity::class.java)
+                startActivity(intent)
+            } else {
+                // Redirect to login activity
+                val intent = Intent(this, LoginActivity::class.java)
+                startActivity(intent)
+            }
         }
     }
 
