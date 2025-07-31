@@ -5,6 +5,7 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.hardware.camera2.CameraManager
 import android.hardware.camera2.CameraCharacteristics
@@ -196,7 +197,6 @@ class MainActivity : AppCompatActivity() {
                 currentUser != null -> {
                     Log.d("MainActivity", "User is authenticated: ${currentUser.displayName} (${currentUser.role})")
                     applyRoleBasedRestrictions()
-                    showWelcomeDialog()
                 }
 
                 // Case 2: No user but Firebase is still loading - wait a bit more
@@ -213,7 +213,6 @@ class MainActivity : AppCompatActivity() {
                     Log.d("MainActivity", "Creating guest user...")
                     authManager.loginAsGuest()
                     applyRoleBasedRestrictions()
-                    showWelcomeDialog()
                 }
 
                 // Case 4: No authentication and auto-login disabled - go to login
@@ -509,40 +508,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Tampilkan dialog selamat datang saat aplikasi pertama kali dibuka
-     */
-    private fun showWelcomeDialog() {
-        val currentUser = authManager.getCurrentUser()
-        if (currentUser != null) {
-            val welcomeMessage = when {
-                currentUser.role == UserRole.GUEST && currentUser.uid.startsWith("guest_") -> {
-                    "Welcome, Guest! You can start detecting plankton right away."
-                }
-                currentUser.role == UserRole.ADMIN -> {
-                    "Welcome back, ${currentUser.displayName}! You have administrator access."
-                }
-                else -> {
-                    "Welcome back, ${currentUser.displayName}!"
-                }
-            }
-
-            // Only show welcome dialog once per session
-            if (!hasShownWelcomeDialog) {
-                hasShownWelcomeDialog = true
-
-                runOnUiThread {
-                    AlertDialog.Builder(this)
-                        .setTitle("PlanktoScan")
-                        .setMessage(welcomeMessage)
-                        .setPositiveButton("Get Started") { dialog, _ ->
-                            dialog.dismiss()
-                        }
-                        .show()
-                }
-            }
-        }
-    }
 
     /**
      * Apply role-based restrictions to UI elements
@@ -565,6 +530,28 @@ class MainActivity : AppCompatActivity() {
                 // Default user restrictions
                 Log.d("MainActivity", "Default user access")
             }
+        }
+
+        // Check and show welcome dialog after user authentication is complete
+        // Use a delay to ensure UI is fully loaded
+        Handler(Looper.getMainLooper()).postDelayed({
+            checkAndShowWelcomeDialog()
+        }, 1000)
+
+        // Update user profile button text
+        updateUserProfileButtonText()
+    }
+
+    /**
+     * Update user profile button text based on authentication state
+     */
+    private fun updateUserProfileButtonText() {
+        if (authManager.isAuthenticated()) {
+            val currentUser = authManager.getCurrentUser()
+            val roleName = currentUser?.role?.roleName ?: "User"
+            userProfileButton?.text = roleName
+        } else {
+            userProfileButton?.text = "Login"
         }
     }
 
@@ -1882,7 +1869,6 @@ class MainActivity : AppCompatActivity() {
             batchGalleryLauncher.launch(batchGalleryIntent)
         }
 
-
         dialog.show()
     }
 
@@ -2610,5 +2596,69 @@ class MainActivity : AppCompatActivity() {
 
         startActivity(intent)
         Toast.makeText(this, "Filter diterapkan: $model, $classification, $dateRange", Toast.LENGTH_SHORT).show()
+    }
+
+    /**
+     * Tampilkan dialog selamat datang
+     */
+    private fun showWelcomeDialog() {
+        val dialogBuilder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_welcome, null)
+
+        dialogBuilder.setView(dialogView)
+        dialogBuilder.setCancelable(false)
+
+        val dialog = dialogBuilder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        val startButton = dialogView.findViewById<Button>(R.id.welcomeStartButton)
+
+        // Handle start button click
+        startButton.setOnClickListener {
+            dialog.dismiss()
+            // Set flag to not show again
+            hasShownWelcomeDialog = true
+            saveWelcomeDialogFlag()
+        }
+
+        dialog.show()
+    }
+
+    /**
+     * Save the flag indicating that the welcome dialog has been shown
+     */
+    private fun saveWelcomeDialogFlag() {
+        try {
+            val sharedPreferences: SharedPreferences = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            with(sharedPreferences.edit()) {
+                putBoolean("has_shown_welcome_dialog", hasShownWelcomeDialog)
+                apply()
+            }
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Error saving welcome dialog flag", e)
+        }
+    }
+
+    /**
+     * Check and show welcome dialog if applicable
+     */
+    private fun checkAndShowWelcomeDialog() {
+        val sharedPreferences: SharedPreferences = getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        hasShownWelcomeDialog = sharedPreferences.getBoolean("has_shown_welcome_dialog", false)
+
+        // Show dialog only if not shown before
+        if (!hasShownWelcomeDialog) {
+            showWelcomeDialog()
+        }
+    }
+
+    /**
+     * Called when the activity is resuming
+     * Update UI elements that might have changed while the activity was paused
+     */
+    override fun onResume() {
+        super.onResume()
+        // Update user profile button text when returning to activity
+        updateUserProfileButtonText()
     }
 }
