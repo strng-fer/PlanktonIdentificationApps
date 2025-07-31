@@ -29,6 +29,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.google.firebase.auth.FirebaseAuth
 import org.tensorflow.lite.DataType
 import org.tensorflow.lite.support.tensorbuffer.TensorBuffer
 import java.io.File
@@ -143,17 +144,20 @@ class MainActivity : AppCompatActivity() {
     // Add user profile button
     private var userProfileButton: Button? = null
 
+    // Add flag for welcome dialog
+    private var hasShownWelcomeDialog = false
+
     /**
      * Inisialisasi activity dan setup UI components
      */
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Check authentication first
-        checkAuthenticationState()
-
         // Force light mode for the entire application
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+
+        // Initialize AuthManager with context FIRST
+        authManager.initialize(this)
 
         setContentView(R.layout.activity_main)
 
@@ -167,35 +171,68 @@ class MainActivity : AppCompatActivity() {
         // Initialize history manager
         historyManager = HistoryManager(this)
 
-        // Apply role-based UI restrictions
-        applyRoleBasedRestrictions()
-
-        // Delay welcome dialog until after layout is completely finished
-        // This prevents any flicker by ensuring everything is ready
-        window.decorView.viewTreeObserver.addOnGlobalLayoutListener(object :
-            android.view.ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                // Remove listener to prevent multiple calls
-                window.decorView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-
-                // Now show welcome dialog when everything is fully rendered
-                showWelcomeDialog()
-            }
-        })
+        // Check authentication AFTER everything is set up
+        checkAuthenticationState()
     }
 
     /**
      * Check authentication state and redirect if needed
+     * Simplified version with better timing
      */
     private fun checkAuthenticationState() {
-        if (!authManager.isAuthenticated()) {
-            // Redirect to login activity
-            val intent = Intent(this, LoginActivity::class.java)
-            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            startActivity(intent)
-            finish()
-            return
-        }
+        Log.d("MainActivity", "Checking authentication state...")
+
+        // Give Firebase Auth time to initialize
+        Handler(Looper.getMainLooper()).postDelayed({
+            val currentUser = authManager.getCurrentUser()
+            val firebaseUser = FirebaseAuth.getInstance().currentUser
+
+            Log.d("MainActivity", "Auth check results:")
+            Log.d("MainActivity", "  AuthManager user: ${currentUser?.displayName}")
+            Log.d("MainActivity", "  Firebase user: ${firebaseUser?.email}")
+
+            when {
+                // Case 1: We have an authenticated user (either Firebase or Guest)
+                currentUser != null -> {
+                    Log.d("MainActivity", "User is authenticated: ${currentUser.displayName} (${currentUser.role})")
+                    applyRoleBasedRestrictions()
+                    showWelcomeDialog()
+                }
+
+                // Case 2: No user but Firebase is still loading - wait a bit more
+                firebaseUser != null -> {
+                    Log.d("MainActivity", "Firebase user exists but AuthManager not ready, waiting...")
+                    // Wait for AuthManager to process Firebase user
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        checkAuthenticationState()
+                    }, 500)
+                }
+
+                // Case 3: No Firebase user and auto-login enabled - create guest
+                authManager.isAutoLoginEnabled() -> {
+                    Log.d("MainActivity", "Creating guest user...")
+                    authManager.loginAsGuest()
+                    applyRoleBasedRestrictions()
+                    showWelcomeDialog()
+                }
+
+                // Case 4: No authentication and auto-login disabled - go to login
+                else -> {
+                    Log.d("MainActivity", "Redirecting to login...")
+                    redirectToLogin()
+                }
+            }
+        }, 200) // Increased delay to ensure Firebase Auth is ready
+    }
+
+    /**
+     * Redirect to login activity
+     */
+    private fun redirectToLogin() {
+        val intent = Intent(this, LoginActivity::class.java)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        startActivity(intent)
+        finish()
     }
 
     /**
@@ -203,12 +240,14 @@ class MainActivity : AppCompatActivity() {
      */
     private fun setupAuthenticationListener() {
         authManager.addAuthStateListener { user: AppUser? ->
+            Log.d("MainActivity", "Auth state changed: ${user?.displayName ?: "null"}")
+
             if (user == null) {
-                // User logged out, redirect to login
-                val intent = Intent(this, LoginActivity::class.java)
-                intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                startActivity(intent)
-                finish()
+                // User logged out, redirect to login only if not in onCreate
+                if (lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED) &&
+                    authManager.getLastAuthType() == "logout") {
+                    redirectToLogin()
+                }
             } else {
                 // User logged in, update UI based on role
                 runOnUiThread {
@@ -218,51 +257,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    /**
-     * Apply UI restrictions based on user role
-     */
-    private fun applyRoleBasedRestrictions() {
-        val currentUser = authManager.getCurrentUser()
-        if (currentUser == null) return
-
-        val userRole = currentUser.getUserRole()
-
-        // Enable/disable upload functionality based on role
-        val canUpload = userRole.canUpload()
-        picture?.isEnabled = canUpload
-        galleryButton?.isEnabled = canUpload
-
-        // Enable/disable feedback functionality based on role
-        val canAccessFeedback = userRole.canAccessFeedback()
-        feedbackButton?.isEnabled = canAccessFeedback
-        feedbackButton?.visibility = if (canAccessFeedback) View.VISIBLE else View.GONE
-
-        // Update user profile button text based on authentication state
-        userProfileButton?.text = if (authManager.isAuthenticated()) {
-            "Profile (${userRole.roleName})"
-        } else {
-            "Login"
-        }
-
-        // Show role-specific toast messages
-        when (userRole) {
-            UserRole.GUEST -> {
-                if (!canUpload) {
-                    Toast.makeText(this, "Guest access: Upload functionality only", Toast.LENGTH_LONG).show()
-                }
-            }
-            UserRole.USER -> {
-                // Regular user has standard permissions
-            }
-            UserRole.RESEARCHER -> {
-                // Researcher has feedback access
-            }
-            UserRole.ADMIN -> {
-                // Show admin capabilities
-                Toast.makeText(this, "Admin access: Full system control", Toast.LENGTH_SHORT).show()
-            }
-        }
-    }
 
     /**
      * Inisialisasi semua view components
@@ -519,21 +513,59 @@ class MainActivity : AppCompatActivity() {
      * Tampilkan dialog selamat datang saat aplikasi pertama kali dibuka
      */
     private fun showWelcomeDialog() {
-        val dialogBuilder = AlertDialog.Builder(this)
-        val dialogView = layoutInflater.inflate(R.layout.dialog_welcome, null)
+        val currentUser = authManager.getCurrentUser()
+        if (currentUser != null) {
+            val welcomeMessage = when {
+                currentUser.role == UserRole.GUEST && currentUser.uid.startsWith("guest_") -> {
+                    "Welcome, Guest! You can start detecting plankton right away."
+                }
+                currentUser.role == UserRole.ADMIN -> {
+                    "Welcome back, ${currentUser.displayName}! You have administrator access."
+                }
+                else -> {
+                    "Welcome back, ${currentUser.displayName}!"
+                }
+            }
 
-        dialogBuilder.setView(dialogView)
-        dialogBuilder.setCancelable(false)
+            // Only show welcome dialog once per session
+            if (!hasShownWelcomeDialog) {
+                hasShownWelcomeDialog = true
 
-        val dialog = dialogBuilder.create()
-        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
-
-        val startButton = dialogView.findViewById<Button>(R.id.welcomeStartButton)
-        startButton.setOnClickListener {
-            dialog.dismiss()
+                runOnUiThread {
+                    AlertDialog.Builder(this)
+                        .setTitle("PlanktoScan")
+                        .setMessage(welcomeMessage)
+                        .setPositiveButton("Get Started") { dialog, _ ->
+                            dialog.dismiss()
+                        }
+                        .show()
+                }
+            }
         }
+    }
 
-        dialog.show()
+    /**
+     * Apply role-based restrictions to UI elements
+     */
+    private fun applyRoleBasedRestrictions() {
+        val currentUser = authManager.getCurrentUser()
+        Log.d("MainActivity", "Applying role-based restrictions for user: ${currentUser?.displayName} (${currentUser?.role})")
+
+        when (currentUser?.role) {
+            UserRole.ADMIN -> {
+                // Admin has access to all features
+                Log.d("MainActivity", "Admin access granted - all features enabled")
+            }
+            UserRole.GUEST -> {
+                // Guest has limited access
+                Log.d("MainActivity", "Guest access - some features may be limited")
+                // You can add specific restrictions for guest users here if needed
+            }
+            else -> {
+                // Default user restrictions
+                Log.d("MainActivity", "Default user access")
+            }
+        }
     }
 
     /**

@@ -60,7 +60,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="textPassword" />
-
     </com.google.android.material.textfield.TextInputLayout>
 
     <!-- Sign In Button -->
@@ -102,7 +101,6 @@
         android:clickable="true"
         android:focusable="true"
         android:background="?android:attr/selectableItemBackground" />
-
     <!-- Guest Access -->
     <TextView
         android:id="@+id/tvGuestAccess"
@@ -119,3 +117,4 @@
         android:background="?android:attr/selectableItemBackground" />
 
 </LinearLayout>
+

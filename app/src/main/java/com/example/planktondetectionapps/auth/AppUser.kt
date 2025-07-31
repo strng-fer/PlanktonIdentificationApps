@@ -10,7 +10,7 @@ data class AppUser(
     val uid: String,
     val email: String?,
     val displayName: String?,
-    val role: UserRole = UserRole.USER,
+    val role: UserRole = UserRole.GUEST,
     val createdAt: Timestamp = Timestamp.now(),
     val lastLoginAt: Timestamp = Timestamp.now(),
     val isEmailVerified: Boolean = false
@@ -39,7 +39,7 @@ data class AppUser(
         /**
          * Create AppUser from FirebaseUser
          */
-        fun fromFirebaseUser(firebaseUser: FirebaseUser, role: UserRole = UserRole.USER): AppUser {
+        fun fromFirebaseUser(firebaseUser: FirebaseUser, role: UserRole = UserRole.GUEST): AppUser {
             return AppUser(
                 uid = firebaseUser.uid,
                 email = firebaseUser.email,

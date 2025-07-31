@@ -32,6 +32,9 @@ class LoginActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
 
+        // Initialize AuthManager with context for SharedPreferences
+        authManager.initialize(this)
+
         initViews()
         setupListeners()
 
@@ -52,22 +55,25 @@ class LoginActivity : AppCompatActivity() {
 
     private fun setupListeners() {
         btnSignIn.setOnClickListener {
-            signIn()
+            val email = etEmail.text.toString().trim()
+            val password = etPassword.text.toString().trim()
+
+            if (validateInput(email, password)) {
+                signIn(email, password)
+            }
         }
 
         tvRegister.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
 
+        // Add guest login functionality
         tvGuestAccess.setOnClickListener {
-            continueAsGuest()
+            loginAsGuest()
         }
     }
 
-    private fun signIn() {
-        val email = etEmail.text.toString().trim()
-        val password = etPassword.text.toString().trim()
-
+    private fun signIn(email: String, password: String) {
         if (email.isEmpty()) {
             etEmail.error = "Email is required"
             return
@@ -101,36 +107,17 @@ class LoginActivity : AppCompatActivity() {
         }
     }
 
-    private fun continueAsGuest() {
-        lifecycleScope.launch {
-            // Create anonymous guest account
-            val guestEmail = "guest_${System.currentTimeMillis()}@temp.com"
-            val guestPassword = "temppassword123"
+    private fun loginAsGuest() {
+        showLoading(true)
 
-            showLoading(true)
-
-            val result = authManager.register(
-                email = guestEmail,
-                password = guestPassword,
-                displayName = "Guest User",
-                role = UserRole.GUEST
-            )
-
+        try {
+            val guestUser = authManager.loginAsGuest()
+            Toast.makeText(this, "Logged in as Guest", Toast.LENGTH_SHORT).show()
+            navigateToMainActivity()
+        } catch (e: Exception) {
+            Toast.makeText(this, "Failed to login as guest: ${e.message}", Toast.LENGTH_LONG).show()
+        } finally {
             showLoading(false)
-
-            result.fold(
-                onSuccess = { user ->
-                    Toast.makeText(this@LoginActivity,
-                        "Welcome, Guest! You can upload images for detection.",
-                        Toast.LENGTH_LONG).show()
-                    navigateToMainActivity()
-                },
-                onFailure = { exception ->
-                    Toast.makeText(this@LoginActivity,
-                        "Failed to create guest account: ${exception.message}",
-                        Toast.LENGTH_LONG).show()
-                }
-            )
         }
     }
 
@@ -146,5 +133,21 @@ class LoginActivity : AppCompatActivity() {
         intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         startActivity(intent)
         finish()
+    }
+
+    private fun validateInput(email: String, password: String): Boolean {
+        var isValid = true
+
+        if (email.isEmpty()) {
+            etEmail.error = "Email is required"
+            isValid = false
+        }
+
+        if (password.isEmpty()) {
+            etPassword.error = "Password is required"
+            isValid = false
+        }
+
+        return isValid
     }
 }

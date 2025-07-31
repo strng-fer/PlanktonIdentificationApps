@@ -3,6 +3,10 @@ package com.example.planktondetectionapps
 import android.content.Context
 import android.os.Environment
 import android.util.Log
+import com.example.planktondetectionapps.database.DatabaseService
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileWriter
 import java.io.IOException
@@ -11,11 +15,13 @@ import java.util.*
 
 /**
  * Manager untuk mengelola penyimpanan dan pembacaan riwayat klasifikasi dalam format CSV
+ * dengan integrasi otomatis ke database server
  */
 class HistoryManager(private val context: Context) {
 
     private val csvFileName = "plankton_classification_history.csv"
     private val csvFile: File
+    private val databaseService = DatabaseService.getInstance()
 
     init {
         // Gunakan internal storage untuk lebih reliable
@@ -58,7 +64,7 @@ class HistoryManager(private val context: Context) {
     }
 
     /**
-     * Menyimpan entry baru ke CSV
+     * Menyimpan entry baru ke CSV dan database
      */
     fun saveHistoryEntry(entry: HistoryEntry): Boolean {
         return try {
@@ -78,6 +84,21 @@ class HistoryManager(private val context: Context) {
             Log.d("HistoryManager", "History entry saved successfully: ${entry.id}")
             Log.d("HistoryManager", "File size after save: $newFileSize bytes")
             writeDebugLog("SAVE: SUCCESS - Entry saved, new file size: $newFileSize bytes")
+
+            // Simpan ke database secara asinkron (untuk semua user)
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val result = databaseService.saveClassificationToDatabase(entry)
+                    if (result.isSuccess) {
+                        Log.d("HistoryManager", "Entry saved to database: ${entry.id}")
+                    } else {
+                        Log.e("HistoryManager", "Failed to save entry to database: ${entry.id}", result.exceptionOrNull())
+                    }
+                } catch (e: Exception) {
+                    Log.e("HistoryManager", "Error saving entry to database: ${entry.id}", e)
+                }
+            }
+
             true
         } catch (e: IOException) {
             Log.e("HistoryManager", "Error saving history entry: ${entry.id}", e)
@@ -171,6 +192,20 @@ class HistoryManager(private val context: Context) {
                 Log.d("HistoryManager", "Rewriting CSV file with updated entry...")
                 rewriteCsvFile(entries)
 
+                // Update database secara asinkron
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        val result = databaseService.updateClassificationInDatabase(updatedEntry)
+                        if (result.isSuccess) {
+                            Log.d("HistoryManager", "Entry updated in database: ${updatedEntry.id}")
+                        } else {
+                            Log.e("HistoryManager", "Failed to update entry in database: ${updatedEntry.id}", result.exceptionOrNull())
+                        }
+                    } catch (e: Exception) {
+                        Log.e("HistoryManager", "Error updating entry in database: ${updatedEntry.id}", e)
+                    }
+                }
+
                 // Verify the update by reading back
                 val verifyEntries = getAllHistoryEntries()
                 val verifyEntry = verifyEntries.find { it.id == entryId }
@@ -229,6 +264,8 @@ class HistoryManager(private val context: Context) {
 
             if (removed) {
                 rewriteCsvFile(entries)
+                Log.d("HistoryManager", "Entry removed from local storage: $entryId")
+                // Note: Database deletion functionality can be added later if needed
             }
 
             removed

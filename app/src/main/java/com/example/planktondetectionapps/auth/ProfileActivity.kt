@@ -34,8 +34,6 @@ class ProfileActivity : AppCompatActivity() {
     private lateinit var btnManageUsers: Button
     private lateinit var btnSignOut: Button
 
-    private val authManager = AuthManager.getInstance()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_profile)
@@ -74,7 +72,7 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun updateUI() {
-        val currentUser = authManager.getCurrentUser()
+        val currentUser = com.example.planktondetectionapps.auth.AuthManager.getInstance().getCurrentUser()
 
         if (currentUser == null) {
             // User not logged in, redirect to login
@@ -84,9 +82,9 @@ class ProfileActivity : AppCompatActivity() {
 
         // Update user information
         tvDisplayName.text = if (currentUser.displayName?.isEmpty() != false) "User" else currentUser.displayName
-        tvEmail.text = currentUser.email
+        tvEmail.text = currentUser.email ?: "No email"
 
-        val userRole = currentUser.getUserRole()
+        val userRole = currentUser.role
         tvUserRole.text = userRole.roleName.uppercase()
 
         // Format dates
@@ -102,17 +100,17 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun updatePermissionIcons(userRole: UserRole) {
-        // Upload permission - all users can upload
-        val uploadEnabled = userRole.canUpload()
+        // Classification permission - all users can classify
+        val classifyEnabled = userRole.canClassify()
         ivUploadIcon.setColorFilter(
             ContextCompat.getColor(this,
-                if (uploadEnabled) android.R.color.holo_green_dark else android.R.color.darker_gray
+                if (classifyEnabled) android.R.color.holo_green_dark else android.R.color.darker_gray
             )
         )
-        llUploadPermission.alpha = if (uploadEnabled) 1.0f else 0.5f
+        llUploadPermission.alpha = if (classifyEnabled) 1.0f else 0.5f
 
         // Feedback permission - expert and admin
-        val feedbackEnabled = userRole.canAccessFeedback()
+        val feedbackEnabled = userRole.canProvideFeedback()
         ivFeedbackIcon.setColorFilter(
             ContextCompat.getColor(this,
                 if (feedbackEnabled) android.R.color.holo_blue_dark else android.R.color.darker_gray
@@ -131,7 +129,7 @@ class ProfileActivity : AppCompatActivity() {
     }
 
     private fun signOut() {
-        authManager.signOut()
+        com.example.planktondetectionapps.auth.AuthManager.getInstance().signOut()
         navigateToLogin()
     }
 

@@ -32,8 +32,6 @@ class RegisterActivity : AppCompatActivity() {
     private lateinit var progressBar: ProgressBar
     private lateinit var tvBackToLogin: TextView
 
-    private val authManager = AuthManager.getInstance()
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_register)
@@ -98,14 +96,14 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         val selectedRole = when (rgRole.checkedRadioButtonId) {
-            R.id.rbExpert -> UserRole.RESEARCHER
+            R.id.rbExpert -> UserRole.EXPERT
             else -> UserRole.GUEST
         }
 
         showLoading(true)
 
         lifecycleScope.launch {
-            val result = authManager.register(
+            val result = com.example.planktondetectionapps.auth.AuthManager.getInstance().register(
                 email = email,
                 password = password,
                 displayName = displayName,
@@ -115,7 +113,7 @@ class RegisterActivity : AppCompatActivity() {
             showLoading(false)
 
             result.fold(
-                onSuccess = { user: AppUser ->
+                onSuccess = { user: com.example.planktondetectionapps.auth.AppUser ->
                     Toast.makeText(this@RegisterActivity,
                         "Account created successfully! Welcome, ${user.displayName}!",
                         Toast.LENGTH_LONG).show()
