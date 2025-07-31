@@ -49,7 +49,9 @@
                 android:id="@+id/etDisplayName"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPersonName" />
+                android:inputType="textPersonName"
+                android:textColor="@color/black"
+                android:textColorHint="@android:color/darker_gray" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -63,7 +65,9 @@
                 android:id="@+id/etEmail"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textEmailAddress" />
+                android:inputType="textEmailAddress"
+                android:textColor="@color/black"
+                android:textColorHint="@android:color/darker_gray" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -78,7 +82,9 @@
                 android:id="@+id/etPassword"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPassword" />
+                android:inputType="textPassword"
+                android:textColor="@color/black"
+                android:textColorHint="@android:color/darker_gray" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -93,7 +99,9 @@
                 android:id="@+id/etConfirmPassword"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="textPassword" />
+                android:inputType="textPassword"
+                android:textColor="@color/black"
+                android:textColorHint="@android:color/darker_gray" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -118,13 +126,15 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Guest (Upload only)"
+                android:textColor="@color/black"
                 android:checked="true" />
 
             <RadioButton
                 android:id="@+id/rbExpert"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Expert (Upload + Feedback access)" />
+                android:text="Expert (Upload + Feedback access)"
+                android:textColor="@color/black" />
 
         </RadioGroup>
 

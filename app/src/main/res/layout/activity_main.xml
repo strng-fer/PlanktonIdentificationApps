@@ -709,7 +709,7 @@
                                 android:id="@+id/selectedModelName"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="MobileNetV3 Small (300 Data)"
+                                android:text="MobileNetV3 Small"
                                 android:textSize="16sp"
                                 android:textColor="#424242"
                                 android:textStyle="bold" />
@@ -871,7 +871,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="ResNet50 V2 (300 Data)"
+                                    android:text="ResNet50 V2"
                                     android:textSize="15sp"
                                     android:textColor="#424242"
                                     android:textStyle="bold" />
@@ -918,7 +918,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="ResNet50 V2 (300 Data)"
+                                    android:text="ResNet50 V2"
                                     android:textSize="15sp"
                                     android:textColor="#424242"
                                     android:textStyle="bold" />
@@ -964,7 +964,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="EfficientNet V1 B0 (300 Data)"
+                                    android:text="EfficientNet V1 B0"
                                     android:textSize="15sp"
                                     android:textColor="#424242"
                                     android:textStyle="bold" />
@@ -1010,7 +1010,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="EfficientNet V2 B0 (300 Data)"
+                                    android:text="EfficientNet V2 B0"
                                     android:textSize="15sp"
                                     android:textColor="#424242"
                                     android:textStyle="bold" />
@@ -1056,7 +1056,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="ConvNext Tiny (300 Data)"
+                                    android:text="ConvNext Tiny"
                                     android:textSize="15sp"
                                     android:textColor="#424242"
                                     android:textStyle="bold" />
@@ -1102,7 +1102,7 @@
                                 <TextView
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:text="DenseNet121 (300 Data)"
+                                    android:text="DenseNet121"
                                     android:textSize="15sp"
                                     android:textColor="#424242"
                                     android:textStyle="bold" />
