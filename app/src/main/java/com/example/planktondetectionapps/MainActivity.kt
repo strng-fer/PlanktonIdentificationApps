@@ -111,7 +111,6 @@ class MainActivity : AppCompatActivity() {
     // Navigation menu UI elements
     private var menuButton: android.widget.ImageButton? = null
     private var navigationMenu: LinearLayout? = null
-    private var settingsOption: LinearLayout? = null
     private var historyOption: LinearLayout? = null
     private var aboutOption: LinearLayout? = null
     private var documentationOption: LinearLayout? = null
@@ -327,10 +326,9 @@ class MainActivity : AppCompatActivity() {
         // Initialize navigation menu elements
         menuButton = findViewById(R.id.menuButton)
         navigationMenu = findViewById(R.id.navigationMenu)
-        settingsOption = findViewById(R.id.settingsOption)
+        historyOption = findViewById(R.id.historyOption)
         aboutOption = findViewById(R.id.aboutOption)
         documentationOption = findViewById(R.id.documentationOption)
-        historyOption = findViewById(R.id.historyOption)
 
         // Initialize user profile button
         userProfileButton = findViewById(R.id.userProfileButton)
@@ -1798,12 +1796,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        settingsOption?.setOnClickListener {
-            navigationMenu?.visibility = View.GONE
-            isNavigationMenuOpen = false
-            val intent = Intent(this, SettingsActivity::class.java)
-            startActivity(intent)
-        }
 
         aboutOption?.setOnClickListener {
             navigationMenu?.visibility = View.GONE

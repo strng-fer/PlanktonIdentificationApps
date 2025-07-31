@@ -68,13 +68,6 @@
             android:screenOrientation="portrait"
             android:parentActivityName=".MainActivity" />
 
-        <!-- Settings Activity -->
-        <activity
-            android:name=".SettingsActivity"
-            android:exported="false"
-            android:label="@string/settings_title"
-            android:parentActivityName=".MainActivity"
-            android:screenOrientation="portrait" />
 
         <!-- History Activity -->
         <activity

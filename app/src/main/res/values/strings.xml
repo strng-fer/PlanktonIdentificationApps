@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Plankton Detection</string>
+    <string name="app_name">PlanktoScan</string>
 
     <!-- Activity Titles -->
-    <string name="settings_title">Pengaturan</string>
     <string name="about_title">Tentang</string>
     <string name="documentation_title">Dokumentasi</string>
 
@@ -21,22 +20,6 @@
     <string name="loading_filename">Memuat nama file...</string>
     <string name="processing_prediction">Memproses...</string>
     <string name="processing_confidence">--</string>
-
-    <!-- Settings Activity -->
-    <string name="appearance_section">Tampilan</string>
-    <string name="dark_mode">Mode Gelap</string>
-    <string name="dark_mode_description">Aktifkan tema gelap</string>
-    <string name="detection_settings">Pengaturan Deteksi</string>
-    <string name="confidence_threshold">Ambang Batas Kepercayaan</string>
-    <string name="confidence_description">Minimum tingkat kepercayaan untuk klasifikasi</string>
-    <string name="feedback_section">Feedback</string>
-    <string name="vibration">Getaran</string>
-    <string name="vibration_description">Berikan feedback getaran</string>
-    <string name="sound">Suara</string>
-    <string name="sound_description">Berikan feedback suara</string>
-    <string name="storage_section">Penyimpanan</string>
-    <string name="save_to_gallery">Simpan ke Galeri</string>
-    <string name="save_to_gallery_description">Otomatis simpan hasil ke galeri</string>
 
     <!-- About Activity -->
     <string name="app_description">Aplikasi deteksi plankton menggunakan teknologi AI yang canggih untuk mengidentifikasi berbagai jenis plankton melalui gambar. Aplikasi ini membantu peneliti dan mahasiswa dalam studi biologi laut dengan memberikan hasil klasifikasi yang akurat dan cepat.</string>

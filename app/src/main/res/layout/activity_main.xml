@@ -81,34 +81,6 @@
             android:padding="8dp"
             android:elevation="2dp">
 
-            <!-- Settings Option -->
-            <LinearLayout
-                android:id="@+id/settingsOption"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:padding="12dp"
-                android:background="@drawable/menu_item_animated"
-                android:clickable="true"
-                android:focusable="true"
-                android:gravity="center_vertical">
-
-                <ImageView
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:src="@drawable/ic_settings"
-                    android:layout_marginEnd="12dp"
-                    android:contentDescription="Settings Icon" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Pengaturan"
-                    android:textSize="16sp"
-                    android:textColor="#424242" />
-
-            </LinearLayout>
-
             <!-- History Option -->
             <LinearLayout
                 android:id="@+id/historyOption"
