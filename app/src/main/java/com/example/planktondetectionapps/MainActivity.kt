@@ -519,16 +519,37 @@ class MainActivity : AppCompatActivity() {
                 // Admin has access to all features
                 Log.d("MainActivity", "Admin access granted - all features enabled")
                 showFeedbackFeatures(true)
+                showClassificationFeatures(true)
             }
-            UserRole.GUEST -> {
-                // Guest has limited access - hide feedback features
-                Log.d("MainActivity", "Guest access - feedback features disabled")
+            UserRole.EXPERT -> {
+                // Expert has access to all features including feedback
+                Log.d("MainActivity", "Expert access granted - all features enabled")
+                showFeedbackFeatures(true)
+                showClassificationFeatures(true)
+            }
+            UserRole.BASIC -> {
+                // Basic users can classify but have limited feedback features
+                Log.d("MainActivity", "Basic user access - classification enabled, limited feedback")
+                showFeedbackFeatures(true)
+                showClassificationFeatures(true)
+            }
+            UserRole.VIEWER -> {
+                // Viewer has view-only access - no classification or feedback
+                Log.d("MainActivity", "Viewer access - view only, no classification or feedback")
                 showFeedbackFeatures(false)
+                showClassificationFeatures(false)
+            }
+            null -> {
+                // Handle null user case
+                Log.d("MainActivity", "Null user - applying default restrictions")
+                showFeedbackFeatures(false)
+                showClassificationFeatures(false)
             }
             else -> {
-                // Default user restrictions - allow feedback features
-                Log.d("MainActivity", "Default user access - feedback features enabled")
+                // Default user restrictions
+                Log.d("MainActivity", "Default user access - basic features enabled")
                 showFeedbackFeatures(true)
+                showClassificationFeatures(true)
             }
         }
 
@@ -558,44 +579,40 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Update user profile button text based on authentication state
+     * Show or hide classification features (camera and gallery buttons) based on user role
      */
-    private fun updateUserProfileButtonText() {
-        if (authManager.isAuthenticated()) {
-            val currentUser = authManager.getCurrentUser()
-            val roleName = currentUser?.role?.roleName ?: "User"
-            userProfileButton?.text = roleName
-        } else {
-            userProfileButton?.text = "Login"
+    private fun showClassificationFeatures(show: Boolean) {
+        picture?.visibility = if (show) View.VISIBLE else View.GONE
+        galleryButton?.visibility = if (show) View.VISIBLE else View.GONE
+
+        // Also disable/enable the buttons to prevent any programmatic access
+        picture?.isEnabled = show
+        galleryButton?.isEnabled = show
+
+        // Show/hide model selection dropdown for viewers
+        customDropdownContainer?.visibility = if (show) View.VISIBLE else View.GONE
+
+        Log.d("MainActivity", "Classification features visibility set to: $show")
+
+        // If hiding classification features, show a message for viewers
+        if (!show) {
+            showViewerWelcomeMessage()
         }
     }
 
     /**
-     * Tampilkan dialog error dengan pesan tertentu
+     * Show welcome message for viewer users explaining their limitations
      */
-    private fun showErrorDialog(message: String) {
-        val dialogBuilder = AlertDialog.Builder(this)
-        dialogBuilder.setTitle("Gagal")
-        dialogBuilder.setMessage(message)
-        dialogBuilder.setPositiveButton("OK") { dialog, _ ->
-            dialog.dismiss()
-        }
-        dialogBuilder.setIcon(android.R.drawable.ic_dialog_alert)
-        dialogBuilder.create().show()
-    }
+    private fun showViewerWelcomeMessage() {
+        // Update the default message to explain viewer limitations
+        defaultMessage?.text = "Selamat datang! Anda masuk sebagai Viewer.\n\nUntuk menggunakan fitur klasifikasi plankton, silakan daftar akun terlebih dahulu.\n\nAnda dapat melihat dokumentasi dan informasi tentang aplikasi melalui menu navigasi."
+        defaultMessage?.visibility = View.VISIBLE
 
-    /**
-     * Tampilkan dialog sukses dengan pesan tertentu
-     */
-    private fun showSuccessDialog(message: String) {
-        val dialogBuilder = AlertDialog.Builder(this)
-        dialogBuilder.setTitle("Berhasil Disimpan")
-        dialogBuilder.setMessage(message)
-        dialogBuilder.setPositiveButton("OK") { dialog, _ ->
-            dialog.dismiss()
-        }
-        dialogBuilder.setIcon(android.R.drawable.ic_dialog_info)
-        dialogBuilder.create().show()
+        // Hide results-related UI elements
+        confidence?.visibility = View.GONE
+        resultsTable?.visibility = View.GONE
+        modelInfo?.visibility = View.GONE
+        saveButton?.visibility = View.GONE
     }
 
     /**
@@ -1247,7 +1264,7 @@ class MainActivity : AppCompatActivity() {
 
             // Check user role before showing feedback features
             val currentUser = authManager.getCurrentUser()
-            val showFeedback = currentUser?.role != UserRole.GUEST
+            val showFeedback = currentUser?.role != UserRole.VIEWER // Changed from GUEST to VIEWER
 
             if (showFeedback) {
                 // Show and enable feedback section for non-guest users
@@ -2682,5 +2699,42 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         // Update user profile button text when returning to activity
         updateUserProfileButtonText()
+    }
+
+    /**
+     * Update user profile button text based on current user state
+     */
+    private fun updateUserProfileButtonText() {
+        val currentUser = authManager.getCurrentUser()
+        userProfileButton?.text = when {
+            currentUser == null -> "Login"
+            currentUser.role == UserRole.VIEWER -> "Guest"
+            currentUser.email != null -> currentUser.displayName ?: currentUser.email?.substringBefore("@") ?: "Profile"
+            else -> "Profile"
+        }
+    }
+
+    /**
+     * Show error dialog with custom styling
+     */
+    private fun showErrorDialog(message: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Error")
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .setIcon(android.R.drawable.ic_dialog_alert)
+            .show()
+    }
+
+    /**
+     * Show success dialog with custom styling
+     */
+    private fun showSuccessDialog(message: String) {
+        AlertDialog.Builder(this)
+            .setTitle("Success")
+            .setMessage(message)
+            .setPositiveButton("OK", null)
+            .setIcon(android.R.drawable.ic_dialog_info)
+            .show()
     }
 }

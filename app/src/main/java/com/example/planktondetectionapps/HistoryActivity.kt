@@ -93,7 +93,7 @@ class HistoryActivity : AppCompatActivity() {
 
         // Check user role to determine if feedback features should be enabled
         val currentUser = authManager.getCurrentUser()
-        val isGuestUser = currentUser?.role == UserRole.GUEST
+        val isGuestUser = currentUser?.role == UserRole.VIEWER // Changed from GUEST to VIEWER
 
         Log.d("HistoryActivity", "User role: ${currentUser?.role}, isGuest: $isGuestUser")
 
@@ -239,7 +239,7 @@ class HistoryActivity : AppCompatActivity() {
 
             // Check user role to determine if feedback features should be enabled
             val currentUser = authManager.getCurrentUser()
-            val isGuestUser = currentUser?.role == UserRole.GUEST
+            val isGuestUser = currentUser?.role == UserRole.VIEWER // Changed from GUEST to VIEWER
 
             Log.d("HistoryActivity", "Recreating adapter - User role: ${currentUser?.role}, isGuest: $isGuestUser")
 
@@ -961,7 +961,7 @@ class HistoryActivity : AppCompatActivity() {
 
         // Check user role for feedback button restrictions
         val currentUser = authManager.getCurrentUser()
-        val isGuestUser = currentUser?.role == UserRole.GUEST
+        val isGuestUser = currentUser?.role == UserRole.VIEWER // Changed from GUEST to VIEWER
 
         // Set button listeners
         detailFeedbackButton.setOnClickListener {

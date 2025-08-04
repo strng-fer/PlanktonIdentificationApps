@@ -39,7 +39,7 @@ class DatabaseService private constructor() {
         return try {
             val currentUser = authManager.getCurrentUser()
             val userId = currentUser?.uid ?: "guest_${System.currentTimeMillis()}"
-            val userRole = currentUser?.role?.roleName ?: UserRole.GUEST.roleName
+            val userRole = currentUser?.role?.roleName ?: UserRole.BASIC.roleName // Changed from GUEST to BASIC
 
             val classificationData = mapOf(
                 "id" to entry.id,

@@ -97,7 +97,8 @@ class RegisterActivity : AppCompatActivity() {
 
         val selectedRole = when (rgRole.checkedRadioButtonId) {
             R.id.rbExpert -> UserRole.EXPERT
-            else -> UserRole.GUEST
+            R.id.rbGuest -> UserRole.BASIC  // Changed: rbGuest now maps to BASIC role
+            else -> UserRole.BASIC // Default to BASIC instead of GUEST
         }
 
         showLoading(true)

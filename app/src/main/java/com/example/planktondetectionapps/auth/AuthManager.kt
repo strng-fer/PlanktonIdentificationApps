@@ -86,7 +86,7 @@ class AuthManager private constructor() {
                     if (!userEmail.isNullOrEmpty() && !userDisplayName.isNullOrEmpty() &&
                         !userRole.isNullOrEmpty() && !userUid.isNullOrEmpty()) {
 
-                        val role = UserRole.values().find { it.roleName == userRole } ?: UserRole.GUEST
+                        val role = UserRole.values().find { it.roleName == userRole } ?: UserRole.BASIC // Changed from GUEST to BASIC
                         val cachedUser = AppUser(
                             uid = userUid,
                             email = userEmail,
@@ -176,7 +176,7 @@ class AuthManager private constructor() {
                         !cachedDisplayName.isNullOrEmpty() && !cachedRole.isNullOrEmpty()) {
                         // Use cached user data for immediate loading
                         Log.d(TAG, "Using cached user data for: ${firebaseUser.email}")
-                        val userRole = UserRole.values().find { it.roleName == cachedRole } ?: UserRole.GUEST
+                        val userRole = UserRole.values().find { it.roleName == cachedRole } ?: UserRole.BASIC
                         currentAppUser = AppUser(
                             uid = firebaseUser.uid,
                             email = firebaseUser.email,
@@ -252,7 +252,7 @@ class AuthManager private constructor() {
                     uid = guestUid,
                     email = null,
                     displayName = guestDisplayName,
-                    role = UserRole.GUEST,
+                    role = UserRole.VIEWER, // Changed from GUEST to VIEWER for view-only access
                     isEmailVerified = false
                 )
 
@@ -355,7 +355,7 @@ class AuthManager private constructor() {
     /**
      * Register new user with email and password
      */
-    suspend fun register(email: String, password: String, displayName: String, role: UserRole = UserRole.GUEST): Result<AppUser> {
+    suspend fun register(email: String, password: String, displayName: String, role: UserRole = UserRole.BASIC): Result<AppUser> {
         return try {
             Log.d(TAG, "Attempting to register user with email: $email")
 
@@ -399,7 +399,7 @@ class AuthManager private constructor() {
                     uid = existingGuestUid,
                     email = null,
                     displayName = existingDisplayName,
-                    role = UserRole.GUEST,
+                    role = UserRole.VIEWER, // Changed from GUEST to VIEWER for view-only access
                     isEmailVerified = false
                 )
 
@@ -416,7 +416,7 @@ class AuthManager private constructor() {
             uid = "guest_${System.currentTimeMillis()}",
             email = null,
             displayName = "Guest User",
-            role = UserRole.GUEST,
+            role = UserRole.VIEWER, // Changed from GUEST to VIEWER for view-only access
             isEmailVerified = false
         )
 
@@ -466,7 +466,7 @@ class AuthManager private constructor() {
      * Check if current user is guest
      */
     fun isGuestUser(): Boolean {
-        return currentAppUser?.role == UserRole.GUEST && currentAppUser?.uid?.startsWith("guest_") == true
+        return currentAppUser?.role == UserRole.VIEWER && currentAppUser?.uid?.startsWith("guest_") == true
     }
 
     /**
