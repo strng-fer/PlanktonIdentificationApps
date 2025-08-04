@@ -14,9 +14,12 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.planktondetectionapps.auth.AuthManager
+import com.example.planktondetectionapps.auth.UserRole
 
 /**
  * Activity untuk menampilkan riwayat klasifikasi plankton
+ * Now includes role-based access control for feedback features
  */
 class HistoryActivity : AppCompatActivity() {
 
@@ -35,6 +38,9 @@ class HistoryActivity : AppCompatActivity() {
     private lateinit var historyManager: HistoryManager
     private lateinit var historyAdapter: HistoryAdapter
     private var currentHistoryList = mutableListOf<HistoryEntry>()
+
+    // Add authentication manager
+    private val authManager = AuthManager.getInstance()
 
     // Permission launcher
     private val storagePermissionLauncher = registerForActivityResult(
@@ -85,15 +91,23 @@ class HistoryActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         Log.d("HistoryActivity", "=== setupRecyclerView() called ===")
 
+        // Check user role to determine if feedback features should be enabled
+        val currentUser = authManager.getCurrentUser()
+        val isGuestUser = currentUser?.role == UserRole.GUEST
+
+        Log.d("HistoryActivity", "User role: ${currentUser?.role}, isGuest: $isGuestUser")
+
         historyAdapter = HistoryAdapter(
             context = this,
             historyList = currentHistoryList,
-            onFeedbackClick = { entry -> showFeedbackDialog(entry) },
+            onFeedbackClick = if (isGuestUser) null else { entry -> showFeedbackDialog(entry) }, // Disable feedback for guests
             onDeleteClick = { entry -> showDeleteConfirmation(entry) },
-            onItemClick = { entry -> showClassificationDetailsDialog(entry) } // Add detailed view handler
+            onItemClick = { entry -> showClassificationDetailsDialog(entry) }, // Keep details view for all users
+            isGuestUser = isGuestUser // Pass guest status to adapter
         )
 
         Log.d("HistoryActivity", "Created adapter with initial list size: ${currentHistoryList.size}")
+        Log.d("HistoryActivity", "Feedback features enabled: ${!isGuestUser}")
 
         historyRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@HistoryActivity)
@@ -223,19 +237,27 @@ class HistoryActivity : AppCompatActivity() {
             Log.d("HistoryActivity", "RecyclerView layoutManager: ${historyRecyclerView.layoutManager}")
             Log.d("HistoryActivity", "RecyclerView adapter: ${historyRecyclerView.adapter}")
 
-            // Recreate adapter with fresh data to ensure it works
+            // Check user role to determine if feedback features should be enabled
+            val currentUser = authManager.getCurrentUser()
+            val isGuestUser = currentUser?.role == UserRole.GUEST
+
+            Log.d("HistoryActivity", "Recreating adapter - User role: ${currentUser?.role}, isGuest: $isGuestUser")
+
+            // Recreate adapter with fresh data to ensure it works and apply guest restrictions
             historyAdapter = HistoryAdapter(
                 context = this,
                 historyList = currentHistoryList.toMutableList(), // Create a new list
-                onFeedbackClick = { entry -> showFeedbackDialog(entry) },
+                onFeedbackClick = if (isGuestUser) null else { entry -> showFeedbackDialog(entry) }, // Disable feedback for guests
                 onDeleteClick = { entry -> showDeleteConfirmation(entry) },
-                onItemClick = { entry -> showClassificationDetailsDialog(entry) } // Add detailed view handler
+                onItemClick = { entry -> showClassificationDetailsDialog(entry) }, // Keep details view for all users
+                isGuestUser = isGuestUser // Pass guest status to adapter
             )
 
             // Set the new adapter
             historyRecyclerView.adapter = historyAdapter
 
             Log.d("HistoryActivity", "New adapter created and set with ${historyAdapter.itemCount} items")
+            Log.d("HistoryActivity", "Feedback features enabled for adapter: ${!isGuestUser}")
 
             // Force layout refresh
             historyRecyclerView.post {
@@ -937,10 +959,25 @@ class HistoryActivity : AppCompatActivity() {
         // Make dialog background transparent to prevent overlap with custom rounded background
         dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
+        // Check user role for feedback button restrictions
+        val currentUser = authManager.getCurrentUser()
+        val isGuestUser = currentUser?.role == UserRole.GUEST
+
         // Set button listeners
         detailFeedbackButton.setOnClickListener {
             dialog.dismiss()
-            showFeedbackDialog(entry)
+
+            // Only allow feedback for non-guest users
+            if (!isGuestUser) {
+                showFeedbackDialog(entry)
+            } else {
+                Toast.makeText(this, "Fitur feedback tidak tersedia untuk pengguna guest", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        // Hide feedback button for guest users
+        if (isGuestUser) {
+            detailFeedbackButton.visibility = View.GONE
         }
 
         detailCloseButton.setOnClickListener {

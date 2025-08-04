@@ -14,13 +14,15 @@ import java.util.*
 
 /**
  * Adapter untuk menampilkan daftar riwayat klasifikasi
+ * Now includes role-based access control for feedback features
  */
 class HistoryAdapter(
     private val context: Context,
     private var historyList: MutableList<HistoryEntry>,
-    private val onFeedbackClick: (HistoryEntry) -> Unit,
+    private val onFeedbackClick: ((HistoryEntry) -> Unit)?, // Make nullable for guest users
     private val onDeleteClick: (HistoryEntry) -> Unit,
-    private val onItemClick: (HistoryEntry) -> Unit = {} // Add click handler for detailed view
+    private val onItemClick: (HistoryEntry) -> Unit = {}, // Add click handler for detailed view
+    private val isGuestUser: Boolean = false // Add guest user flag
 ) : RecyclerView.Adapter<HistoryAdapter.HistoryViewHolder>() {
 
     class HistoryViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -169,6 +171,26 @@ class HistoryAdapter(
         // Item click listener for detailed view
         holder.itemView.setOnClickListener {
             onItemClick(entry)
+        }
+
+        // Handle guest user restrictions for feedback features
+        if (isGuestUser) {
+            // For guest users, hide feedback-related UI elements
+            Log.d("HistoryAdapter", "Guest user - disabling feedback features for entry ${entry.id}")
+
+            // Hide feedback container even if feedback exists (guests can't see feedback)
+            holder.feedbackContainer.visibility = View.GONE
+
+            // Show simplified status without feedback information
+            holder.feedbackResultContainer.visibility = View.VISIBLE
+            holder.feedbackResultText.text = "Klasifikasi Selesai"
+            holder.feedbackResultText.setTextColor(context.getColor(android.R.color.holo_blue_dark))
+            holder.statusIcon.setImageResource(R.drawable.ic_check_circle)
+            holder.statusIcon.setColorFilter(context.getColor(android.R.color.holo_blue_dark))
+            holder.statusIcon.visibility = View.VISIBLE
+            holder.actualClassificationContainer.visibility = View.GONE
+
+            Log.d("HistoryAdapter", "Guest restrictions applied - feedback features hidden")
         }
     }
 

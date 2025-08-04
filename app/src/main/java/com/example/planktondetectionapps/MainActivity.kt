@@ -518,15 +518,17 @@ class MainActivity : AppCompatActivity() {
             UserRole.ADMIN -> {
                 // Admin has access to all features
                 Log.d("MainActivity", "Admin access granted - all features enabled")
+                showFeedbackFeatures(true)
             }
             UserRole.GUEST -> {
-                // Guest has limited access
-                Log.d("MainActivity", "Guest access - some features may be limited")
-                // You can add specific restrictions for guest users here if needed
+                // Guest has limited access - hide feedback features
+                Log.d("MainActivity", "Guest access - feedback features disabled")
+                showFeedbackFeatures(false)
             }
             else -> {
-                // Default user restrictions
-                Log.d("MainActivity", "Default user access")
+                // Default user restrictions - allow feedback features
+                Log.d("MainActivity", "Default user access - feedback features enabled")
+                showFeedbackFeatures(true)
             }
         }
 
@@ -538,6 +540,21 @@ class MainActivity : AppCompatActivity() {
 
         // Update user profile button text
         updateUserProfileButtonText()
+    }
+
+    /**
+     * Show or hide feedback features based on user role
+     */
+    private fun showFeedbackFeatures(show: Boolean) {
+        val feedbackSection = findViewById<LinearLayout>(R.id.feedbackSection)
+        feedbackButton?.visibility = if (show) View.VISIBLE else View.GONE
+
+        // If hiding feedback features, also hide the entire feedback section
+        if (!show && feedbackSection != null) {
+            feedbackSection.visibility = View.GONE
+        }
+
+        Log.d("MainActivity", "Feedback features visibility set to: $show")
     }
 
     /**
@@ -1228,12 +1245,25 @@ class MainActivity : AppCompatActivity() {
 
             saveButton?.isEnabled = true
 
-            // Show and enable feedback section
-            val feedbackSection = findViewById<LinearLayout>(R.id.feedbackSection)
-            feedbackSection?.visibility = View.VISIBLE
+            // Check user role before showing feedback features
+            val currentUser = authManager.getCurrentUser()
+            val showFeedback = currentUser?.role != UserRole.GUEST
 
-            feedbackButton?.visibility = View.VISIBLE
-            feedbackButton?.isEnabled = true
+            if (showFeedback) {
+                // Show and enable feedback section for non-guest users
+                val feedbackSection = findViewById<LinearLayout>(R.id.feedbackSection)
+                feedbackSection?.visibility = View.VISIBLE
+
+                feedbackButton?.visibility = View.VISIBLE
+                feedbackButton?.isEnabled = true
+            } else {
+                // Hide feedback features for guest users
+                val feedbackSection = findViewById<LinearLayout>(R.id.feedbackSection)
+                feedbackSection?.visibility = View.GONE
+
+                feedbackButton?.visibility = View.GONE
+                feedbackButton?.isEnabled = false
+            }
 
             // Save to history automatically
             saveToHistory()
