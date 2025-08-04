@@ -528,28 +528,23 @@ class MainActivity : AppCompatActivity() {
                 showClassificationFeatures(true)
             }
             UserRole.BASIC -> {
-                // Basic users can classify but have limited feedback features
-                Log.d("MainActivity", "Basic user access - classification enabled, limited feedback")
-                showFeedbackFeatures(true)
+                // Basic users can classify but CANNOT access feedback features
+                Log.d("MainActivity", "Basic user access - classification enabled, NO feedback")
+                showFeedbackFeatures(false) // Changed from true to false
                 showClassificationFeatures(true)
             }
             UserRole.VIEWER -> {
-                // Viewer has view-only access - no classification or feedback
-                Log.d("MainActivity", "Viewer access - view only, no classification or feedback")
-                showFeedbackFeatures(false)
-                showClassificationFeatures(false)
+                // Viewer can see all UI elements but with restricted functionality
+                Log.d("MainActivity", "Viewer access - UI visible but functionality restricted")
+                showFeedbackFeatures(false) // Keep feedback hidden for viewers
+                showClassificationFeatures(true) // Show classification UI but restrict functionality
+                setupViewerRestrictions() // Add click restrictions
             }
             null -> {
                 // Handle null user case
                 Log.d("MainActivity", "Null user - applying default restrictions")
                 showFeedbackFeatures(false)
                 showClassificationFeatures(false)
-            }
-            else -> {
-                // Default user restrictions
-                Log.d("MainActivity", "Default user access - basic features enabled")
-                showFeedbackFeatures(true)
-                showClassificationFeatures(true)
             }
         }
 
@@ -1262,19 +1257,21 @@ class MainActivity : AppCompatActivity() {
 
             saveButton?.isEnabled = true
 
-            // Check user role before showing feedback features
+            // Check user role before showing feedback features - ONLY EXPERT and ADMIN can see feedback
             val currentUser = authManager.getCurrentUser()
-            val showFeedback = currentUser?.role != UserRole.VIEWER // Changed from GUEST to VIEWER
+            val showFeedback = currentUser?.role == UserRole.EXPERT || currentUser?.role == UserRole.ADMIN
+
+            Log.d("MainActivity", "User role: ${currentUser?.role}, Show feedback: $showFeedback")
 
             if (showFeedback) {
-                // Show and enable feedback section for non-guest users
+                // Show and enable feedback section for EXPERT and ADMIN users only
                 val feedbackSection = findViewById<LinearLayout>(R.id.feedbackSection)
                 feedbackSection?.visibility = View.VISIBLE
 
                 feedbackButton?.visibility = View.VISIBLE
                 feedbackButton?.isEnabled = true
             } else {
-                // Hide feedback features for guest users
+                // Hide feedback features for BASIC and VIEWER users
                 val feedbackSection = findViewById<LinearLayout>(R.id.feedbackSection)
                 feedbackSection?.visibility = View.GONE
 
@@ -2736,5 +2733,79 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton("OK", null)
             .setIcon(android.R.drawable.ic_dialog_info)
             .show()
+    }
+
+    /**
+     * Setup click restrictions for VIEWER users with popup dialogs
+     */
+    private fun setupViewerRestrictions() {
+        val currentUser = authManager.getCurrentUser()
+
+        // Only apply restrictions if user is VIEWER
+        if (currentUser?.role != UserRole.VIEWER) {
+            return
+        }
+
+        // Override camera button click listener
+        picture?.setOnClickListener {
+            showViewerRestrictionDialog("camera")
+        }
+
+        // Override gallery button click listener
+        galleryButton?.setOnClickListener {
+            showViewerRestrictionDialog("gallery")
+        }
+
+        // Override save button click listener
+        saveButton?.setOnClickListener {
+            showViewerRestrictionDialog("save")
+        }
+
+        // Keep model selection working but show restriction when trying to classify
+        // The dropdown functionality remains unchanged
+    }
+
+    /**
+     * Show restriction dialog for VIEWER users with enhanced UI
+     */
+    private fun showViewerRestrictionDialog(action: String) {
+        val dialogBuilder = AlertDialog.Builder(this)
+        val dialogView = layoutInflater.inflate(R.layout.dialog_viewer_restriction, null)
+
+        dialogBuilder.setView(dialogView)
+        dialogBuilder.setCancelable(true)
+
+        val dialog = dialogBuilder.create()
+        dialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
+
+        // Get UI elements from dialog
+        val restrictionMessage = dialogView.findViewById<TextView>(R.id.restrictionMessage)
+        val understandButton = dialogView.findViewById<Button>(R.id.understandButton)
+        val registerButton = dialogView.findViewById<Button>(R.id.registerButton)
+
+        // Customize message based on action
+        val customMessage = when (action) {
+            "camera" -> "Sebagai Viewer, Anda tidak dapat mengambil foto untuk klasifikasi plankton."
+            "gallery" -> "Sebagai Viewer, Anda tidak dapat memilih gambar dari galeri untuk klasifikasi plankton."
+            "save" -> "Sebagai Viewer, Anda tidak dapat menyimpan hasil klasifikasi."
+            else -> "Sebagai Viewer, Anda tidak dapat mengakses fitur klasifikasi plankton."
+        }
+
+        restrictionMessage.text = customMessage
+
+        // Set button listeners
+        understandButton.setOnClickListener {
+            dialog.dismiss()
+        }
+
+        registerButton.setOnClickListener {
+            dialog.dismiss()
+            // Redirect to login/register activity
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.putExtra("show_register", true) // Flag to show register form
+            startActivity(intent)
+        }
+
+        dialog.show()
     }
 }

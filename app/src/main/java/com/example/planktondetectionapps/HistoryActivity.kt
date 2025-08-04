@@ -93,21 +93,21 @@ class HistoryActivity : AppCompatActivity() {
 
         // Check user role to determine if feedback features should be enabled
         val currentUser = authManager.getCurrentUser()
-        val isGuestUser = currentUser?.role == UserRole.VIEWER // Changed from GUEST to VIEWER
+        val canProvideFeedback = currentUser?.role == UserRole.EXPERT || currentUser?.role == UserRole.ADMIN
 
-        Log.d("HistoryActivity", "User role: ${currentUser?.role}, isGuest: $isGuestUser")
+        Log.d("HistoryActivity", "User role: ${currentUser?.role}, can provide feedback: $canProvideFeedback")
 
         historyAdapter = HistoryAdapter(
             context = this,
             historyList = currentHistoryList,
-            onFeedbackClick = if (isGuestUser) null else { entry -> showFeedbackDialog(entry) }, // Disable feedback for guests
+            onFeedbackClick = if (canProvideFeedback) { entry -> showFeedbackDialog(entry) } else null, // Only EXPERT and ADMIN can provide feedback
             onDeleteClick = { entry -> showDeleteConfirmation(entry) },
             onItemClick = { entry -> showClassificationDetailsDialog(entry) }, // Keep details view for all users
-            isGuestUser = isGuestUser // Pass guest status to adapter
+            isGuestUser = !canProvideFeedback // Pass opposite of canProvideFeedback to hide feedback UI
         )
 
         Log.d("HistoryActivity", "Created adapter with initial list size: ${currentHistoryList.size}")
-        Log.d("HistoryActivity", "Feedback features enabled: ${!isGuestUser}")
+        Log.d("HistoryActivity", "Feedback features enabled: $canProvideFeedback")
 
         historyRecyclerView.apply {
             layoutManager = LinearLayoutManager(this@HistoryActivity)
@@ -239,25 +239,25 @@ class HistoryActivity : AppCompatActivity() {
 
             // Check user role to determine if feedback features should be enabled
             val currentUser = authManager.getCurrentUser()
-            val isGuestUser = currentUser?.role == UserRole.VIEWER // Changed from GUEST to VIEWER
+            val canProvideFeedback = currentUser?.role == UserRole.EXPERT || currentUser?.role == UserRole.ADMIN
 
-            Log.d("HistoryActivity", "Recreating adapter - User role: ${currentUser?.role}, isGuest: $isGuestUser")
+            Log.d("HistoryActivity", "Recreating adapter - User role: ${currentUser?.role}, canProvideFeedback: $canProvideFeedback")
 
             // Recreate adapter with fresh data to ensure it works and apply guest restrictions
             historyAdapter = HistoryAdapter(
                 context = this,
                 historyList = currentHistoryList.toMutableList(), // Create a new list
-                onFeedbackClick = if (isGuestUser) null else { entry -> showFeedbackDialog(entry) }, // Disable feedback for guests
+                onFeedbackClick = if (canProvideFeedback) { entry -> showFeedbackDialog(entry) } else null, // Only EXPERT and ADMIN can provide feedback
                 onDeleteClick = { entry -> showDeleteConfirmation(entry) },
                 onItemClick = { entry -> showClassificationDetailsDialog(entry) }, // Keep details view for all users
-                isGuestUser = isGuestUser // Pass guest status to adapter
+                isGuestUser = !canProvideFeedback // Pass opposite of canProvideFeedback to hide feedback UI
             )
 
             // Set the new adapter
             historyRecyclerView.adapter = historyAdapter
 
             Log.d("HistoryActivity", "New adapter created and set with ${historyAdapter.itemCount} items")
-            Log.d("HistoryActivity", "Feedback features enabled for adapter: ${!isGuestUser}")
+            Log.d("HistoryActivity", "Feedback features enabled for adapter: $canProvideFeedback")
 
             // Force layout refresh
             historyRecyclerView.post {
@@ -961,22 +961,22 @@ class HistoryActivity : AppCompatActivity() {
 
         // Check user role for feedback button restrictions
         val currentUser = authManager.getCurrentUser()
-        val isGuestUser = currentUser?.role == UserRole.VIEWER // Changed from GUEST to VIEWER
+        val canProvideFeedback = currentUser?.role == UserRole.EXPERT || currentUser?.role == UserRole.ADMIN
 
         // Set button listeners
         detailFeedbackButton.setOnClickListener {
             dialog.dismiss()
 
-            // Only allow feedback for non-guest users
-            if (!isGuestUser) {
+            // Only allow feedback for EXPERT and ADMIN users
+            if (canProvideFeedback) {
                 showFeedbackDialog(entry)
             } else {
-                Toast.makeText(this, "Fitur feedback tidak tersedia untuk pengguna guest", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Fitur feedback hanya tersedia untuk pengguna Expert dan Admin", Toast.LENGTH_SHORT).show()
             }
         }
 
-        // Hide feedback button for guest users
-        if (isGuestUser) {
+        // Hide feedback button for users who cannot provide feedback (BASIC and VIEWER)
+        if (!canProvideFeedback) {
             detailFeedbackButton.visibility = View.GONE
         }
 
