@@ -54,13 +54,15 @@ class DatabaseService private constructor() {
                 "isCorrect" to entry.isCorrect,
                 "correctClass" to entry.correctClass,
                 "isUpdated" to false,
-                "createdAt" to Timestamp.now()
+                "createdAt" to Timestamp.now(),
+                // Location information - simplified to just store fullAddress as "location"
+                "location" to entry.fullAddress
             )
 
             // Simpan ke collection dengan document ID yang sama dengan entry ID
             classificationsCollection.document(entry.id).set(classificationData).await()
 
-            Log.d(TAG, "Classification saved to database: ${entry.id} for user: $userId")
+            Log.d(TAG, "Classification saved to database: ${entry.id} for user: $userId with location: ${entry.clusteredLocation}")
             Result.success(entry.id)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to save classification to database", e)
@@ -159,8 +161,8 @@ class DatabaseService private constructor() {
 
             val classifications = result.getOrNull() ?: emptyList()
             val csvContent = buildString {
-                // Header
-                appendLine("ID,User ID,User Role,Image Path,Classification Result,Confidence,Model Used,Timestamp,User Feedback,Is Correct,Correct Class,Is Updated,Updated By,Created At,Updated At")
+                // Header with simplified location information
+                appendLine("ID,User ID,User Role,Image Path,Classification Result,Confidence,Model Used,Timestamp,User Feedback,Is Correct,Correct Class,Is Updated,Updated By,Created At,Updated At,Location")
 
                 // Data rows
                 classifications.forEach { classification ->
@@ -180,14 +182,133 @@ class DatabaseService private constructor() {
                     val createdAt = classification["createdAt"] ?: ""
                     val updatedAt = classification["updatedAt"] ?: ""
 
-                    appendLine("\"$id\",\"$userId\",\"$userRole\",\"$imagePath\",\"$classificationResult\",\"$confidence\",\"$modelUsed\",\"$timestamp\",\"$userFeedback\",\"$isCorrect\",\"$correctClass\",\"$isUpdated\",\"$updatedBy\",\"$createdAt\",\"$updatedAt\"")
+                    // Extract location data - now just a simple string
+                    val location = classification["location"] as? String ?: ""
+
+                    appendLine("\"$id\",\"$userId\",\"$userRole\",\"$imagePath\",\"$classificationResult\",\"$confidence\",\"$modelUsed\",\"$timestamp\",\"$userFeedback\",\"$isCorrect\",\"$correctClass\",\"$isUpdated\",\"$updatedBy\",\"$createdAt\",\"$updatedAt\",\"$location\"")
                 }
             }
 
-            Log.d(TAG, "Generated CSV export with ${classifications.size} records")
+            Log.d(TAG, "Generated CSV export with ${classifications.size} records including location data")
             Result.success(csvContent)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to export classifications to CSV", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Mengambil klasifikasi berdasarkan lokasi tertentu (untuk admin dan expert)
+     */
+    suspend fun getClassificationsByLocation(locationQuery: String): Result<List<Map<String, Any>>> {
+        return try {
+            val currentUser = authManager.getCurrentUser()
+
+            // Cek apakah user adalah admin atau expert
+            if (currentUser?.role != UserRole.ADMIN && currentUser?.role != UserRole.EXPERT) {
+                return Result.failure(SecurityException("Only admin and expert can access location-based data"))
+            }
+
+            val querySnapshot = classificationsCollection
+                .whereEqualTo("location", locationQuery)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
+
+            val classifications = querySnapshot.documents.mapNotNull { document ->
+                document.data?.plus("documentId" to document.id)
+            }
+
+            Log.d(TAG, "Retrieved ${classifications.size} classifications for location: $locationQuery")
+            Result.success(classifications)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get classifications by location: $locationQuery", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Mengambil statistik klasifikasi berdasarkan lokasi (untuk admin)
+     */
+    suspend fun getLocationStatistics(): Result<Map<String, Any>> {
+        return try {
+            val currentUser = authManager.getCurrentUser()
+
+            // Cek apakah user adalah admin
+            if (currentUser?.role != UserRole.ADMIN) {
+                return Result.failure(SecurityException("Only admin can access location statistics"))
+            }
+
+            val querySnapshot = classificationsCollection
+                .get()
+                .await()
+
+            val classifications = querySnapshot.documents.mapNotNull { it.data }
+
+            // Group by location
+            val locationStats = mutableMapOf<String, MutableMap<String, Int>>()
+            var totalWithLocation = 0
+            var totalWithoutLocation = 0
+
+            classifications.forEach { classification ->
+                val location = classification["location"] as? String ?: ""
+                val classificationResult = classification["classificationResult"] as? String ?: "Unknown"
+
+                if (location.isNotEmpty()) {
+                    totalWithLocation++
+
+                    if (!locationStats.containsKey(location)) {
+                        locationStats[location] = mutableMapOf()
+                    }
+
+                    val currentCount = locationStats[location]!![classificationResult] ?: 0
+                    locationStats[location]!![classificationResult] = currentCount + 1
+                } else {
+                    totalWithoutLocation++
+                }
+            }
+
+            val statistics = mapOf(
+                "totalClassifications" to (totalWithLocation + totalWithoutLocation),
+                "totalWithLocation" to totalWithLocation,
+                "totalWithoutLocation" to totalWithoutLocation,
+                "locationBreakdown" to locationStats,
+                "uniqueLocations" to locationStats.keys.size
+            )
+
+            Log.d(TAG, "Generated location statistics: ${locationStats.size} unique locations")
+            Result.success(statistics)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to get location statistics", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Update lokasi untuk entry yang sudah ada (untuk admin)
+     */
+    suspend fun updateLocationForClassification(entryId: String, location: String): Result<Unit> {
+        return try {
+            val currentUser = authManager.getCurrentUser()
+
+            // Cek apakah user adalah admin
+            if (currentUser?.role != UserRole.ADMIN) {
+                return Result.failure(SecurityException("Only admin can update location data"))
+            }
+
+            val updateData = mapOf(
+                "location" to location,
+                "isUpdated" to true,
+                "updatedBy" to currentUser.uid,
+                "updatedAt" to Timestamp.now()
+            )
+
+            classificationsCollection.document(entryId).update(updateData).await()
+
+            Log.d(TAG, "Location updated for classification: $entryId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to update location for classification: $entryId", e)
             Result.failure(e)
         }
     }

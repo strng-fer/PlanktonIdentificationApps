@@ -2397,7 +2397,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-   /**
+    /**
      * Save current classification result to history
      */
     private fun saveToHistory() {
@@ -2415,7 +2415,7 @@ class MainActivity : AppCompatActivity() {
                 Log.d("PlanktonHistory", "Image saved to: ${imageFile?.absolutePath}")
 
                 if (imageFile != null && imageFile.exists()) {
-                    // Create history entry with location information
+                    // Create history entry with location information (village level only)
                     val locationInfo = currentLocationInfo
                     val historyEntry = HistoryEntry(
                         id = System.currentTimeMillis().toString(),
@@ -2425,25 +2425,24 @@ class MainActivity : AppCompatActivity() {
                         classificationResult = currentClassificationResult!!,
                         confidence = currentConfidence,
                         modelUsed = formatModelName(selectedModel),
-                        // Location information
-                        latitude = locationInfo?.latitude ?: 0.0,
-                        longitude = locationInfo?.longitude ?: 0.0,
-                        locationAccuracy = locationInfo?.accuracy ?: 0f,
-                        fullAddress = locationInfo?.address ?: "",
+                        // Location information - only use clusteredLocation (village level)
+                        latitude = 0.0, // Don't store exact coordinates
+                        longitude = 0.0, // Don't store exact coordinates
+                        locationAccuracy = 0f, // Don't store accuracy
+                        fullAddress = locationInfo?.clusteredLocation ?: "", // Use only village level
                         clusteredLocation = locationInfo?.clusteredLocation ?: "",
-                        locationLevel = locationInfo?.locationLevel?.name ?: ""
+                        locationLevel = "VILLAGE" // Always set to village level
                     )
 
-                    Log.d("PlanktonHistory", "Created HistoryEntry with location:")
+                    Log.d("PlanktonHistory", "Created HistoryEntry with village-level location:")
                     Log.d("PlanktonHistory", "  ID: ${historyEntry.id}")
                     Log.d("PlanktonHistory", "  Timestamp: ${historyEntry.timestamp}")
                     Log.d("PlanktonHistory", "  ImagePath: ${historyEntry.imagePath}")
                     Log.d("PlanktonHistory", "  Result: ${historyEntry.classificationResult}")
                     Log.d("PlanktonHistory", "  Confidence: ${historyEntry.confidence}")
                     Log.d("PlanktonHistory", "  Model: ${historyEntry.modelUsed}")
-                    Log.d("PlanktonHistory", "  Location: ${historyEntry.clusteredLocation}")
+                    Log.d("PlanktonHistory", "  Village Location: ${historyEntry.clusteredLocation}")
                     Log.d("PlanktonHistory", "  Location Level: ${historyEntry.locationLevel}")
-                    Log.d("PlanktonHistory", "  Coordinates: ${historyEntry.latitude}, ${historyEntry.longitude}")
 
                     // Save to history using HistoryManager with current user
                     if (historyManager.saveHistoryEntryWithCurrentUser(historyEntry)) {
