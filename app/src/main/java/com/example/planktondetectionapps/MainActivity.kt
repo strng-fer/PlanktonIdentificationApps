@@ -127,9 +127,13 @@ class MainActivity : AppCompatActivity() {
     private var currentConfidence: Float = 0f
     private var currentPhotoUri: Uri? = null
     private var currentHistoryEntryId: String? = null // Track current history entry for feedback
+    private var currentLocationInfo: com.example.planktondetectionapps.location.LocationManager.LocationInfo? = null
 
     // History Manager
     private lateinit var historyManager: HistoryManager
+
+    // Location Manager
+    private lateinit var locationManager: com.example.planktondetectionapps.location.LocationManager
 
     // Activity result launchers
     private lateinit var cameraLauncher: ActivityResultLauncher<Intent>
@@ -137,6 +141,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var batchGalleryLauncher: ActivityResultLauncher<Intent>
     private lateinit var permissionLauncher: ActivityResultLauncher<String>
     private lateinit var storagePermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var locationPermissionLauncher: ActivityResultLauncher<Array<String>>
 
     // Add authentication manager
     private val authManager = AuthManager.getInstance()
@@ -146,6 +151,11 @@ class MainActivity : AppCompatActivity() {
 
     // Add flag for welcome dialog
     private var hasShownWelcomeDialog = false
+
+    // Location display UI elements
+    private var locationSection: LinearLayout? = null
+    private var locationInfo: TextView? = null
+    private var locationAccuracy: TextView? = null
 
     /**
      * Inisialisasi activity dan setup UI components
@@ -170,6 +180,9 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize history manager
         historyManager = HistoryManager(this)
+
+        // Initialize location manager
+        locationManager = com.example.planktondetectionapps.location.LocationManager(this)
 
         // Check authentication AFTER everything is set up
         checkAuthenticationState()
@@ -332,6 +345,10 @@ class MainActivity : AppCompatActivity() {
 
         // Initialize user profile button
         userProfileButton = findViewById(R.id.userProfileButton)
+
+        // Initialize location display elements
+        locationSection = findViewById(R.id.locationSection)
+        locationInfo = findViewById(R.id.locationInfo)
     }
 
     /**
@@ -757,6 +774,21 @@ class MainActivity : AppCompatActivity() {
                     showError("Izin penyimpanan diperlukan untuk menyimpan gambar ke galeri.")
                 }
             }
+
+        // Location permission launcher
+        locationPermissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
+                // Check if all required permissions are granted
+                val allGranted = permissions.values.all { it }
+
+                if (allGranted) {
+                    // All permissions granted, proceed with location-dependent feature
+                    Toast.makeText(this, "Izin lokasi diberikan", Toast.LENGTH_SHORT).show()
+                } else {
+                    // At least one permission denied, show a message
+                    Toast.makeText(this, "Izin lokasi diperlukan untuk fitur ini", Toast.LENGTH_SHORT).show()
+                }
+            }
     }
 
     /**
@@ -829,6 +861,9 @@ class MainActivity : AppCompatActivity() {
         try {
             android.util.Log.d("PlanktonDebug", "=== CLASSIFICATION START ===")
             android.util.Log.d("PlanktonDebug", "Selected model: ${selectedModel.name}")
+
+            // Start location capture if permission is available
+            captureLocationForClassification()
 
             // Special handling for majority voting
             if (selectedModel == ModelType.MAJORITY_VOTING) {
@@ -2075,8 +2110,7 @@ class MainActivity : AppCompatActivity() {
                 // If there's a tie, use the confidence to decide
                 if (classVotes.size > 1 && maxVote == classVotes[1].second) {
                     // Tie-breaking logic: choose the class with the highest confidence among the tied classes
-                    maxPos = classVotes.filter { it.second == maxVote }.map { it.first }.maxOrNull()
-                        ?: maxPos
+                    maxPos = classVotes.filter { it.second == maxVote }.map { it.first }.maxOrNull() ?: maxPos
                 }
 
                 val classes = loadLabels(this)
@@ -2381,23 +2415,34 @@ class MainActivity : AppCompatActivity() {
                 Log.d("PlanktonHistory", "Image saved to: ${imageFile?.absolutePath}")
 
                 if (imageFile != null && imageFile.exists()) {
-                    // Create history entry
+                    // Create history entry with location information
+                    val locationInfo = currentLocationInfo
                     val historyEntry = HistoryEntry(
                         id = System.currentTimeMillis().toString(),
                         timestamp = Date(),
                         imagePath = imageFile.absolutePath,
                         classificationResult = currentClassificationResult!!,
                         confidence = currentConfidence,
-                        modelUsed = formatModelName(selectedModel)
+                        modelUsed = formatModelName(selectedModel),
+                        // Location information
+                        latitude = locationInfo?.latitude ?: 0.0,
+                        longitude = locationInfo?.longitude ?: 0.0,
+                        locationAccuracy = locationInfo?.accuracy ?: 0f,
+                        fullAddress = locationInfo?.address ?: "",
+                        clusteredLocation = locationInfo?.clusteredLocation ?: "",
+                        locationLevel = locationInfo?.locationLevel?.name ?: ""
                     )
 
-                    Log.d("PlanktonHistory", "Created HistoryEntry:")
+                    Log.d("PlanktonHistory", "Created HistoryEntry with location:")
                     Log.d("PlanktonHistory", "  ID: ${historyEntry.id}")
                     Log.d("PlanktonHistory", "  Timestamp: ${historyEntry.timestamp}")
                     Log.d("PlanktonHistory", "  ImagePath: ${historyEntry.imagePath}")
                     Log.d("PlanktonHistory", "  Result: ${historyEntry.classificationResult}")
                     Log.d("PlanktonHistory", "  Confidence: ${historyEntry.confidence}")
                     Log.d("PlanktonHistory", "  Model: ${historyEntry.modelUsed}")
+                    Log.d("PlanktonHistory", "  Location: ${historyEntry.clusteredLocation}")
+                    Log.d("PlanktonHistory", "  Location Level: ${historyEntry.locationLevel}")
+                    Log.d("PlanktonHistory", "  Coordinates: ${historyEntry.latitude}, ${historyEntry.longitude}")
 
                     // Save to history using HistoryManager
                     if (historyManager.saveHistoryEntry(historyEntry)) {
@@ -2807,5 +2852,89 @@ class MainActivity : AppCompatActivity() {
         }
 
         dialog.show()
+    }
+
+    /**
+     * Capture location for classification
+     */
+    private fun captureLocationForClassification() {
+        Log.d("LocationCapture", "Starting location capture for classification")
+
+        // Check if location permissions are granted
+        if (!locationManager.hasLocationPermission()) {
+            Log.d("LocationCapture", "Location permission not granted, requesting...")
+            // Request location permissions
+            locationPermissionLauncher.launch(arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ))
+            return
+        }
+
+        // Get current location
+        locationManager.getCurrentLocation(object : com.example.planktondetectionapps.location.LocationManager.LocationCallback {
+            override fun onLocationObtained(locationInfo: com.example.planktondetectionapps.location.LocationManager.LocationInfo) {
+                Log.d("LocationCapture", "Location obtained successfully")
+                Log.d("LocationCapture", "Clustered location: ${locationInfo.clusteredLocation}")
+                Log.d("LocationCapture", "Location level: ${locationInfo.locationLevel}")
+
+                currentLocationInfo = locationInfo
+
+                // Update location display in UI
+                updateLocationDisplay(locationInfo)
+
+                // Show a subtle toast with location info
+                runOnUiThread {
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Lokasi: ${locationInfo.clusteredLocation}",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+
+            override fun onLocationError(error: String) {
+                Log.w("LocationCapture", "Location error: $error")
+                currentLocationInfo = null
+                hideLocationDisplay()
+                // Don't show error to user as location is optional
+            }
+
+            override fun onPermissionRequired() {
+                Log.d("LocationCapture", "Permission required callback triggered")
+                // Request permissions
+                locationPermissionLauncher.launch(arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION
+                ))
+            }
+        })
+    }
+
+    /**
+     * Update location display in UI
+     */
+    private fun updateLocationDisplay(locationInfo: com.example.planktondetectionapps.location.LocationManager.LocationInfo) {
+        runOnUiThread {
+            locationSection?.visibility = View.VISIBLE
+            this@MainActivity.locationInfo?.text = locationInfo.clusteredLocation
+
+            // Show accuracy information if available
+            if (locationInfo.accuracy > 0) {
+                locationAccuracy?.text = "Akurasi: ±${locationInfo.accuracy.toInt()}m"
+                locationAccuracy?.visibility = View.VISIBLE
+            } else {
+                locationAccuracy?.visibility = View.GONE
+            }
+        }
+    }
+
+    /**
+     * Hide location display
+     */
+    private fun hideLocationDisplay() {
+        runOnUiThread {
+            locationSection?.visibility = View.GONE
+        }
     }
 }

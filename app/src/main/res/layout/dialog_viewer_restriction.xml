@@ -311,7 +311,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Daftar Akun"
-            android:background="@drawable/button_primary"
+            android:background="@drawable/button_primary_animated"
             android:textColor="@color/white"
             android:paddingHorizontal="20dp"
             android:paddingVertical="10dp" />

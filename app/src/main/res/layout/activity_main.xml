@@ -236,6 +236,7 @@
                     android:textSize="24sp"
                     android:textStyle="bold" />
 
+
                 <TextView
                     android:id="@+id/confidencesText"
                     android:layout_width="wrap_content"
@@ -489,6 +490,36 @@
                         </TableRow>
 
                     </TableLayout>
+
+                    <!-- Location Information Section -->
+                    <LinearLayout
+                        android:id="@+id/locationSection"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="12dp"
+                        android:layout_marginHorizontal="16dp"
+                        android:layout_marginBottom="16dp"
+                        android:visibility="gone">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Lokasi:"
+                            android:textSize="13sp"
+                            android:textColor="#424242"
+                            android:textStyle="bold"
+                            android:layout_marginBottom="4dp" />
+
+                        <TextView
+                            android:id="@+id/locationInfo"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Mendapatkan lokasi..."
+                            android:textColor="#666666"
+                            android:textSize="14sp"
+                            android:lineSpacingExtra="2dp" />
+                    </LinearLayout>
 
                     <!-- Feedback Message Section -->
                     <LinearLayout
