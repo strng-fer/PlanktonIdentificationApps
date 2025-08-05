@@ -74,7 +74,6 @@ class ClassificationLoadingDialog(private val context: Context) {
         progressText = view.findViewById(R.id.progressText)
         currentModelText = view.findViewById(R.id.currentModelText)
         modelStatusContainer = view.findViewById(R.id.modelStatusContainer)
-        funFactText = view.findViewById(R.id.funFactText)
 
         // Animation views
         outerCircle = view.findViewById(R.id.outerCircle)

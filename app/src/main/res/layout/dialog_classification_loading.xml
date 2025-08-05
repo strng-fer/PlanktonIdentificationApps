@@ -148,17 +148,4 @@
 
     </LinearLayout>
 
-    <!-- Fun Fact -->
-    <TextView
-        android:id="@+id/funFactText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="💡 Tahukah kamu? Plankton adalah organisme mikroskopis yang sangat penting untuk ekosistem laut!"
-        android:textSize="11sp"
-        android:textColor="#4CAF50"
-        android:layout_marginTop="16dp"
-        android:background="@drawable/card_background_light"
-        android:padding="8dp"
-        android:gravity="center" />
-
 </LinearLayout>

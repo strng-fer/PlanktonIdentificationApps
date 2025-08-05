@@ -31,6 +31,7 @@ class HistoryAdapter(
         val classificationText: TextView = view.findViewById(R.id.classificationText)
         val confidenceText: TextView = view.findViewById(R.id.confidenceText)
         val modelText: TextView = view.findViewById(R.id.modelText)
+        val locationText: TextView = view.findViewById(R.id.locationText)
         val feedbackText: TextView = view.findViewById(R.id.feedbackText)
         val deleteButton: ImageButton = view.findViewById(R.id.deleteButton)
         val feedbackContainer: LinearLayout = view.findViewById(R.id.feedbackContainer)
@@ -92,6 +93,16 @@ class HistoryAdapter(
 
         // Set model name
         holder.modelText.text = entry.modelUsed
+
+        // Set location information
+        if (entry.clusteredLocation.isNotEmpty()) {
+            holder.locationText.text = "Lokasi: ${entry.clusteredLocation}"
+            holder.locationText.visibility = View.VISIBLE
+            Log.d("HistoryAdapter", "Location displayed: ${entry.clusteredLocation}")
+        } else {
+            holder.locationText.visibility = View.GONE
+            Log.d("HistoryAdapter", "No location data - hiding location text")
+        }
 
         // Handle feedback display
         if (entry.userFeedback.isNotEmpty()) {

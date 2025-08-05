@@ -120,6 +120,21 @@
 
             </LinearLayout>
 
+            <!-- Location Information -->
+            <TextView
+                android:id="@+id/locationText"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Lokasi: BRIN"
+                android:textSize="11sp"
+                android:textColor="@color/text_secondary"
+                android:layout_marginTop="2dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:drawablePadding="4dp"
+                android:gravity="center_vertical"
+                android:visibility="gone" />
+
             <!-- Feedback Container -->
             <LinearLayout
                 android:id="@+id/feedbackContainer"

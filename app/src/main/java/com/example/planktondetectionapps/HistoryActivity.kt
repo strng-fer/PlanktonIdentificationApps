@@ -817,6 +817,7 @@ class HistoryActivity : AppCompatActivity() {
         val detailClassificationText = dialogView.findViewById<TextView>(R.id.detailClassificationText)
         val detailTimestampText = dialogView.findViewById<TextView>(R.id.detailTimestampText)
         val detailModelText = dialogView.findViewById<TextView>(R.id.detailModelText)
+        val detailLocationText = dialogView.findViewById<TextView>(R.id.detailLocationText)
 
         // Set classification results table
         val detailPred1 = dialogView.findViewById<TextView>(R.id.detailPred1)
@@ -857,6 +858,16 @@ class HistoryActivity : AppCompatActivity() {
         val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
         detailTimestampText.text = dateFormat.format(entry.timestamp)
         detailModelText.text = "Model: ${entry.modelUsed}"
+
+        // Set location information
+        if (entry.clusteredLocation.isNotEmpty()) {
+            detailLocationText.text = "Lokasi: ${entry.clusteredLocation}"
+            detailLocationText.visibility = View.VISIBLE
+            Log.d("HistoryActivity", "Location displayed in details: ${entry.clusteredLocation}")
+        } else {
+            detailLocationText.visibility = View.GONE
+            Log.d("HistoryActivity", "No location data in details - hiding location text")
+        }
 
         // Parse and display classification results
         try {
