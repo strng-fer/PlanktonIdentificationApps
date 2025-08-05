@@ -24,7 +24,6 @@ class ClassificationLoadingDialog(private val context: Context) {
     private var progressText: TextView? = null
     private var currentModelText: TextView? = null
     private var modelStatusContainer: LinearLayout? = null
-    private var funFactText: TextView? = null
 
     // Animation views
     private var outerCircle: ImageView? = null
@@ -46,23 +45,8 @@ class ClassificationLoadingDialog(private val context: Context) {
         "Inception V3"
     )
 
-    // Fun facts about plankton
-    private val funFacts = listOf(
-        "💡 Tahukah kamu? Plankton menghasilkan lebih dari 50% oksigen di atmosfer bumi!",
-        "🌊 Plankton adalah dasar dari rantai makanan di lautan!",
-        "🔬 Satu tetes air laut bisa mengandung jutaan plankton!",
-        "🌍 Plankton berperan penting dalam siklus karbon global!",
-        "✨ Beberapa plankton dapat bercahaya di kegelapan (bioluminescence)!",
-        "🦐 Plankton terbesar adalah ubur-ubur yang bisa mencapai diameter 2 meter!",
-        "🎯 AI dapat mengidentifikasi lebih dari 100 spesies plankton berbeda!",
-        "🌡️ Plankton sangat sensitif terhadap perubahan suhu air laut!",
-        "🔄 Plankton bermigrasi vertikal setiap hari mengikuti cahaya matahari!"
-    )
-
     private var currentProgress = 0
-    private var currentFactIndex = 0
     private val handler = Handler(Looper.getMainLooper())
-    private var factUpdateRunnable: Runnable? = null
 
     fun show() {
         val builder = AlertDialog.Builder(context)
@@ -87,9 +71,6 @@ class ClassificationLoadingDialog(private val context: Context) {
 
         // Setup model status list
         setupModelStatusList()
-
-        // Setup fun fact rotation
-        setupFunFactRotation()
 
         builder.setView(view)
         builder.setCancelable(false)
@@ -157,19 +138,6 @@ class ClassificationLoadingDialog(private val context: Context) {
 
             modelStatusContainer?.addView(statusView)
         }
-    }
-
-    private fun setupFunFactRotation() {
-        factUpdateRunnable = object : Runnable {
-            override fun run() {
-                if (currentFactIndex < funFacts.size) {
-                    funFactText?.text = funFacts[currentFactIndex]
-                    currentFactIndex = (currentFactIndex + 1) % funFacts.size
-                    handler.postDelayed(this, 3000) // Change fact every 3 seconds
-                }
-            }
-        }
-        handler.post(factUpdateRunnable!!)
     }
 
     fun updateProgress(modelIndex: Int, modelName: String) {
@@ -251,14 +219,11 @@ class ClassificationLoadingDialog(private val context: Context) {
         modelStatusContainer?.visibility = View.VISIBLE
 
         // Show a different message for single model
-        funFactText?.text = "⚡ Memproses dengan model $modelName untuk hasil yang cepat dan akurat!"
-
         // Restart animations for single model processing
         startAllAnimations()
     }
 
     fun dismiss() {
-        factUpdateRunnable?.let { handler.removeCallbacks(it) }
         dialog?.dismiss()
         dialog = null
     }
