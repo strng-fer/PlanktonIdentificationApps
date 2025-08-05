@@ -2419,6 +2419,7 @@ class MainActivity : AppCompatActivity() {
                     val locationInfo = currentLocationInfo
                     val historyEntry = HistoryEntry(
                         id = System.currentTimeMillis().toString(),
+                        userId = "", // Will be set by saveHistoryEntryWithCurrentUser
                         timestamp = Date(),
                         imagePath = imageFile.absolutePath,
                         classificationResult = currentClassificationResult!!,
@@ -2444,8 +2445,8 @@ class MainActivity : AppCompatActivity() {
                     Log.d("PlanktonHistory", "  Location Level: ${historyEntry.locationLevel}")
                     Log.d("PlanktonHistory", "  Coordinates: ${historyEntry.latitude}, ${historyEntry.longitude}")
 
-                    // Save to history using HistoryManager
-                    if (historyManager.saveHistoryEntry(historyEntry)) {
+                    // Save to history using HistoryManager with current user
+                    if (historyManager.saveHistoryEntryWithCurrentUser(historyEntry)) {
                         currentHistoryEntryId = historyEntry.id
                         Log.d("PlanktonHistory", "History entry saved successfully with ID: $currentHistoryEntryId")
                     } else {

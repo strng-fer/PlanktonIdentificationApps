@@ -3,6 +3,7 @@ package com.example.planktondetectionapps
 import android.content.Context
 import android.os.Environment
 import android.util.Log
+import com.example.planktondetectionapps.auth.AuthManager
 import com.example.planktondetectionapps.database.DatabaseService
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -15,13 +16,14 @@ import java.util.*
 
 /**
  * Manager untuk mengelola penyimpanan dan pembacaan riwayat klasifikasi dalam format CSV
- * dengan integrasi otomatis ke database server
+ * dengan integrasi otomatis ke database server dan dukungan user-specific history
  */
 class HistoryManager(private val context: Context) {
 
     private val csvFileName = "plankton_classification_history.csv"
     private val csvFile: File
     private val databaseService = DatabaseService.getInstance()
+    private val authManager = AuthManager.getInstance()
 
     init {
         // Gunakan internal storage untuk lebih reliable
@@ -155,6 +157,42 @@ class HistoryManager(private val context: Context) {
         val sortedEntries = entries.sortedByDescending { it.timestamp }
         writeDebugLog("READ: Returning ${sortedEntries.size} sorted entries")
         return sortedEntries
+    }
+
+    /**
+     * Membaca entry riwayat untuk user yang sedang login
+     */
+    fun getCurrentUserHistoryEntries(): List<HistoryEntry> {
+        val currentUser = authManager.getCurrentUser()
+        val currentUserId = currentUser?.uid ?: "guest_user"
+
+        writeDebugLog("READ_USER: Getting history for user: $currentUserId")
+
+        val allEntries = getAllHistoryEntries()
+        val userEntries = allEntries.filter { entry ->
+            entry.userId == currentUserId ||
+            (entry.userId == "legacy_user" && currentUserId == "guest_user") // Backward compatibility for guest users
+        }
+
+        Log.d("HistoryManager", "Filtered ${userEntries.size} entries for user $currentUserId from ${allEntries.size} total entries")
+        writeDebugLog("READ_USER: Returning ${userEntries.size} entries for user $currentUserId")
+
+        return userEntries
+    }
+
+    /**
+     * Menyimpan entry baru dengan user ID otomatis
+     */
+    fun saveHistoryEntryWithCurrentUser(entry: HistoryEntry): Boolean {
+        val currentUser = authManager.getCurrentUser()
+        val currentUserId = currentUser?.uid ?: "guest_user"
+
+        val entryWithUserId = entry.copy(userId = currentUserId)
+
+        Log.d("HistoryManager", "Saving entry for user: $currentUserId")
+        writeDebugLog("SAVE_USER: Saving entry ${entry.id} for user $currentUserId")
+
+        return saveHistoryEntry(entryWithUserId)
     }
 
     /**
@@ -351,6 +389,7 @@ class HistoryManager(private val context: Context) {
         return try {
             val testEntry = HistoryEntry(
                 id = "TEST_${System.currentTimeMillis()}",
+                userId = "test_user", // Add userId parameter for test entry
                 timestamp = Date(),
                 imagePath = "/test/path",
                 classificationResult = "TestPlankton",

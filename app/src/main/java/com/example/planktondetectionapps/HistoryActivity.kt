@@ -12,10 +12,12 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.planktondetectionapps.auth.AuthManager
 import com.example.planktondetectionapps.auth.UserRole
+import kotlinx.coroutines.launch
 
 /**
  * Activity untuk menampilkan riwayat klasifikasi plankton
@@ -172,50 +174,43 @@ class HistoryActivity : AppCompatActivity() {
     }
 
     private fun loadHistoryData() {
-        Log.d("HistoryActivity", "=== loadHistoryData() called ===")
-        try {
-            Log.d("HistoryActivity", "Getting all history entries from HistoryManager...")
-            val allEntries = historyManager.getAllHistoryEntries()
-            Log.d("HistoryActivity", "Retrieved ${allEntries.size} entries from HistoryManager")
+        lifecycleScope.launch {
+            try {
+                // Use user-specific history instead of global history
+                val entries = historyManager.getCurrentUserHistoryEntries()
+                currentHistoryList.clear()
+                currentHistoryList.addAll(entries)
 
-            // Debug: Log each entry received
-            allEntries.forEachIndexed { index, entry ->
-                Log.d("HistoryActivity", "Entry $index: ID=${entry.id}, Result=${entry.classificationResult}")
-            }
-
-            currentHistoryList.clear()
-            Log.d("HistoryActivity", "Cleared currentHistoryList, size now: ${currentHistoryList.size}")
-
-            currentHistoryList.addAll(allEntries)
-            Log.d("HistoryActivity", "Added ${allEntries.size} entries to currentHistoryList")
-            Log.d("HistoryActivity", "currentHistoryList final size: ${currentHistoryList.size}")
-
-            // Log first few entries for debugging
-            if (currentHistoryList.isNotEmpty()) {
-                Log.d("HistoryActivity", "Sample entries in currentHistoryList:")
-                currentHistoryList.take(3).forEachIndexed { index, entry ->
-                    Log.d("HistoryActivity", "  Entry $index: ID=${entry.id}, Result=${entry.classificationResult}, Confidence=${entry.confidence}")
+                runOnUiThread {
+                    updateUI()
+                    updateStatistics()
                 }
-            } else {
-                Log.w("HistoryActivity", "currentHistoryList is empty after adding entries!")
-                Log.w("HistoryActivity", "Original allEntries size was: ${allEntries.size}")
+            } catch (e: Exception) {
+                Log.e("HistoryActivity", "Error loading history data", e)
+                runOnUiThread {
+                    Toast.makeText(this@HistoryActivity, "Error loading history: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
-
-            updateStatistics()
-            updateUI()
-            Log.d("HistoryActivity", "=== loadHistoryData() finished ===")
-        } catch (e: Exception) {
-            Log.e("HistoryActivity", "Error loading history: ${e.message}", e)
-            Toast.makeText(this, "Error loading history: ${e.message}", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun updateStatistics() {
-        val stats = historyManager.getFeedbackStats()
+        // Use getCurrentUserHistoryEntries instead of global stats
+        val userEntries = historyManager.getCurrentUserHistoryEntries()
+        val totalEntries = userEntries.size
+        val entriesWithFeedback = userEntries.count { it.userFeedback.isNotEmpty() }
+        val correctPredictions = userEntries.count { it.isCorrect == true }
+        val incorrectPredictions = userEntries.count { it.isCorrect == false }
 
-        totalClassificationsText.text = stats.totalEntries.toString()
-        feedbackCountText.text = stats.entriesWithFeedback.toString()
-        accuracyText.text = "${stats.accuracyPercentage.toInt()}%"
+        val accuracyPercentage = if (entriesWithFeedback > 0) {
+            (correctPredictions * 100f) / entriesWithFeedback
+        } else {
+            0f
+        }
+
+        totalClassificationsText.text = totalEntries.toString()
+        feedbackCountText.text = entriesWithFeedback.toString()
+        accuracyText.text = "${accuracyPercentage.toInt()}%"
     }
 
     private fun updateUI() {
@@ -271,8 +266,9 @@ class HistoryActivity : AppCompatActivity() {
     private fun applyFilter(filterType: Int) {
         Log.d("HistoryActivity", "=== applyFilter() called with filterType: $filterType ===")
 
-        val allEntries = historyManager.getAllHistoryEntries()
-        Log.d("HistoryActivity", "Got ${allEntries.size} entries from historyManager")
+        // Use getCurrentUserHistoryEntries instead of getAllHistoryEntries for user-specific filtering
+        val allEntries = historyManager.getCurrentUserHistoryEntries()
+        Log.d("HistoryActivity", "Got ${allEntries.size} user-specific entries from historyManager")
 
         val filteredEntries = when (filterType) {
             0 -> {
@@ -312,7 +308,7 @@ class HistoryActivity : AppCompatActivity() {
                 allEntries.sortedBy { it.timestamp }
             }
             else -> {
-                Log.d("HistoryActivity", "Filter: Default (all entries)")
+                Log.d("HistoryActivity", "Filter: Default (all user entries)")
                 allEntries
             }
         }

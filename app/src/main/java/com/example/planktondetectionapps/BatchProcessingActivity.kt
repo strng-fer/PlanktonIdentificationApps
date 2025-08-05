@@ -899,6 +899,7 @@ class BatchProcessingActivity : AppCompatActivity() {
                 // Create history entry with proper constructor
                 val historyEntry = HistoryEntry(
                     id = entryId,
+                    userId = "", // Will be set by saveHistoryEntryWithCurrentUser
                     timestamp = Date(),
                     imagePath = imageFile.absolutePath,
                     classificationResult = prediction,
@@ -909,8 +910,8 @@ class BatchProcessingActivity : AppCompatActivity() {
                     correctClass = ""
                 )
 
-                // Save to history using HistoryManager
-                if (historyManager.saveHistoryEntry(historyEntry)) {
+                // Save to history using HistoryManager with current user
+                if (historyManager.saveHistoryEntryWithCurrentUser(historyEntry)) {
                     // Track this entry ID for batch session
                     batchHistoryEntries.add(entryId)
 

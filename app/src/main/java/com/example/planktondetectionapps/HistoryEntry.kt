@@ -8,6 +8,7 @@ import java.util.Date
  */
 data class HistoryEntry(
     val id: String,
+    val userId: String, // Add userId field to associate entry with specific user
     val timestamp: Date,
     val imagePath: String,
     val classificationResult: String,
@@ -37,8 +38,9 @@ data class HistoryEntry(
         val escapedModel = modelUsed.replace("\"", "\"\"")
         val escapedAddress = fullAddress.replace("\"", "\"\"")
         val escapedClusteredLocation = clusteredLocation.replace("\"", "\"\"")
+        val escapedUserId = userId.replace("\"", "\"\"")
 
-        return "$id,${dateFormat.format(timestamp)},\"$escapedImagePath\",\"$escapedResult\",$confidence,\"$escapedModel\",\"$escapedFeedback\",${isCorrect ?: ""},\"$escapedCorrectClass\",$latitude,$longitude,$locationAccuracy,\"$escapedAddress\",\"$escapedClusteredLocation\",$locationLevel"
+        return "$id,\"$escapedUserId\",${dateFormat.format(timestamp)},\"$escapedImagePath\",\"$escapedResult\",$confidence,\"$escapedModel\",\"$escapedFeedback\",${isCorrect ?: ""},\"$escapedCorrectClass\",$latitude,$longitude,$locationAccuracy,\"$escapedAddress\",\"$escapedClusteredLocation\",$locationLevel"
     }
 
     companion object {
@@ -46,7 +48,7 @@ data class HistoryEntry(
          * Header untuk file CSV dengan informasi lokasi
          */
         fun getCsvHeader(): String {
-            return "ID,Timestamp,Image Path,Classification Result,Confidence,Model Used,User Feedback,Is Correct,Correct Class,Latitude,Longitude,Location Accuracy,Full Address,Clustered Location,Location Level"
+            return "ID,User ID,Timestamp,Image Path,Classification Result,Confidence,Model Used,User Feedback,Is Correct,Correct Class,Latitude,Longitude,Location Accuracy,Full Address,Clustered Location,Location Level"
         }
 
         /**
@@ -82,21 +84,47 @@ data class HistoryEntry(
 
                 android.util.Log.d("HistoryEntry", "Parsed ${parts.size} parts: $parts")
 
-                if (parts.size >= 6) { // Minimum required fields
+                // Handle both old format (without userId) and new format (with userId)
+                val hasUserId = parts.size >= 16 // New format has 16 fields
+                val entry = if (hasUserId) {
+                    // New format: ID,User ID,Timestamp,Image Path,Classification Result,Confidence,Model Used,User Feedback,Is Correct,Correct Class,Latitude,Longitude,Location Accuracy,Full Address,Clustered Location,Location Level
                     val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
-                    val entry = HistoryEntry(
+                    HistoryEntry(
                         id = parts[0],
+                        userId = parts[1].replace("\"", ""),
+                        timestamp = try { dateFormat.parse(parts[2]) } catch (e: Exception) { Date() } ?: Date(),
+                        imagePath = parts[3].replace("\"", ""),
+                        classificationResult = parts[4].replace("\"", ""),
+                        confidence = try { parts[5].toFloat() } catch (e: Exception) { 0f },
+                        modelUsed = parts[6].replace("\"", ""),
+                        userFeedback = parts[7].replace("\"", ""),
+                        isCorrect = if (parts[8].isNotEmpty()) {
+                            try { parts[8].toBoolean() } catch (e: Exception) { null }
+                        } else null,
+                        correctClass = parts[9].replace("\"", ""),
+                        latitude = try { parts[10].toDouble() } catch (e: Exception) { 0.0 },
+                        longitude = try { parts[11].toDouble() } catch (e: Exception) { 0.0 },
+                        locationAccuracy = try { parts[12].toFloat() } catch (e: Exception) { 0f },
+                        fullAddress = parts[13].replace("\"", ""),
+                        clusteredLocation = parts[14].replace("\"", ""),
+                        locationLevel = parts[15]
+                    )
+                } else if (parts.size >= 6) {
+                    // Old format (backwards compatibility): ID,Timestamp,Image Path,Classification Result,Confidence,Model Used,...
+                    val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                    HistoryEntry(
+                        id = parts[0],
+                        userId = "legacy_user", // Default userId for old entries
                         timestamp = try { dateFormat.parse(parts[1]) } catch (e: Exception) { Date() } ?: Date(),
-                        imagePath = parts[2],
-                        classificationResult = parts[3],
+                        imagePath = parts[2].replace("\"", ""),
+                        classificationResult = parts[3].replace("\"", ""),
                         confidence = try { parts[4].toFloat() } catch (e: Exception) { 0f },
-                        modelUsed = parts[5],
+                        modelUsed = parts[5].replace("\"", ""),
                         userFeedback = if (parts.size > 6) parts[6].replace("\"", "") else "",
                         isCorrect = if (parts.size > 7 && parts[7].isNotEmpty()) {
                             try { parts[7].toBoolean() } catch (e: Exception) { null }
                         } else null,
                         correctClass = if (parts.size > 8) parts[8].replace("\"", "") else "",
-                        // Location fields (backwards compatibility)
                         latitude = if (parts.size > 9) try { parts[9].toDouble() } catch (e: Exception) { 0.0 } else 0.0,
                         longitude = if (parts.size > 10) try { parts[10].toDouble() } catch (e: Exception) { 0.0 } else 0.0,
                         locationAccuracy = if (parts.size > 11) try { parts[11].toFloat() } catch (e: Exception) { 0f } else 0f,
@@ -104,12 +132,13 @@ data class HistoryEntry(
                         clusteredLocation = if (parts.size > 13) parts[13].replace("\"", "") else "",
                         locationLevel = if (parts.size > 14) parts[14] else ""
                     )
-                    android.util.Log.d("HistoryEntry", "Successfully created entry: ${entry.id}")
-                    entry
                 } else {
                     android.util.Log.e("HistoryEntry", "Invalid CSV row - not enough parts: ${parts.size}")
-                    null
+                    return null
                 }
+
+                android.util.Log.d("HistoryEntry", "Successfully created entry: ${entry.id}")
+                entry
             } catch (e: Exception) {
                 android.util.Log.e("HistoryEntry", "Error parsing CSV row: $csvRow", e)
                 null
@@ -117,10 +146,11 @@ data class HistoryEntry(
         }
 
         /**
-         * Create HistoryEntry with location info
+         * Create HistoryEntry with location info and user ID
          */
         fun createWithLocation(
             id: String,
+            userId: String,
             timestamp: Date,
             imagePath: String,
             classificationResult: String,
@@ -130,6 +160,7 @@ data class HistoryEntry(
         ): HistoryEntry {
             return HistoryEntry(
                 id = id,
+                userId = userId,
                 timestamp = timestamp,
                 imagePath = imagePath,
                 classificationResult = classificationResult,
