@@ -2913,29 +2913,55 @@ class MainActivity : AppCompatActivity() {
     }
 
     /**
-     * Update location display in UI
+     * Update location display in UI with role-based access control
      */
     private fun updateLocationDisplay(locationInfo: com.example.planktondetectionapps.location.LocationManager.LocationInfo) {
         runOnUiThread {
-            locationSection?.visibility = View.VISIBLE
-            this@MainActivity.locationInfo?.text = locationInfo.clusteredLocation
+            // Check if current user can see location information
+            val currentUser = AuthManager.getInstance().getCurrentUser()
+            val canViewLocation = currentUser?.role?.canClassify() == true
 
-            // Show accuracy information if available
-            if (locationInfo.accuracy > 0) {
-                locationAccuracy?.text = "Akurasi: ±${locationInfo.accuracy.toInt()}m"
-                locationAccuracy?.visibility = View.VISIBLE
+            if (canViewLocation) {
+                locationSection?.visibility = View.VISIBLE
+                this@MainActivity.locationInfo?.text = locationInfo.clusteredLocation
+
+                // Show accuracy information if available
+                if (locationInfo.accuracy > 0) {
+                    locationAccuracy?.text = "Akurasi: ±${locationInfo.accuracy.toInt()}m"
+                    locationAccuracy?.visibility = View.VISIBLE
+                } else {
+                    locationAccuracy?.visibility = View.GONE
+                }
+
+                Log.d("LocationDisplay", "Location displayed for user role: ${currentUser?.role?.roleName}")
             } else {
-                locationAccuracy?.visibility = View.GONE
+                // Hide location for users who cannot classify (VIEWER role)
+                locationSection?.visibility = View.GONE
+                Log.d("LocationDisplay", "Location hidden for user role: ${currentUser?.role?.roleName ?: "null"}")
             }
         }
     }
 
     /**
-     * Hide location display
+     * Hide location display with proper role checking
      */
     private fun hideLocationDisplay() {
         runOnUiThread {
             locationSection?.visibility = View.GONE
+            Log.d("LocationDisplay", "Location display hidden")
+        }
+    }
+
+    /**
+     * Show location information for authenticated users after successful classification
+     */
+    private fun showLocationInfoAfterClassification() {
+        val currentUser = AuthManager.getInstance().getCurrentUser()
+        val canViewLocation = currentUser?.role?.canClassify() == true
+
+        if (canViewLocation && currentLocationInfo != null) {
+            updateLocationDisplay(currentLocationInfo!!)
+            Log.d("LocationDisplay", "Location shown after classification for user: ${currentUser?.email}")
         }
     }
 }
