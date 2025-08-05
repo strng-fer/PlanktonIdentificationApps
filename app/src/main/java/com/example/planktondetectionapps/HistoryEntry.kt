@@ -17,6 +17,11 @@ data class HistoryEntry(
     val userFeedback: String = "", // Empty jika belum ada feedback
     val isCorrect: Boolean? = null, // null jika belum ada feedback, true/false jika sudah ada
     val correctClass: String = "", // Jika user memberikan koreksi
+    // Top 3 classification results
+    val secondClass: String = "", // Hasil klasifikasi kedua
+    val secondProbability: Float = 0f, // Probabilitas klasifikasi kedua
+    val thirdClass: String = "", // Hasil klasifikasi ketiga
+    val thirdProbability: Float = 0f, // Probabilitas klasifikasi ketiga
     // Location information
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
@@ -34,21 +39,23 @@ data class HistoryEntry(
         val escapedFeedback = userFeedback.replace("\"", "\"\"")
         val escapedCorrectClass = correctClass.replace("\"", "\"\"")
         val escapedResult = classificationResult.replace("\"", "\"\"")
+        val escapedSecondClass = secondClass.replace("\"", "\"\"")
+        val escapedThirdClass = thirdClass.replace("\"", "\"\"")
         val escapedImagePath = imagePath.replace("\"", "\"\"")
         val escapedModel = modelUsed.replace("\"", "\"\"")
         val escapedAddress = fullAddress.replace("\"", "\"\"")
         val escapedClusteredLocation = clusteredLocation.replace("\"", "\"\"")
         val escapedUserId = userId.replace("\"", "\"\"")
 
-        return "$id,\"$escapedUserId\",${dateFormat.format(timestamp)},\"$escapedImagePath\",\"$escapedResult\",$confidence,\"$escapedModel\",\"$escapedFeedback\",${isCorrect ?: ""},\"$escapedCorrectClass\",$latitude,$longitude,$locationAccuracy,\"$escapedAddress\",\"$escapedClusteredLocation\",$locationLevel"
+        return "$id,\"$escapedUserId\",${dateFormat.format(timestamp)},\"$escapedImagePath\",\"$escapedResult\",$confidence,\"$escapedSecondClass\",$secondProbability,\"$escapedThirdClass\",$thirdProbability,\"$escapedModel\",\"$escapedFeedback\",${isCorrect ?: ""},\"$escapedCorrectClass\",$latitude,$longitude,$locationAccuracy,\"$escapedAddress\",\"$escapedClusteredLocation\",$locationLevel"
     }
 
     companion object {
         /**
-         * Header untuk file CSV dengan informasi lokasi
+         * Header untuk file CSV dengan informasi lokasi dan top 3 klasifikasi
          */
         fun getCsvHeader(): String {
-            return "ID,User ID,Timestamp,Image Path,Classification Result,Confidence,Model Used,User Feedback,Is Correct,Correct Class,Latitude,Longitude,Location Accuracy,Full Address,Clustered Location,Location Level"
+            return "ID,User ID,Timestamp,Image Path,Classification Result,Confidence,Second Class,Second Probability,Third Class,Third Probability,Model Used,User Feedback,Is Correct,Correct Class,Latitude,Longitude,Location Accuracy,Full Address,Clustered Location,Location Level"
         }
 
         /**
@@ -84,10 +91,37 @@ data class HistoryEntry(
 
                 android.util.Log.d("HistoryEntry", "Parsed ${parts.size} parts: $parts")
 
-                // Handle both old format (without userId) and new format (with userId)
-                val hasUserId = parts.size >= 16 // New format has 16 fields
-                val entry = if (hasUserId) {
-                    // New format: ID,User ID,Timestamp,Image Path,Classification Result,Confidence,Model Used,User Feedback,Is Correct,Correct Class,Latitude,Longitude,Location Accuracy,Full Address,Clustered Location,Location Level
+                // Handle both old format and new format with top 3 classifications
+                val hasTopResults = parts.size >= 20 // New format with top 3 has 20 fields
+                val entry = if (hasTopResults) {
+                    // New format: ID,User ID,Timestamp,Image Path,Classification Result,Confidence,Second Class,Second Probability,Third Class,Third Probability,Model Used,User Feedback,Is Correct,Correct Class,Latitude,Longitude,Location Accuracy,Full Address,Clustered Location,Location Level
+                    val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
+                    HistoryEntry(
+                        id = parts[0],
+                        userId = parts[1].replace("\"", ""),
+                        timestamp = try { dateFormat.parse(parts[2]) } catch (e: Exception) { Date() } ?: Date(),
+                        imagePath = parts[3].replace("\"", ""),
+                        classificationResult = parts[4].replace("\"", ""),
+                        confidence = try { parts[5].toFloat() } catch (e: Exception) { 0f },
+                        secondClass = parts[6].replace("\"", ""),
+                        secondProbability = try { parts[7].toFloat() } catch (e: Exception) { 0f },
+                        thirdClass = parts[8].replace("\"", ""),
+                        thirdProbability = try { parts[9].toFloat() } catch (e: Exception) { 0f },
+                        modelUsed = parts[10].replace("\"", ""),
+                        userFeedback = parts[11].replace("\"", ""),
+                        isCorrect = if (parts[12].isNotEmpty()) {
+                            try { parts[12].toBoolean() } catch (e: Exception) { null }
+                        } else null,
+                        correctClass = parts[13].replace("\"", ""),
+                        latitude = try { parts[14].toDouble() } catch (e: Exception) { 0.0 },
+                        longitude = try { parts[15].toDouble() } catch (e: Exception) { 0.0 },
+                        locationAccuracy = try { parts[16].toFloat() } catch (e: Exception) { 0f },
+                        fullAddress = parts[17].replace("\"", ""),
+                        clusteredLocation = parts[18].replace("\"", ""),
+                        locationLevel = parts[19]
+                    )
+                } else if (parts.size >= 16) {
+                    // Old format without top 3: ID,User ID,Timestamp,Image Path,Classification Result,Confidence,Model Used,User Feedback,Is Correct,Correct Class,Latitude,Longitude,Location Accuracy,Full Address,Clustered Location,Location Level
                     val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
                     HistoryEntry(
                         id = parts[0],
@@ -110,7 +144,7 @@ data class HistoryEntry(
                         locationLevel = parts[15]
                     )
                 } else if (parts.size >= 6) {
-                    // Old format (backwards compatibility): ID,Timestamp,Image Path,Classification Result,Confidence,Model Used,...
+                    // Legacy format (backwards compatibility): ID,Timestamp,Image Path,Classification Result,Confidence,Model Used,...
                     val dateFormat = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault())
                     HistoryEntry(
                         id = parts[0],

@@ -125,6 +125,10 @@ class MainActivity : AppCompatActivity() {
     private var currentBitmap: Bitmap? = null
     private var currentClassificationResult: String? = null
     private var currentConfidence: Float = 0f
+    private var currentSecondClass: String? = null
+    private var currentSecondProbability: Float = 0f
+    private var currentThirdClass: String? = null
+    private var currentThirdProbability: Float = 0f
     private var currentPhotoUri: Uri? = null
     private var currentHistoryEntryId: String? = null // Track current history entry for feedback
     private var currentLocationInfo: com.example.planktondetectionapps.location.LocationManager.LocationInfo? = null
@@ -1280,14 +1284,26 @@ class MainActivity : AppCompatActivity() {
             if (top3.size > 0) {
                 pred1?.text = classes[top3[0].first]
                 prob1?.text = String.format(Locale.getDefault(), "%.1f%%", top3[0].second * 100)
+
+                // Store top result (already stored as current)
+                currentClassificationResult = classes[top3[0].first]
+                currentConfidence = top3[0].second
             }
             if (top3.size > 1) {
                 pred2?.text = classes[top3[1].first]
                 prob2?.text = String.format(Locale.getDefault(), "%.1f%%", top3[1].second * 100)
+
+                // Store second result
+                currentSecondClass = classes[top3[1].first]
+                currentSecondProbability = top3[1].second
             }
             if (top3.size > 2) {
                 pred3?.text = classes[top3[2].first]
                 prob3?.text = String.format(Locale.getDefault(), "%.1f%%", top3[2].second * 100)
+
+                // Store third result
+                currentThirdClass = classes[top3[2].first]
+                currentThirdProbability = top3[2].second
             }
 
             saveButton?.isEnabled = true
@@ -2425,6 +2441,11 @@ class MainActivity : AppCompatActivity() {
                         classificationResult = currentClassificationResult!!,
                         confidence = currentConfidence,
                         modelUsed = formatModelName(selectedModel),
+                        // Add second and third classification results
+                        secondClass = currentSecondClass ?: "",
+                        secondProbability = currentSecondProbability,
+                        thirdClass = currentThirdClass ?: "",
+                        thirdProbability = currentThirdProbability,
                         // Location information - only use clusteredLocation (village level)
                         latitude = 0.0, // Don't store exact coordinates
                         longitude = 0.0, // Don't store exact coordinates
@@ -2883,14 +2904,6 @@ class MainActivity : AppCompatActivity() {
                 // Update location display in UI
                 updateLocationDisplay(locationInfo)
 
-                // Show a subtle toast with location info
-                runOnUiThread {
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Lokasi: ${locationInfo.clusteredLocation}",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
             }
 
             override fun onLocationError(error: String) {

@@ -48,6 +48,10 @@ class DatabaseService private constructor() {
                 "imagePath" to entry.imagePath,
                 "classificationResult" to entry.classificationResult,
                 "confidence" to entry.confidence,
+                "secondClass" to entry.secondClass,
+                "secondProbability" to entry.secondProbability,
+                "thirdClass" to entry.thirdClass,
+                "thirdProbability" to entry.thirdProbability,
                 "modelUsed" to entry.modelUsed,
                 "timestamp" to Timestamp(entry.timestamp),
                 "userFeedback" to entry.userFeedback,
@@ -161,8 +165,8 @@ class DatabaseService private constructor() {
 
             val classifications = result.getOrNull() ?: emptyList()
             val csvContent = buildString {
-                // Header with simplified location information
-                appendLine("ID,User ID,User Role,Image Path,Classification Result,Confidence,Model Used,Timestamp,User Feedback,Is Correct,Correct Class,Is Updated,Updated By,Created At,Updated At,Location")
+                // Header with top 3 classification results and location information
+                appendLine("ID,User ID,User Role,Image Path,Classification Result,Confidence,Second Class,Second Probability,Third Class,Third Probability,Model Used,Timestamp,User Feedback,Is Correct,Correct Class,Is Updated,Updated By,Created At,Updated At,Location")
 
                 // Data rows
                 classifications.forEach { classification ->
@@ -172,6 +176,10 @@ class DatabaseService private constructor() {
                     val imagePath = classification["imagePath"] ?: ""
                     val classificationResult = classification["classificationResult"] ?: ""
                     val confidence = classification["confidence"] ?: ""
+                    val secondClass = classification["secondClass"] ?: ""
+                    val secondProbability = classification["secondProbability"] ?: 0f
+                    val thirdClass = classification["thirdClass"] ?: ""
+                    val thirdProbability = classification["thirdProbability"] ?: 0f
                     val modelUsed = classification["modelUsed"] ?: ""
                     val timestamp = classification["timestamp"] ?: ""
                     val userFeedback = classification["userFeedback"] ?: ""
@@ -181,11 +189,9 @@ class DatabaseService private constructor() {
                     val updatedBy = classification["updatedBy"] ?: ""
                     val createdAt = classification["createdAt"] ?: ""
                     val updatedAt = classification["updatedAt"] ?: ""
-
-                    // Extract location data - now just a simple string
                     val location = classification["location"] as? String ?: ""
 
-                    appendLine("\"$id\",\"$userId\",\"$userRole\",\"$imagePath\",\"$classificationResult\",\"$confidence\",\"$modelUsed\",\"$timestamp\",\"$userFeedback\",\"$isCorrect\",\"$correctClass\",\"$isUpdated\",\"$updatedBy\",\"$createdAt\",\"$updatedAt\",\"$location\"")
+                    appendLine("\"$id\",\"$userId\",\"$userRole\",\"$imagePath\",\"$classificationResult\",\"$confidence\",\"$secondClass\",\"$secondProbability\",\"$thirdClass\",\"$thirdProbability\",\"$modelUsed\",\"$timestamp\",\"$userFeedback\",\"$isCorrect\",\"$correctClass\",\"$isUpdated\",\"$updatedBy\",\"$createdAt\",\"$updatedAt\",\"$location\"")
                 }
             }
 
