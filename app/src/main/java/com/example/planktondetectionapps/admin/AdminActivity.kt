@@ -3,14 +3,17 @@ package com.example.planktondetectionapps.admin
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
 import androidx.core.app.ActivityCompat
@@ -45,6 +48,7 @@ class AdminActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "AdminActivity"
         private const val STORAGE_PERMISSION_REQUEST = 100
+        private const val MANAGE_STORAGE_REQUEST = 101
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -93,29 +97,61 @@ class AdminActivity : AppCompatActivity() {
     }
 
     private fun checkPermissionAndDownload() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            == PackageManager.PERMISSION_GRANTED) {
-            downloadAllLogs()
-        } else {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
-                STORAGE_PERMISSION_REQUEST
-            )
+        when {
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
+                // Android 11+ (API 30+) - Use Manage External Storage
+                if (Environment.isExternalStorageManager()) {
+                    downloadAllLogs()
+                } else {
+                    requestManageExternalStoragePermission()
+                }
+            }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                // Android 10 (API 29) - Use scoped storage but with legacy support
+                downloadAllLogs() // Legacy storage should work with manifest config
+            }
+            else -> {
+                // Android 9 and below - Use traditional storage permission
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                    downloadAllLogs()
+                } else {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                        STORAGE_PERMISSION_REQUEST
+                    )
+                }
+            }
         }
     }
 
-    override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
-    ) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        if (requestCode == STORAGE_PERMISSION_REQUEST) {
-            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+    private fun requestManageExternalStoragePermission() {
+        AlertDialog.Builder(this)
+            .setTitle("Storage Permission Required")
+            .setMessage("To export data, this app needs permission to manage external storage. You'll be redirected to settings.")
+            .setPositiveButton("Grant Permission") { _, _ ->
+                try {
+                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                    startActivityForResult(intent, MANAGE_STORAGE_REQUEST)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Unable to open settings. Please grant storage permission manually.", Toast.LENGTH_LONG).show()
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+                Toast.makeText(this, "Storage permission is required to export data", Toast.LENGTH_SHORT).show()
+            }
+            .show()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == MANAGE_STORAGE_REQUEST) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
                 downloadAllLogs()
             } else {
-                Toast.makeText(this, "Storage permission required to download logs", Toast.LENGTH_LONG).show()
+                Toast.makeText(this, "Storage permission denied. Cannot export data.", Toast.LENGTH_LONG).show()
             }
         }
     }

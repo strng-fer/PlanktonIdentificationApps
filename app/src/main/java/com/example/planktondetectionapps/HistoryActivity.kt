@@ -1,9 +1,13 @@
 package com.example.planktondetectionapps
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.BitmapFactory
+import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.Settings
 import android.util.Log
 import android.view.View
 import android.widget.*
@@ -11,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -43,6 +48,11 @@ class HistoryActivity : AppCompatActivity() {
 
     // Add authentication manager
     private val authManager = AuthManager.getInstance()
+
+    companion object {
+        private const val STORAGE_PERMISSION_REQUEST = 100
+        private const val MANAGE_STORAGE_REQUEST = 101
+    }
 
     // Permission launcher
     private val storagePermissionLauncher = registerForActivityResult(
@@ -135,11 +145,8 @@ class HistoryActivity : AppCompatActivity() {
             showClearAllConfirmation()
         }
 
-        // Add debug button (long press on export button)
-        exportButton.setOnLongClickListener {
-            showDebugInfo()
-            true
-        }
+        // Removed the long press listener for debug info
+        // exportButton.setOnLongClickListener { ... } - REMOVED
     }
 
     private fun setupFilterSpinner() {
@@ -614,13 +621,75 @@ class HistoryActivity : AppCompatActivity() {
 
     private fun checkStoragePermissionAndExport() {
         when {
-            ContextCompat.checkSelfPermission(
-                this, Manifest.permission.WRITE_EXTERNAL_STORAGE
-            ) == PackageManager.PERMISSION_GRANTED -> {
-                exportCsvFile()
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R -> {
+                // Android 11+ (API 30+) - Use Manage External Storage
+                if (Environment.isExternalStorageManager()) {
+                    exportCsvFile()
+                } else {
+                    requestManageExternalStoragePermission()
+                }
+            }
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> {
+                // Android 10 (API 29) - Use scoped storage but with legacy support
+                exportCsvFile() // Legacy storage should work with manifest config
             }
             else -> {
-                storagePermissionLauncher.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                // Android 9 and below - Use traditional storage permission
+                if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    == PackageManager.PERMISSION_GRANTED) {
+                    exportCsvFile()
+                } else {
+                    ActivityCompat.requestPermissions(
+                        this,
+                        arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE),
+                        STORAGE_PERMISSION_REQUEST
+                    )
+                }
+            }
+        }
+    }
+
+    private fun requestManageExternalStoragePermission() {
+        AlertDialog.Builder(this)
+            .setTitle("Storage Permission Required")
+            .setMessage("To export data, this app needs permission to manage external storage. You'll be redirected to settings.")
+            .setPositiveButton("Grant Permission") { _, _ ->
+                try {
+                    val intent = Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION)
+                    startActivityForResult(intent, MANAGE_STORAGE_REQUEST)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Unable to open settings. Please grant storage permission manually.", Toast.LENGTH_LONG).show()
+                }
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+                Toast.makeText(this, "Storage permission is required to export data", Toast.LENGTH_SHORT).show()
+            }
+            .show()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == STORAGE_PERMISSION_REQUEST) {
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                exportCsvFile()
+            } else {
+                Toast.makeText(this, "Storage permission required to export file", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == MANAGE_STORAGE_REQUEST) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && Environment.isExternalStorageManager()) {
+                exportCsvFile()
+            } else {
+                Toast.makeText(this, "Storage permission denied. Cannot export data.", Toast.LENGTH_LONG).show()
             }
         }
     }
