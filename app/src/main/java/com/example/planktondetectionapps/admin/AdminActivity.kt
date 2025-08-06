@@ -1,6 +1,7 @@
 package com.example.planktondetectionapps.admin
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Environment
@@ -87,8 +88,7 @@ class AdminActivity : AppCompatActivity() {
         }
 
         btnViewAllUsers.setOnClickListener {
-            // TODO: Implement user management functionality
-            Toast.makeText(this@AdminActivity, "User management coming soon", Toast.LENGTH_SHORT).show()
+            viewAllUsers()
         }
     }
 
@@ -238,6 +238,103 @@ class AdminActivity : AppCompatActivity() {
         tvDownloadStatus.text = "❌ Error: $message"
         Toast.makeText(this, message, Toast.LENGTH_LONG).show()
         Log.e(TAG, message)
+    }
+
+    private fun viewAllUsers() {
+        lifecycleScope.launch {
+            try {
+                // Get all users from auth manager
+                val allUsers = authManager.getAllUsers()
+                if (allUsers.isNotEmpty()) {
+                    showUsersDialog(allUsers)
+                } else {
+                    Toast.makeText(this@AdminActivity, "No users found in the system", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error loading users", e)
+                Toast.makeText(this@AdminActivity, "Error loading users: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun showUsersDialog(users: List<com.example.planktondetectionapps.auth.User>) {
+        val usersList = StringBuilder()
+        usersList.appendLine("👥 REGISTERED USERS")
+        usersList.appendLine("═══════════════════════")
+
+        val adminCount = users.count { it.role == UserRole.ADMIN }
+        val expertCount = users.count { it.role == UserRole.EXPERT }
+        val basicCount = users.count { it.role == UserRole.BASIC }
+        val viewerCount = users.count { it.role == UserRole.VIEWER }
+
+        usersList.appendLine("Total Users: ${users.size}")
+        usersList.appendLine("Admins: $adminCount | Experts: $expertCount | Basic: $basicCount | Viewers: $viewerCount")
+        usersList.appendLine("")
+
+        users.sortedWith(compareBy<com.example.planktondetectionapps.auth.User> { it.role.ordinal }.thenBy { it.displayName })
+            .forEachIndexed { index, user ->
+                val roleIcon = when (user.role) {
+                    UserRole.ADMIN -> "🔑"
+                    UserRole.EXPERT -> "⭐"
+                    UserRole.BASIC -> "👤"
+                    UserRole.VIEWER -> "👁️"
+                }
+
+                usersList.appendLine("${index + 1}. $roleIcon ${user.displayName}")
+                usersList.appendLine("   Role: ${user.role.roleName}")
+                usersList.appendLine("   Email: ${user.email ?: "N/A"}")
+
+                val dateFormat = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+                usersList.appendLine("   Joined: ${dateFormat.format(user.createdAt.toDate())}")
+                usersList.appendLine("   Last Login: ${dateFormat.format(user.lastLoginAt.toDate())}")
+                usersList.appendLine("")
+            }
+
+        // Create and show dialog with user information
+        val builder = androidx.appcompat.app.AlertDialog.Builder(this)
+        builder.setTitle("User Management")
+        builder.setMessage(usersList.toString())
+        builder.setPositiveButton("Close") { dialog, _ -> dialog.dismiss() }
+        builder.setNeutralButton("Export Users") { _, _ -> exportUsersToCSV(users) }
+        builder.show()
+    }
+
+    private fun exportUsersToCSV(users: List<com.example.planktondetectionapps.auth.User>) {
+        lifecycleScope.launch {
+            try {
+                val csvContent = buildString {
+                    appendLine("Name,Email,Role,Created Date,Last Login")
+                    users.forEach { user ->
+                        val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                        appendLine("\"${user.displayName}\",\"${user.email ?: "N/A"}\",\"${user.role.roleName}\",\"${dateFormat.format(user.createdAt.toDate())}\",\"${dateFormat.format(user.lastLoginAt.toDate())}\"")
+                    }
+                }
+
+                saveUsersCSVToDownloads(csvContent)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error exporting users", e)
+                Toast.makeText(this@AdminActivity, "Error exporting users: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun saveUsersCSVToDownloads(csvContent: String) {
+        try {
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+            val fileName = "plankton_users_$timestamp.csv"
+            val file = File(downloadsDir, fileName)
+
+            FileWriter(file).use { writer ->
+                writer.write(csvContent)
+            }
+
+            Toast.makeText(this, "Users exported to Downloads: $fileName", Toast.LENGTH_LONG).show()
+            Log.d(TAG, "Users CSV file saved to: ${file.absolutePath}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error saving users CSV file", e)
+            Toast.makeText(this, "Error saving users file: ${e.message}", Toast.LENGTH_LONG).show()
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {

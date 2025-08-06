@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.example.planktondetectionapps.R
+import com.example.planktondetectionapps.admin.AdminActivity
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -66,8 +67,9 @@ class ProfileActivity : AppCompatActivity() {
         }
 
         btnManageUsers.setOnClickListener {
-            // Start user management activity (to be created if needed)
-            Toast.makeText(this, "User management feature coming soon", Toast.LENGTH_SHORT).show()
+            // Launch AdminActivity
+            val intent = Intent(this, AdminActivity::class.java)
+            startActivity(intent)
         }
     }
 

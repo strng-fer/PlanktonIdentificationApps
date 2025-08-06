@@ -591,4 +591,28 @@ class AuthManager private constructor() {
             Result.failure(e)
         }
     }
+
+    /**
+     * Get all users from Firestore (admin only functionality)
+     */
+    suspend fun getAllUsers(): List<User> {
+        return try {
+            val snapshot = usersCollection.get().await()
+            snapshot.documents.mapNotNull { document ->
+                document.data?.let { data ->
+                    User(
+                        uid = document.id,
+                        email = data["email"] as? String,
+                        displayName = data["displayName"] as? String ?: "Unknown User",
+                        role = UserRole.valueOf((data["role"] as? String) ?: "GUEST"),
+                        createdAt = (data["createdAt"] as? Timestamp) ?: Timestamp.now(),
+                        lastLoginAt = (data["lastLoginAt"] as? Timestamp) ?: Timestamp.now()
+                    )
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting all users", e)
+            emptyList()
+        }
+    }
 }
